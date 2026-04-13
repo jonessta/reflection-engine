@@ -1,8 +1,6 @@
 package au.clef
 
-import java.lang.reflect.Method
-
-class MethodDescriptor(
+data class MethodDescriptor(
     val name: String,
     val parameters: List<ParamDescriptor>,
     val returnType: Class<*>,
@@ -11,6 +9,6 @@ class MethodDescriptor(
     val invoke: (ExecutionContext, List<Any?>) -> Any?
 ) {
     override fun toString(): String {
-        return "MethodDescriptor(name='$name', parameters=$parameters, returnType=$returnType, isStatic=$isStatic)"
+        return "MethodDescriptor(name='$name', parameters=$parameters, returnType=$returnType, isStatic=$isStatic, rawMethod=$rawMethod)"
     }
 }

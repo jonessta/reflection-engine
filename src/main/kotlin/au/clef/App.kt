@@ -2,10 +2,6 @@ package au.clef
 
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
-import kotlin.reflect.KClass
-import kotlin.reflect.KFunction
-import kotlin.reflect.KParameter
-import kotlin.reflect.jvm.kotlinFunction
 
 class App {
 
@@ -13,65 +9,76 @@ class App {
         clazz: Class<*>,
         level: InheritanceLevel
     ): List<Method> {
+
         val result = mutableListOf<Method>()
+
         var current: Class<*>? = clazz
         var depth = 0
+
         val maxDepth = when (level) {
             is InheritanceLevel.DeclaredOnly -> 0
             is InheritanceLevel.All -> Int.MAX_VALUE
             is InheritanceLevel.Depth -> level.value
         }
+
         while (current != null && depth <= maxDepth) {
+
             result += current.declaredMethods
+
             current = current.superclass
             depth++
         }
-        return result
-            .filter { Modifier.isPublic(it.modifiers) }
-            .distinctBy {
-                it.name + it.parameterTypes.joinToString { t -> t.name }
-            }
+
+        return result.filter {
+            Modifier.isPublic(it.modifiers)
+        }.distinctBy {
+            it.name + it.parameterTypes.joinToString { t -> t.name }
+        }
     }
 
-    fun buildMethods(methods: List<java.lang.reflect.Method>): List<MethodDescriptor> {
+    fun buildMethods(methods: List<Method>): List<MethodDescriptor> {
 
         return methods.map { method ->
 
-            val isStatic = java.lang.reflect.Modifier.isStatic(method.modifiers)
+            val isStatic = Modifier.isStatic(method.modifiers)
 
-            val params = method.parameters.mapIndexed { index, p ->
+            val params = method.parameters.mapIndexed { i, p ->
                 ParamDescriptor(
-                    index = index,
+                    index = i,
+                    name = p.name ?: "arg$i",
                     type = p.type,
                     nullable = true
                 )
             }
 
+            // 🔥 IMPORTANT: capture into local variable
+
+            val paramsCopy = params
+            val isStaticCopy = isStatic
+            val raw = method
+
             MethodDescriptor(
                 name = method.name,
-                parameters = params,
+                parameters = paramsCopy,
                 returnType = method.returnType,
-                isStatic = isStatic,
-                rawMethod = method,
+                isStatic = isStaticCopy,
+                rawMethod = raw,
 
                 invoke = { ctx, args ->
 
-                    // 🔒 HARD SAFETY CHECK
-                    if (args.size != params.size) {
+                    if (args.size != paramsCopy.size) {
                         throw IllegalArgumentException(
-                            "Argument mismatch for ${method.name}: expected ${params.size}, got ${args.size}"
+                            "Expected ${paramsCopy.size}, got ${args.size}"
                         )
                     }
 
                     val target = when {
-                        isStatic -> null
+                        isStaticCopy -> null
                         ctx.instance != null -> ctx.instance
-                        else -> throw IllegalStateException(
-                            "Instance required for ${method.name}"
-                        )
+                        else -> throw IllegalStateException("Instance required")
                     }
 
-                    method.invoke(target, *args.toTypedArray())
+                    raw.invoke(target, *args.toTypedArray())
                 }
             )
         }

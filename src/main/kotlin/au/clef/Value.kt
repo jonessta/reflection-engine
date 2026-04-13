@@ -6,8 +6,9 @@ sealed class Value {
 
     data class Instance(val obj: Any) : Value()
 
-    data class ObjectBuilder(
+    data class Object(
         val type: Class<*>,
         val fields: Map<String, Value>
     ) : Value()
 }
+

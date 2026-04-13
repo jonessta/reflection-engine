@@ -1,19 +1,21 @@
 package au.clef
 
+import au.clef.model.Person
+
 fun main(args: Array<String>) {
-
     val app = App()
+    runPrimitive(app)
+//    runComposite(app)
+}
 
-    // 1. Collect methods (inheritance-aware)
+fun runPrimitive(app: App) {
     val rawMethods = app.collectMethods(
-        java.lang.Math::class.java,
+        Math::class.java,
         InheritanceLevel.All
     )
 
-    // 2. Build safe descriptors
     val methods = app.buildMethods(rawMethods)
 
-    // 3. Find method
     val maxMethod = methods.first {
         it.name == "max" &&
                 it.rawMethod.parameterTypes.contentEquals(
@@ -21,12 +23,30 @@ fun main(args: Array<String>) {
                 )
     }
 
+    val inputArgs = listOf(
+        Value.Primitive("10"),
+        Value.Primitive("20")
+    )
+
     println(maxMethod)
-    // 4. Invoke safely (NO STRING KEYS)
+
     val result = maxMethod.invoke(
-        ExecutionContext(null),
-        listOf(10, 20)
+        ExecutionContext(),
+        inputArgs
     )
 
     println(result) // 20
+}
+
+fun runComposite(app: App) {
+    val personValue: Value.Object = Value.Object(
+        type = Person::class.java,
+        fields = mapOf(
+            "name" to Value.Primitive("Alice"),
+            "age" to Value.Primitive("25")
+        )
+    )
+    val person = app.materialize(personValue, Person::class.java)
+    println(person)
+
 }

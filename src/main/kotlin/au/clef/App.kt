@@ -7,6 +7,7 @@ import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
 
 class App {
+
     private fun signature(m: MethodDescriptor): String =
         "${m.name}(${m.parameters.joinToString(", ") { it.type.simpleName }})"
 
@@ -56,7 +57,6 @@ class App {
         if (unwrapped == null) {
             return if (targetType.isPrimitive) null else 0
         }
-
         return when (targetType) {
             Int::class.javaPrimitiveType,
             Int::class.java -> when (unwrapped) {
@@ -83,8 +83,8 @@ class App {
     }
 
     private fun matchScore(method: MethodDescriptor, args: List<Any?>): Int? {
-        if (method.parameters.size != args.size) return null
-
+        if (method.parameters.size != args.size)
+            return null
         var total = 0
         for (i in method.parameters.indices) {
             val score = conversionScore(args[i], method.parameters[i].type) ?: return null
@@ -99,17 +99,15 @@ class App {
         args: List<Any?>,
         inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): Any? {
-
         val methods = buildMethods(
             collectMethods(target.javaClass, inheritanceLevel)
-        ).filter { it.name == methodName }
+        )
+            .filter { it.name == methodName }
 
         if (methods.isEmpty()) {
             throw IllegalArgumentException("No method '$methodName' found on ${target.javaClass.name}")
         }
-
         val matching = methods.filter { matches(it, args) }
-
         return when {
             matching.isEmpty() -> throw IllegalArgumentException(
                 "No matching overload for '$methodName' with args ${args.map { it?.javaClass?.simpleName }}"

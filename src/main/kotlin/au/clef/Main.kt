@@ -11,17 +11,17 @@ fun main() {
 }
 
 fun runComposite(app: App) {
-    val personValue = personValue()
-    val person = app.materialize(personValue, Person::class.java)
+    val personInput = personValue()
+    val person = app.materialize(personInput, Person::class.java)
     println("-----------> runComposite: $person")
 }
 
 fun runAcme(app: App) {
-    val personValue = personValue()
+    val personInput = personValue()
     val result = app.call(
         target = AcmeService(),
         methodName = "personName",
-        args = listOf(personValue)
+        args = listOf(personInput)
     )
     println("-----------> runAcme: $result")
 }
@@ -44,7 +44,7 @@ fun runStatic(app: App) {
 
 fun runStaticAmbiguous(app: App) {
     try {
-        app.callStatic(
+        val result = app.callStatic(
             clazz = Math::class.java,
             methodName = "max",
             args = listOf(
@@ -52,6 +52,7 @@ fun runStaticAmbiguous(app: App) {
                 Value.Primitive("20")
             )
         )
+        println("-----------> runStaticAmbiguous UNEXPECTED SUCCESS: $result")
     } catch (e: IllegalArgumentException) {
         println("-----------> runStaticAmbiguous: ${e.message}")
     }

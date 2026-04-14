@@ -1,5 +1,6 @@
 package au.clef
 
+import java.lang.reflect.Constructor
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import kotlin.reflect.KClass
@@ -7,6 +8,21 @@ import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
 
 class App {
+
+    fun invokeDescriptor(
+        descriptor: MethodDescriptor,
+        instance: Any? = null,
+        args: List<Any?>
+    ): Any? {
+        require(descriptor.isStatic || instance != null) {
+            "Instance required for method ${descriptor.name}"
+        }
+
+        return descriptor.invoke(
+            ExecutionContext(instance),
+            args
+        )
+    }
 
     private fun signature(m: MethodDescriptor): String =
         "${m.name}(${m.parameters.joinToString(", ") { it.type.simpleName }})"
@@ -18,8 +34,8 @@ class App {
             is Value.Object -> return true // always constructible
             else -> value
         }
-
-        if (unwrapped == null) return !targetType.isPrimitive
+        if (unwrapped == null)
+            return !targetType.isPrimitive
 
         return when (targetType) {
             Int::class.javaPrimitiveType,
@@ -99,9 +115,7 @@ class App {
         args: List<Any?>,
         inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): Any? {
-        val methods = buildMethods(
-            collectMethods(target.javaClass, inheritanceLevel)
-        )
+        val methods = buildMethods(collectMethods(target.javaClass, inheritanceLevel))
             .filter { it.name == methodName }
 
         if (methods.isEmpty()) {
@@ -129,24 +143,20 @@ class App {
         args: List<Any?>,
         inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): Any? {
-        val methods = buildMethods(
-            collectMethods(clazz, inheritanceLevel)
-        ).filter { it.name == methodName && it.isStatic }
+        val methods = buildMethods(collectMethods(clazz, inheritanceLevel))
+            .filter { it.name == methodName && it.isStatic }
 
         if (methods.isEmpty()) {
             throw IllegalArgumentException("No static method '$methodName' found on ${clazz.name}")
         }
-
         val scored = methods.mapNotNull { method ->
             matchScore(method, args)?.let { score -> method to score }
         }
-
         if (scored.isEmpty()) {
             throw IllegalArgumentException(
                 "No matching static overload for '$methodName' on ${clazz.name}"
             )
         }
-
         val bestScore = scored.minOf { it.second }
         val best = scored.filter { it.second == bestScore }
 
@@ -157,7 +167,6 @@ class App {
                 }"
             )
         }
-
         return best.first().first.invoke(ExecutionContext(null), args)
     }
 
@@ -165,25 +174,17 @@ class App {
         clazz: Class<*>,
         methodName: String,
         args: List<Any?>,
-        parameterTypes: List<Class<*>>,
+        paramTypes: List<Class<*>>,
         inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): Any? {
-        require(args.size == parameterTypes.size) {
-            "args size (${args.size}) must match parameterTypes size (${parameterTypes.size})"
-        }
-
-        val methods = buildMethods(
-            collectMethods(clazz, inheritanceLevel)
-        )
-
+        require(args.size == paramTypes.size) { "args size (${args.size}) must match parameterTypes size (${paramTypes.size})" }
+        val methods = buildMethods(collectMethods(clazz, inheritanceLevel))
         val matchingMethods = methods.filter { it.name == methodName && it.isStatic }
-
         val method = matchingMethods.firstOrNull {
-            it.rawMethod.parameterTypes.contentEquals(parameterTypes.toTypedArray())
+            it.rawMethod.parameterTypes.contentEquals(paramTypes.toTypedArray())
         } ?: throw IllegalArgumentException(
-            "No static method '$methodName(${parameterTypes.joinToString(", ") { it.simpleName }})' found on ${clazz.name}"
+            "No static method '$methodName(${paramTypes.joinToString(", ") { it.simpleName }})' found on ${clazz.name}"
         )
-
         return method.invoke(ExecutionContext(null), args)
     }
 
@@ -191,27 +192,23 @@ class App {
         target: Any,
         methodName: String,
         args: List<Any?>,
-        parameterTypes: List<Class<*>>,
+        paramTypes: List<Class<*>>,
         inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): Any? {
-        require(args.size == parameterTypes.size) {
-            "args size (${args.size}) must match parameterTypes size (${parameterTypes.size})"
+        require(args.size == paramTypes.size) {
+            "args size (${args.size}) must match parameterTypes size (${paramTypes.size})"
         }
-
-        val methods = buildMethods(
-            collectMethods(target.javaClass, inheritanceLevel)
-        )
-
+        val collectedMethods = collectMethods(target.javaClass, inheritanceLevel)
+        val methods = buildMethods(collectedMethods)
         val matchingMethods = methods.filter { it.name == methodName }
-
         val method = matchingMethods.firstOrNull {
-            it.rawMethod.parameterTypes.contentEquals(parameterTypes.toTypedArray())
+            it.rawMethod.parameterTypes.contentEquals(paramTypes.toTypedArray())
         } ?: throw IllegalArgumentException(
             buildString {
                 append("No method '")
                 append(methodName)
                 append("(")
-                append(parameterTypes.joinToString(", ") { it.simpleName })
+                append(paramTypes.joinToString(", ") { it.simpleName })
                 append(")' found on ")
                 append(target.javaClass.name)
 
@@ -225,12 +222,8 @@ class App {
                 }
             }
         )
-        return method.invoke(
-            ExecutionContext(target),
-            args
-        )
+        return method.invoke(ExecutionContext(target), args)
     }
-
 
     // --------------------------------------------------
     // METHOD DISCOVERY
@@ -240,41 +233,31 @@ class App {
         clazz: Class<*>,
         level: InheritanceLevel
     ): List<Method> {
-
         val result = mutableListOf<Method>()
-
         var current: Class<*>? = clazz
         var depth = 0
-
         val maxDepth = when (level) {
             is InheritanceLevel.DeclaredOnly -> 0
             is InheritanceLevel.All -> Int.MAX_VALUE
             is InheritanceLevel.Depth -> level.value
         }
-
         while (current != null && depth <= maxDepth) {
             result += current.declaredMethods
             current = current.superclass
             depth++
         }
-
         return result
             .filter {
                 Modifier.isPublic(it.modifiers) &&
                         !it.isSynthetic &&
                         !it.isBridge
             }
-            .distinctBy {
-                it.name + it.parameterTypes.joinToString { t -> t.name }
-            }
+            .distinctBy { it.name + it.parameterTypes.joinToString { t -> t.name } }
     }
 
     fun buildMethods(methods: List<Method>): List<MethodDescriptor> {
-
         return methods.map { method ->
-
             val isStatic = Modifier.isStatic(method.modifiers)
-
             val params = method.parameters.mapIndexed { i, p ->
                 ParamDescriptor(
                     index = i,
@@ -283,7 +266,6 @@ class App {
                     nullable = true
                 )
             }
-
             val raw = method
             MethodDescriptor(
                 name = method.name,
@@ -318,7 +300,8 @@ class App {
             else -> value
         }
 
-        if (unwrapped == null) return null
+        if (unwrapped == null)
+            return null
 
         // 🔥 Object construction path
         if (unwrapped is Value.Object) {
@@ -351,7 +334,6 @@ class App {
 
     fun buildObject(obj: Value.Object): Any {
         val clazz = obj.type
-
         return if (isKotlinClass(clazz)) {
             buildKotlinObject(obj)
         } else {
@@ -362,19 +344,13 @@ class App {
     // ✅ Kotlin reflection (clean, reliable)
     private fun buildKotlinObject(obj: Value.Object): Any {
         val kClass: KClass<*> = obj.type.kotlin
-
         val ctor = kClass.primaryConstructor
             ?: throw IllegalArgumentException("No primary constructor for ${obj.type.name}")
-
         val argsByParam = mutableMapOf<KParameter, Any?>()
-
         for (param in ctor.parameters) {
-
             val name = param.name
                 ?: throw IllegalArgumentException("Unnamed constructor parameter in ${obj.type.name}")
-
             val rawValue = obj.fields[name]
-
             if (rawValue == null) {
                 if (param.isOptional) continue
                 if (param.type.isMarkedNullable) {
@@ -383,26 +359,19 @@ class App {
                 }
                 throw IllegalArgumentException("Missing field '$name' for ${obj.type.name}")
             }
-
             val paramClass = (param.type.classifier as? KClass<*>)?.java
                 ?: throw IllegalArgumentException("Unsupported type for '$name' in ${obj.type.name}")
-
             argsByParam[param] = materialize(rawValue, paramClass)
         }
-
         return ctor.callBy(argsByParam)
     }
 
     // ✅ Java reflection fallback
     private fun buildJavaObject(obj: Value.Object): Any {
         val clazz = obj.type
-
-        for (ctor in clazz.declaredConstructors) {
-
+        for (ctor: Constructor<*> in clazz.declaredConstructors) {
             val params = ctor.parameters
-
             if (params.size != obj.fields.size) continue
-
             try {
                 val args = params.mapIndexed { i, param ->
                     val value =
@@ -410,25 +379,20 @@ class App {
                             ?: obj.fields["arg$i"]
                             ?: obj.fields.values.elementAtOrNull(i)
                             ?: throw IllegalArgumentException("Missing value for param $i")
-
                     materialize(value, param.type)
                 }.toTypedArray()
 
                 ctor.isAccessible = true
                 return ctor.newInstance(*args)
-
             } catch (_: Exception) {
             }
         }
 
         val noArgCtor = clazz.declaredConstructors.firstOrNull { it.parameterCount == 0 }
-            ?: throw IllegalArgumentException(
-                "Could not construct ${clazz.name}: no suitable constructor"
-            )
+            ?: throw IllegalArgumentException("Could not construct ${clazz.name}: no suitable constructor")
 
         noArgCtor.isAccessible = true
         val instance = noArgCtor.newInstance()
-
         obj.fields.forEach { (name, value) ->
             runCatching {
                 val field = clazz.getDeclaredField(name)
@@ -436,14 +400,11 @@ class App {
                 field.set(instance, materialize(value, field.type))
             }
         }
-
         return instance
     }
 
     // --------------------------------------------------
     // HELPERS
     // --------------------------------------------------
-
-    private fun isKotlinClass(clazz: Class<*>): Boolean =
-        clazz.getAnnotation(Metadata::class.java) != null
+    private fun isKotlinClass(clazz: Class<*>): Boolean = clazz.getAnnotation(Metadata::class.java) != null
 }

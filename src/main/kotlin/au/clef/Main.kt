@@ -2,6 +2,7 @@ package au.clef
 
 import au.clef.model.OverloadedService
 import au.clef.model.Person
+import java.lang.reflect.Method
 
 fun main() {
     val app = App()
@@ -18,13 +19,13 @@ fun main() {
 }
 
 fun runComposite(app: App) {
-    val personInput = personValue()
+    val personInput: Value.Object = personValue()
     val person = app.materialize(personInput, Person::class.java)
     println("-----------> runComposite: $person")
 }
 
 fun runAcme(app: App) {
-    val personInput = personValue()
+    val personInput: Value.Object = personValue()
     val result = app.call(
         target = AcmeService(),
         methodName = "personName",
@@ -99,7 +100,7 @@ fun runOverloadedExact(app: App) {
 // --------------------------GUI calls --------------------------------------
 fun runGuiStyleInstance(app: App) {
     val service = AcmeService()
-    val descriptor = app.buildMethods(
+    val descriptor: MethodDescriptor = app.buildMethods(
         app.collectMethods(AcmeService::class.java, InheritanceLevel.DeclaredOnly)
     ).first { it.name == "personName" }
 
@@ -114,15 +115,15 @@ fun runGuiStyleInstance(app: App) {
 }
 
 fun runGuiStyleStatic(app: App) {
-    val descriptor = app.buildMethods(
-        app.collectMethods(Math::class.java, InheritanceLevel.DeclaredOnly)
-    ).first {
-        it.name == "max" &&
-                it.isStatic &&
-                it.rawMethod.parameterTypes.contentEquals(
-                    arrayOf(Int::class.javaPrimitiveType, Int::class.javaPrimitiveType)
-                )
-    }
+    val descriptor: MethodDescriptor = app.findDescriptorExact(
+        clazz = Math::class.java,
+        methodName = "max",
+        parameterTypes = listOf(
+            Int::class.javaPrimitiveType!!,
+            Int::class.javaPrimitiveType!!
+        )
+    )
+
     val result = app.invokeDescriptor(
         descriptor = descriptor,
         args = listOf(
@@ -130,6 +131,7 @@ fun runGuiStyleStatic(app: App) {
             Value.Primitive("20")
         )
     )
+
     println("-----------> runGuiStyleStatic: $result")
 }
 

@@ -5,7 +5,28 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
 
+class TypeMismatchException(string: String) : Exception(string)
+
 class App {
+
+    fun descriptors(
+        clazz: Class<*>,
+        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
+    ): List<MethodDescriptor> =
+        buildMethods(collectMethods(clazz, inheritanceLevel))
+
+    fun findDescriptorExact(
+        clazz: Class<*>,
+        methodName: String,
+        parameterTypes: List<Class<*>>,
+        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
+    ): MethodDescriptor =
+        descriptors(clazz, inheritanceLevel).firstOrNull {
+            it.name == methodName &&
+                    it.rawMethod.parameterTypes.contentEquals(parameterTypes.toTypedArray())
+        } ?: throw IllegalArgumentException(
+            "No method '$methodName(${parameterTypes.joinToString(", ") { it.simpleName }})' found on ${clazz.name}"
+        )
 
     fun invokeDescriptor(descriptor: MethodDescriptor, instance: Any? = null, args: List<Any?>): Any? {
         require(descriptor.isStatic || instance != null) { "Instance required for method ${descriptor.name}" }
@@ -46,9 +67,7 @@ class App {
         }
 
         if (scored.isEmpty()) {
-            throw IllegalArgumentException(
-                "No matching overload for '$methodName' on ${target.javaClass.name}"
-            )
+            throw IllegalArgumentException("No matching overload for '$methodName' on ${target.javaClass.name}")
         }
 
         val bestScore = scored.minOf { it.second }
@@ -56,9 +75,7 @@ class App {
 
         if (best.size > 1) {
             throw IllegalArgumentException(
-                "Ambiguous call to '$methodName'. Matching overloads: ${
-                    best.joinToString(" | ") { signature(it.first) }
-                }"
+                "Ambiguous call to '$methodName'. Matching overloads: ${best.joinToString(" | ") { signature(it.first) }}"
             )
         }
 
@@ -128,7 +145,7 @@ class App {
                 append("No method '")
                 append(methodName)
                 append("(")
-                append(paramTypes.joinToString(", ") { it.simpleName })
+                append(paramTypes.joinToString(", ") { it: Class<*> -> it.simpleName })
                 append(")' found on ")
                 append(target.javaClass.name)
                 if (matchingMethods.isNotEmpty()) {
@@ -149,7 +166,7 @@ class App {
     // --------------------------------------------------
 
     fun collectMethods(clazz: Class<*>, level: InheritanceLevel): List<Method> {
-        val result: MutableList<Method> = mutableListOf<Method>()
+        val result: MutableList<Method> = mutableListOf()
         var current: Class<*>? = clazz
         var depth = 0
         val maxDepth = when (level) {
@@ -200,7 +217,8 @@ class App {
     // --------------------------------------------------
 
     fun materialize(value: Any?, targetType: Class<*>): Any? =
-        tryConvert(value, targetType)?.value ?: error("Cannot convert $value to ${targetType.simpleName}")
+        tryConvert(value, targetType)?.value
+            ?: throw TypeMismatchException("Cannot convert $value to ${targetType.simpleName}")
 
     private fun normalize(type: Class<*>): Class<*> =
         when (type) {

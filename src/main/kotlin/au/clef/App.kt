@@ -1,102 +1,21 @@
 package au.clef
 
-import java.lang.reflect.Constructor
-import java.lang.reflect.Method
-import java.lang.reflect.Modifier
+import java.lang.reflect.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
 
 class App {
 
-    fun invokeDescriptor(
-        descriptor: MethodDescriptor,
-        instance: Any? = null,
-        args: List<Any?>
-    ): Any? {
-        require(descriptor.isStatic || instance != null) {
-            "Instance required for method ${descriptor.name}"
-        }
-
-        return descriptor.invoke(
-            ExecutionContext(instance),
-            args
-        )
+    fun invokeDescriptor(descriptor: MethodDescriptor, instance: Any? = null, args: List<Any?>): Any? {
+        require(descriptor.isStatic || instance != null) { "Instance required for method ${descriptor.name}" }
+        return descriptor.invoke(ExecutionContext(instance), args)
     }
 
     private fun signature(m: MethodDescriptor): String =
         "${m.name}(${m.parameters.joinToString(", ") { it.type.simpleName }})"
 
-    private fun canConvert(value: Any?, targetType: Class<*>): Boolean {
-        val unwrapped = when (value) {
-            is Value.Primitive -> value.value
-            is Value.Instance -> value.obj
-            is Value.Object -> return true // always constructible
-            else -> value
-        }
-        if (unwrapped == null)
-            return !targetType.isPrimitive
-
-        return when (targetType) {
-            Int::class.javaPrimitiveType,
-            Int::class.java -> unwrapped is Int || unwrapped is String
-
-            Double::class.javaPrimitiveType,
-            Double::class.java -> unwrapped is Double || unwrapped is String
-
-            String::class.java -> true
-
-            else -> targetType.isAssignableFrom(unwrapped.javaClass)
-        }
-    }
-
-    private fun matches(method: MethodDescriptor, args: List<Any?>): Boolean {
-
-        if (method.parameters.size != args.size) return false
-
-        return method.parameters.indices.all { i ->
-            val arg = args[i]
-            val paramType = method.parameters[i].type
-
-            canConvert(arg, paramType)
-        }
-    }
-
-    private fun conversionScore(value: Any?, targetType: Class<*>): Int? {
-        val unwrapped = when (value) {
-            is Value.Primitive -> value.value
-            is Value.Instance -> value.obj
-            is Value.Object -> return 10
-            else -> value
-        }
-
-        if (unwrapped == null) {
-            return if (targetType.isPrimitive) null else 0
-        }
-        return when (targetType) {
-            Int::class.javaPrimitiveType,
-            Int::class.java -> when (unwrapped) {
-                is Int -> 0
-                is String -> unwrapped.toIntOrNull()?.let { 1 }
-                else -> null
-            }
-
-            Double::class.javaPrimitiveType,
-            Double::class.java -> when (unwrapped) {
-                is Double -> 0
-                is Int -> 1
-                is String -> unwrapped.toDoubleOrNull()?.let { 2 }
-                else -> null
-            }
-
-            String::class.java -> when (unwrapped) {
-                is String -> 0
-                else -> 3
-            }
-
-            else -> if (targetType.isAssignableFrom(unwrapped.javaClass)) 0 else null
-        }
-    }
+    private fun conversionScore(value: Any?, targetType: Class<*>): Int? = tryConvert(value, targetType)?.score
 
     private fun matchScore(method: MethodDescriptor, args: List<Any?>): Int? {
         if (method.parameters.size != args.size)
@@ -121,20 +40,29 @@ class App {
         if (methods.isEmpty()) {
             throw IllegalArgumentException("No method '$methodName' found on ${target.javaClass.name}")
         }
-        val matching = methods.filter { matches(it, args) }
-        return when {
-            matching.isEmpty() -> throw IllegalArgumentException(
-                "No matching overload for '$methodName' with args ${args.map { it?.javaClass?.simpleName }}"
-            )
 
-            matching.size > 1 -> throw IllegalArgumentException(
+        val scored = methods.mapNotNull { method ->
+            matchScore(method, args)?.let { score -> method to score }
+        }
+
+        if (scored.isEmpty()) {
+            throw IllegalArgumentException(
+                "No matching overload for '$methodName' on ${target.javaClass.name}"
+            )
+        }
+
+        val bestScore = scored.minOf { it.second }
+        val best = scored.filter { it.second == bestScore }
+
+        if (best.size > 1) {
+            throw IllegalArgumentException(
                 "Ambiguous call to '$methodName'. Matching overloads: ${
-                    matching.joinToString(" | ") { signature(it) }
+                    best.joinToString(" | ") { signature(it.first) }
                 }"
             )
-
-            else -> matching.first().invoke(ExecutionContext(target), args)
         }
+
+        return best.first().first.invoke(ExecutionContext(target), args)
     }
 
     fun callStatic(
@@ -143,28 +71,22 @@ class App {
         args: List<Any?>,
         inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): Any? {
-        val methods = buildMethods(collectMethods(clazz, inheritanceLevel))
+        val methods: List<MethodDescriptor> = buildMethods(collectMethods(clazz, inheritanceLevel))
             .filter { it.name == methodName && it.isStatic }
-
         if (methods.isEmpty()) {
             throw IllegalArgumentException("No static method '$methodName' found on ${clazz.name}")
         }
-        val scored = methods.mapNotNull { method ->
+        val scored: List<Pair<MethodDescriptor, Int>> = methods.mapNotNull { method ->
             matchScore(method, args)?.let { score -> method to score }
         }
         if (scored.isEmpty()) {
-            throw IllegalArgumentException(
-                "No matching static overload for '$methodName' on ${clazz.name}"
-            )
+            throw IllegalArgumentException("No matching static overload for '$methodName' on ${clazz.name}")
         }
         val bestScore = scored.minOf { it.second }
-        val best = scored.filter { it.second == bestScore }
-
+        val best: List<Pair<MethodDescriptor, Int>> = scored.filter { it.second == bestScore }
         if (best.size > 1) {
             throw IllegalArgumentException(
-                "Ambiguous static call to '$methodName'. Matching overloads: ${
-                    best.joinToString(" | ") { signature(it.first) }
-                }"
+                "Ambiguous static call to '$methodName'. Matching overloads: ${best.joinToString(" | ") { signature(it.first) }}"
             )
         }
         return best.first().first.invoke(ExecutionContext(null), args)
@@ -178,9 +100,9 @@ class App {
         inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): Any? {
         require(args.size == paramTypes.size) { "args size (${args.size}) must match parameterTypes size (${paramTypes.size})" }
-        val methods = buildMethods(collectMethods(clazz, inheritanceLevel))
-        val matchingMethods = methods.filter { it.name == methodName && it.isStatic }
-        val method = matchingMethods.firstOrNull {
+        val methods: List<MethodDescriptor> = buildMethods(collectMethods(clazz, inheritanceLevel))
+        val matchingMethods: List<MethodDescriptor> = methods.filter { it.name == methodName && it.isStatic }
+        val method: MethodDescriptor = matchingMethods.firstOrNull {
             it.rawMethod.parameterTypes.contentEquals(paramTypes.toTypedArray())
         } ?: throw IllegalArgumentException(
             "No static method '$methodName(${paramTypes.joinToString(", ") { it.simpleName }})' found on ${clazz.name}"
@@ -195,13 +117,11 @@ class App {
         paramTypes: List<Class<*>>,
         inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): Any? {
-        require(args.size == paramTypes.size) {
-            "args size (${args.size}) must match parameterTypes size (${paramTypes.size})"
-        }
-        val collectedMethods = collectMethods(target.javaClass, inheritanceLevel)
-        val methods = buildMethods(collectedMethods)
-        val matchingMethods = methods.filter { it.name == methodName }
-        val method = matchingMethods.firstOrNull {
+        require(args.size == paramTypes.size) { "args size (${args.size}) must match parameterTypes size (${paramTypes.size})" }
+        val collectedMethods: List<Method> = collectMethods(target.javaClass, inheritanceLevel)
+        val methods: List<MethodDescriptor> = buildMethods(collectedMethods)
+        val matchingMethods: List<MethodDescriptor> = methods.filter { it.name == methodName }
+        val method: MethodDescriptor = matchingMethods.firstOrNull {
             it.rawMethod.parameterTypes.contentEquals(paramTypes.toTypedArray())
         } ?: throw IllegalArgumentException(
             buildString {
@@ -211,7 +131,6 @@ class App {
                 append(paramTypes.joinToString(", ") { it.simpleName })
                 append(")' found on ")
                 append(target.javaClass.name)
-
                 if (matchingMethods.isNotEmpty()) {
                     append(". Available overloads: ")
                     append(
@@ -229,11 +148,8 @@ class App {
     // METHOD DISCOVERY
     // --------------------------------------------------
 
-    fun collectMethods(
-        clazz: Class<*>,
-        level: InheritanceLevel
-    ): List<Method> {
-        val result = mutableListOf<Method>()
+    fun collectMethods(clazz: Class<*>, level: InheritanceLevel): List<Method> {
+        val result: MutableList<Method> = mutableListOf<Method>()
         var current: Class<*>? = clazz
         var depth = 0
         val maxDepth = when (level) {
@@ -247,34 +163,25 @@ class App {
             depth++
         }
         return result
-            .filter {
-                Modifier.isPublic(it.modifiers) &&
-                        !it.isSynthetic &&
-                        !it.isBridge
-            }
+            .filter { Modifier.isPublic(it.modifiers) && !it.isSynthetic && !it.isBridge }
             .distinctBy { it.name + it.parameterTypes.joinToString { t -> t.name } }
     }
 
     fun buildMethods(methods: List<Method>): List<MethodDescriptor> {
         return methods.map { method ->
             val isStatic = Modifier.isStatic(method.modifiers)
-            val params = method.parameters.mapIndexed { i, p ->
-                ParamDescriptor(
-                    index = i,
-                    name = p.name ?: "arg$i",
-                    type = p.type,
-                    nullable = true
-                )
+            val params: List<ParamDescriptor> = method.parameters.mapIndexed { i, p ->
+                ParamDescriptor(index = i, name = p.name ?: "arg$i", type = p.type, nullable = true)
             }
-            val raw = method
+
             MethodDescriptor(
                 name = method.name,
                 parameters = params,
                 returnType = method.returnType,
                 isStatic = isStatic,
-                rawMethod = raw,
+                rawMethod = method,
                 invoke = { ctx, args ->
-                    val convertedArgs = args.mapIndexed { i, arg ->
+                    val convertedArgs: List<Any?> = args.mapIndexed { i, arg ->
                         materialize(arg, params[i].type)
                     }
                     val target = when {
@@ -282,7 +189,7 @@ class App {
                         ctx.instance != null -> ctx.instance
                         else -> throw IllegalStateException("Instance required for ${method.name}")
                     }
-                    raw.invoke(target, *convertedArgs.toTypedArray())
+                    method.invoke(target, *convertedArgs.toTypedArray())
                 }
             )
         }
@@ -292,39 +199,88 @@ class App {
     // VALUE MATERIALIZATION
     // --------------------------------------------------
 
-    fun materialize(value: Any?, targetType: Class<*>): Any? {
+    fun materialize(value: Any?, targetType: Class<*>): Any? =
+        tryConvert(value, targetType)?.value ?: error("Cannot convert $value to ${targetType.simpleName}")
+
+    private fun normalize(type: Class<*>): Class<*> =
+        when (type) {
+            Integer.TYPE -> Int::class.java
+            java.lang.Long.TYPE -> Long::class.java
+            java.lang.Double.TYPE -> Double::class.java
+            java.lang.Float.TYPE -> Float::class.java
+            java.lang.Boolean.TYPE -> Boolean::class.java
+            java.lang.Short.TYPE -> Short::class.java
+            java.lang.Byte.TYPE -> Byte::class.java
+            Character.TYPE -> Char::class.java
+            else -> type
+        }
+
+    private data class ConversionResult(val value: Any?, val score: Int)
+
+    private fun tryConvert(value: Any?, targetType: Class<*>): ConversionResult? {
+        val normalizedTarget: Class<*> = normalize(targetType)
         val unwrapped = when (value) {
             is Value.Primitive -> value.value
             is Value.Instance -> value.obj
-            is Value.Object -> value
+            is Value.Object -> {
+                val built = buildObject(value)
+                if (normalizedTarget.isAssignableFrom(built.javaClass)) {
+                    return ConversionResult(built, 10)
+                }
+                return null
+            }
+
             else -> value
         }
-
-        if (unwrapped == null)
-            return null
-
-        // 🔥 Object construction path
-        if (unwrapped is Value.Object) {
-            return buildObject(unwrapped)
+        if (unwrapped == null) {
+            return if (targetType.isPrimitive)
+                null
+            else
+                ConversionResult(null, 0)
         }
-
-        return when (targetType) {
-            Int::class.javaPrimitiveType,
+        return when (normalizedTarget) {
             Int::class.java -> when (unwrapped) {
-                is Int -> unwrapped
-                is String -> unwrapped.toInt()
-                else -> error("Cannot convert $value to Int")
+                is Int -> ConversionResult(unwrapped, 0)
+                is String -> unwrapped.toIntOrNull()?.let { ConversionResult(it, 1) }
+                else -> null
             }
 
-            Double::class.javaPrimitiveType,
+            Long::class.java -> when (unwrapped) {
+                is Long -> ConversionResult(unwrapped, 0)
+                is Int -> ConversionResult(unwrapped.toLong(), 1)
+                is String -> unwrapped.toLongOrNull()?.let { ConversionResult(it, 1) }
+                else -> null
+            }
+
             Double::class.java -> when (unwrapped) {
-                is Double -> unwrapped
-                is String -> unwrapped.toDouble()
-                else -> error("Cannot convert $value to Double")
+                is Double -> ConversionResult(unwrapped, 0)
+                is Int -> ConversionResult(unwrapped.toDouble(), 1)
+                is Long -> ConversionResult(unwrapped.toDouble(), 1)
+                is String -> unwrapped.toDoubleOrNull()?.let { ConversionResult(it, 2) }
+                else -> null
             }
 
-            String::class.java -> unwrapped.toString()
-            else -> unwrapped
+            String::class.java -> when (unwrapped) {
+                is String -> ConversionResult(unwrapped, 0)
+                else -> ConversionResult(unwrapped.toString(), 3)
+            }
+
+            Boolean::class.java -> when (unwrapped) {
+                is Boolean -> ConversionResult(unwrapped, 0)
+                is String -> when (unwrapped.lowercase()) {
+                    "true" -> ConversionResult(true, 1)
+                    "false" -> ConversionResult(false, 1)
+                    else -> null
+                }
+
+                else -> null
+            }
+
+            else -> {
+                if (normalizedTarget.isAssignableFrom(unwrapped.javaClass)) {
+                    ConversionResult(unwrapped, 0)
+                } else null
+            }
         }
     }
 
@@ -344,15 +300,15 @@ class App {
     // ✅ Kotlin reflection (clean, reliable)
     private fun buildKotlinObject(obj: Value.Object): Any {
         val kClass: KClass<*> = obj.type.kotlin
-        val ctor = kClass.primaryConstructor
-            ?: throw IllegalArgumentException("No primary constructor for ${obj.type.name}")
+        val ctor =
+            kClass.primaryConstructor ?: throw IllegalArgumentException("No primary constructor for ${obj.type.name}")
         val argsByParam = mutableMapOf<KParameter, Any?>()
         for (param in ctor.parameters) {
-            val name = param.name
-                ?: throw IllegalArgumentException("Unnamed constructor parameter in ${obj.type.name}")
+            val name = param.name ?: throw IllegalArgumentException("Unnamed constructor parameter in ${obj.type.name}")
             val rawValue = obj.fields[name]
             if (rawValue == null) {
-                if (param.isOptional) continue
+                if (param.isOptional)
+                    continue
                 if (param.type.isMarkedNullable) {
                     argsByParam[param] = null
                     continue
@@ -388,7 +344,7 @@ class App {
             }
         }
 
-        val noArgCtor = clazz.declaredConstructors.firstOrNull { it.parameterCount == 0 }
+        val noArgCtor: Constructor<*> = clazz.declaredConstructors.firstOrNull { it.parameterCount == 0 }
             ?: throw IllegalArgumentException("Could not construct ${clazz.name}: no suitable constructor")
 
         noArgCtor.isAccessible = true
@@ -403,8 +359,5 @@ class App {
         return instance
     }
 
-    // --------------------------------------------------
-    // HELPERS
-    // --------------------------------------------------
     private fun isKotlinClass(clazz: Class<*>): Boolean = clazz.getAnnotation(Metadata::class.java) != null
 }

@@ -5,13 +5,13 @@ import au.clef.model.Person
 
 fun main() {
     val app = App()
-//    runComposite(app)
-//    runAcme(app)
-//    runStatic(app)
-//    runStaticAmbiguous(app)
-//
-//    runOverloadedAmbiguous(app)
-//    runOverloadedExact(app)
+    runComposite(app)
+    runAcme(app)
+    runStatic(app)
+    runStaticAmbiguous(app)
+
+    runOverloadedAmbiguous(app)
+    runOverloadedExact(app)
 
     runGuiStyleInstance(app)
     runGuiStyleStatic(app)

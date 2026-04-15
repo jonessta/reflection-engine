@@ -186,6 +186,7 @@ class ReflectionEngine {
         }
     }
 
+    // todo do I still need score?
     private data class ConversionResult(val value: Any?, val score: Int)
 
     // Kotlin reflection

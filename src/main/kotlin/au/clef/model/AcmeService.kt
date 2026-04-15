@@ -1,6 +1,4 @@
-package au.clef
-
-import au.clef.model.Person
+package au.clef.model
 
 class AcmeService {
 

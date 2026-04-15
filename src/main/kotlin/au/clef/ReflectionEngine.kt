@@ -35,7 +35,7 @@ class ReflectionEngine {
         val methods: List<MethodDescriptor> = descriptors(clazz, inheritanceLevel)
         return methods.firstOrNull {
             val rawMethod: Method = it.rawMethod
-            it.name == methodName && rawMethod.parameterTypes.contentEquals(parameterTypes.toTypedArray())
+            it.name == methodName && rawMethod.parameterTypes.toList() == parameterTypes
         } ?: throw MethodNotFoundException(
             owner = clazz,
             methodName = methodName,
@@ -141,6 +141,7 @@ class ReflectionEngine {
             return if (targetType.isPrimitive) null else ConversionResult(null, 0)
         }
         return when (normalizedTarget) {
+            // todo add Float and Short/Byte/Char ?
             Int::class.java -> when (unwrapped) {
                 is Int -> ConversionResult(unwrapped, 0)
                 is String -> unwrapped.toIntOrNull()?.let { ConversionResult(it, 1) }

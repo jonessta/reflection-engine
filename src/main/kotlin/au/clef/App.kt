@@ -2,6 +2,7 @@ package au.clef
 
 import java.lang.reflect.*
 import kotlin.reflect.KClass
+import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
 
@@ -39,14 +40,14 @@ class App {
         args: List<Any?>,
         inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): Any? {
-        val methods = buildMethods(collectMethods(target.javaClass, inheritanceLevel))
+        val methods: List<MethodDescriptor> = buildMethods(collectMethods(target.javaClass, inheritanceLevel))
             .filter { it.name == methodName }
 
         if (methods.isEmpty()) {
             throw IllegalArgumentException("No method '$methodName' found on ${target.javaClass.name}")
         }
 
-        val scored = methods.mapNotNull { method ->
+        val scored: List<Pair<MethodDescriptor, Int>> = methods.mapNotNull { method ->
             matchScore(method, args)?.let { score -> method to score }
         }
 
@@ -55,7 +56,7 @@ class App {
         }
 
         val bestScore = scored.minOf { it.second }
-        val best = scored.filter { it.second == bestScore }
+        val best: List<Pair<MethodDescriptor, Int>> = scored.filter { it.second == bestScore }
 
         if (best.size > 1) {
             throw IllegalArgumentException(
@@ -150,7 +151,7 @@ class App {
             ?: throw TypeMismatchException("Cannot convert $value to ${targetType.simpleName}")
 
     fun buildObject(obj: Value.Object): Any {
-        val clazz = obj.type
+        val clazz: Class<*> = obj.type
         return if (isKotlinClass(clazz)) {
             buildKotlinObject(obj)
         } else {
@@ -310,12 +311,12 @@ class App {
     // Kotlin reflection (clean, reliable)
     private fun buildKotlinObject(obj: Value.Object): Any {
         val kClass: KClass<*> = obj.type.kotlin
-        val ctor =
+        val ctor: KFunction<Any> =
             kClass.primaryConstructor ?: throw IllegalArgumentException("No primary constructor for ${obj.type.name}")
-        val argsByParam = mutableMapOf<KParameter, Any?>()
-        for (param in ctor.parameters) {
+        val argsByParam: MutableMap<KParameter, Any?> = mutableMapOf()
+        for (param: KParameter in ctor.parameters) {
             val name = param.name ?: throw IllegalArgumentException("Unnamed constructor parameter in ${obj.type.name}")
-            val rawValue = obj.fields[name]
+            val rawValue: Value? = obj.fields[name]
             if (rawValue == null) {
                 if (param.isOptional)
                     continue
@@ -325,7 +326,7 @@ class App {
                 }
                 throw IllegalArgumentException("Missing field '$name' for ${obj.type.name}")
             }
-            val paramClass = (param.type.classifier as? KClass<*>)?.java
+            val paramClass: Class<out Any> = (param.type.classifier as? KClass<*>)?.java
                 ?: throw IllegalArgumentException("Unsupported type for '$name' in ${obj.type.name}")
             argsByParam[param] = materialize(rawValue, paramClass)
         }
@@ -334,13 +335,13 @@ class App {
 
     // Java reflection fallback
     private fun buildJavaObject(obj: Value.Object): Any {
-        val clazz = obj.type
+        val clazz: Class<*> = obj.type
         for (ctor: Constructor<*> in clazz.declaredConstructors) {
             val params = ctor.parameters
             if (params.size != obj.fields.size) continue
             try {
-                val args = params.mapIndexed { i, param ->
-                    val value =
+                val args: Array<Any?> = params.mapIndexed { i, param ->
+                    val value: Value =
                         obj.fields[param.name]
                             ?: obj.fields["arg$i"]
                             ?: obj.fields.values.elementAtOrNull(i)
@@ -359,9 +360,9 @@ class App {
 
         noArgCtor.isAccessible = true
         val instance = noArgCtor.newInstance()
-        obj.fields.forEach { (name, value) ->
+        obj.fields.forEach { (name: String, value: Value) ->
             runCatching {
-                val field = clazz.getDeclaredField(name)
+                val field: Field = clazz.getDeclaredField(name)
                 field.isAccessible = true
                 field.set(instance, materialize(value, field.type))
             }

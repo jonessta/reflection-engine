@@ -2,7 +2,6 @@ package au.clef
 
 import au.clef.model.OverloadedService
 import au.clef.model.Person
-import java.lang.reflect.Method
 
 fun main() {
     val app = App()
@@ -42,10 +41,7 @@ fun runStatic(app: App) {
             Value.Primitive("10"),
             Value.Primitive("20")
         ),
-        paramTypes = listOf(
-            Int::class.javaPrimitiveType!!,
-            Int::class.javaPrimitiveType!!
-        )
+        parameterTypes = listOf(Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!)
     )
     println("-----------> runStatic: $result")
 }
@@ -55,13 +51,10 @@ fun runStaticAmbiguous(app: App) {
         val result = app.callStatic(
             clazz = Math::class.java,
             methodName = "max",
-            args = listOf(
-                Value.Primitive("10"),
-                Value.Primitive("20")
-            )
+            args = listOf(Value.Primitive("10"), Value.Primitive("20"))
         )
         println("-----------> runStaticAmbiguous UNEXPECTED SUCCESS: $result")
-    } catch (e: IllegalArgumentException) {
+    } catch (e: AmbiguousMethodException) {
         println("-----------> runStaticAmbiguous: ${e.message}")
     }
 }
@@ -74,7 +67,7 @@ fun runOverloadedAmbiguous(app: App) {
             args = listOf(Value.Primitive("10"))
         )
         println("-----------> runOverloadedAmbiguous UNEXPECTED: $result")
-    } catch (e: IllegalArgumentException) {
+    } catch (e: AmbiguousMethodException) {
         println("-----------> runOverloadedAmbiguous: ${e.message}")
     }
 }
@@ -84,7 +77,7 @@ fun runOverloadedExact(app: App) {
         target = OverloadedService(),
         methodName = "format",
         args = listOf(Value.Primitive("10")),
-        paramTypes = listOf(Int::class.javaPrimitiveType!!)
+        parameterTypes = listOf(Int::class.javaPrimitiveType!!)
     )
     println("-----------> runOverloadedExact (Int): $result")
 
@@ -92,7 +85,7 @@ fun runOverloadedExact(app: App) {
         target = OverloadedService(),
         methodName = "format",
         args = listOf(Value.Primitive("10")),
-        paramTypes = listOf(String::class.java)
+        parameterTypes = listOf(String::class.java)
     )
     println("-----------> runOverloadedExact (String): $result2")
 }
@@ -117,17 +110,11 @@ fun runGuiStyleStatic(app: App) {
     val descriptor: MethodDescriptor = app.findDescriptorExact(
         clazz = Math::class.java,
         methodName = "max",
-        parameterTypes = listOf(
-            Int::class.javaPrimitiveType!!,
-            Int::class.javaPrimitiveType!!
-        )
+        parameterTypes = listOf(Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!)
     )
     val result = app.invokeDescriptor(
         descriptor = descriptor,
-        args = listOf(
-            Value.Primitive("10"),
-            Value.Primitive("20")
-        )
+        args = listOf(Value.Primitive("10"), Value.Primitive("20"))
     )
     println("-----------> runGuiStyleStatic: $result")
 }

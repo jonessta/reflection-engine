@@ -37,23 +37,13 @@ class AmbiguousMethodException(
         append(candidates.joinToString(" | "))
     })
 
-class MissingInstanceException(
-    methodName: String
-) : EngineException("Instance required for method $methodName")
+class MissingInstanceException(methodName: String) : EngineException("Instance required for method $methodName")
 
-class TypeMismatchException(
-    val value: Any?, val targetType: Class<*>
-) : EngineException("Cannot convert $value to ${targetType.simpleName}")
+class TypeMismatchException(val value: Any?, targetType: Class<*>) :
+    EngineException("Cannot convert $value to ${targetType.simpleName}")
 
-class ObjectConstructionException(
-    targetClass: Class<*>, details: String, cause: Throwable? = null
-) : EngineException("Failed to construct ${targetClass.name}: $details", cause)
+class ObjectConstructionException(targetClass: Class<*>, details: String, cause: Throwable? = null) :
+    EngineException("Failed to construct ${targetClass.name}: $details", cause)
 
-class ArgumentCountMismatchException(
-    val expected: Int,
-    val actual: Int,
-    val methodName: String,
-    val owner: Class<*>
-) : EngineException(
-    "Argument count mismatch for '$methodName' on ${owner.name}: expected $expected but got $actual"
-)
+class ArgumentCountMismatchException(val expected: Int, val actual: Int, val methodName: String, val owner: Class<*>) :
+    EngineException("Argument count mismatch for '$methodName' on ${owner.name}: expected $expected but got $actual")

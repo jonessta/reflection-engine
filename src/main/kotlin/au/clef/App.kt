@@ -6,10 +6,19 @@ import kotlin.reflect.full.primaryConstructor
 
 class App {
 
+    // ------------------------------ GUI methods ------------------------------------------------
     fun descriptors(
         clazz: Class<*>, inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): List<MethodDescriptor> = buildMethods(collectMethods(clazz, inheritanceLevel))
 
+    fun invokeDescriptor(descriptor: MethodDescriptor, instance: Any? = null, args: List<Any?>): Any? {
+        if (!descriptor.isStatic && instance == null) {
+            throw MissingInstanceException(descriptor.name)
+        }
+        return descriptor.invoke(ExecutionContext(instance), args)
+    }
+
+    // Optional GUI
     fun findDescriptorExact(
         clazz: Class<*>,
         methodName: String,
@@ -28,12 +37,7 @@ class App {
             availableOverloads = methods.filter { it.name == methodName }.map { signature(it) })
     }
 
-    fun invokeDescriptor(descriptor: MethodDescriptor, instance: Any? = null, args: List<Any?>): Any? {
-        if (!descriptor.isStatic && instance == null) {
-            throw MissingInstanceException(descriptor.name)
-        }
-        return descriptor.invoke(ExecutionContext(instance), args)
-    }
+    // ------------------------- END GUI methods -------------------------------------------------------
 
     fun call(
         target: Any,

@@ -5,12 +5,22 @@ import au.clef.model.Person
 
 fun main() {
     val reflectionEngine = ReflectionEngine()
+    showAllDescriptors(reflectionEngine)
     runGuiStyleInstance(reflectionEngine)
     runGuiStyleStatic(reflectionEngine)
     runKotlinTopLevel(reflectionEngine)
 }
 
 // --------------------------GUI calls --------------------------------------
+
+fun showAllDescriptors(reflectionEngine: ReflectionEngine) {
+    val descriptors = reflectionEngine.descriptors(clazz = Math::class.java, InheritanceLevel.DeclaredOnly)
+    for (descriptor in descriptors) {
+        println(descriptor)
+    }
+}
+
+
 fun runGuiStyleInstance(reflectionEngine: ReflectionEngine) {
     val service = AcmeService()
     val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(

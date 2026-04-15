@@ -18,11 +18,19 @@ class ReflectionEngine {
         clazz: Class<*>, inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): List<MethodDescriptor> = buildMethods(collectMethods(clazz, inheritanceLevel))
 
-    fun invokeDescriptor(descriptor: MethodDescriptor, instance: Any? = null, args: List<Any?>): Any? {
+    fun invokeDescriptor(
+        descriptor: MethodDescriptor,
+        instance: Any? = null,
+        args: List<Any?>
+    ): Any? {
         if (!descriptor.isStatic && instance == null) {
             throw MissingInstanceException(descriptor.name)
         }
-        return descriptor.invoke(ExecutionContext(instance), args)
+        val convertedArgs: List<Any?> = args.mapIndexed { i: Int, arg: Any? ->
+            materialize(arg, descriptor.parameters[i].type)
+        }
+        val target: Any? = if (descriptor.isStatic) null else instance
+        return descriptor.rawMethod.invoke(target, *convertedArgs.toTypedArray())
     }
 
     // Optional GUI
@@ -81,30 +89,25 @@ class ReflectionEngine {
         }
     }
 
-    internal fun buildMethods(methods: List<Method>): List<MethodDescriptor> = methods.map { method: Method ->
-        val isStatic: Boolean = Modifier.isStatic(method.modifiers)
-        val params: List<ParamDescriptor> = method.parameters.mapIndexed { i: Int, p: Parameter ->
-            ParamDescriptor(
-                index = i, name = p.name ?: "arg$i", type = p.type, nullable = true
+    internal fun buildMethods(methods: List<Method>): List<MethodDescriptor> =
+        methods.map { method: Method ->
+            val isStatic: Boolean = Modifier.isStatic(method.modifiers)
+            val params: List<ParamDescriptor> = method.parameters.mapIndexed { i: Int, p ->
+                ParamDescriptor(
+                    index = i,
+                    name = p.name ?: "arg$i",
+                    type = p.type,
+                    nullable = true
+                )
+            }
+            MethodDescriptor(
+                name = method.name,
+                parameters = params,
+                returnType = method.returnType,
+                isStatic = isStatic,
+                rawMethod = method
             )
         }
-        MethodDescriptor(
-            name = method.name,
-            parameters = params,
-            returnType = method.returnType,
-            isStatic = isStatic,
-            rawMethod = method,
-            invoke = { ctx: ExecutionContext, args: List<Any?> ->
-                val convertedArgs: List<Any?> =
-                    args.mapIndexed { i: Int, arg: Any? -> materialize(arg, params[i].type) }
-                val target: Any? = when {
-                    isStatic -> null
-                    ctx.instance != null -> ctx.instance
-                    else -> throw MissingInstanceException(method.name)
-                }
-                method.invoke(target, *convertedArgs.toTypedArray())
-            })
-    }
 
     // ------------ private ---------------------------------------------------
 

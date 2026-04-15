@@ -1,0 +1,14 @@
+{
+  "classes": {
+    "java.lang.Math": {
+      "methods": {
+        "max(int,int)": {
+          "parameters": [
+            { "name": "left" },
+            { "name": "right" }
+          ]
+        }
+      }
+    }
+  }
+}

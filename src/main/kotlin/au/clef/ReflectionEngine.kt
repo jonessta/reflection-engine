@@ -3,11 +3,16 @@ package au.clef
 import java.lang.reflect.Method
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
-
 class ReflectionEngine(
     private val typeConverter: TypeConverter = TypeConverter(),
-    private val methodRegistry: MethodRegistry = MethodRegistry()
+    private val methodRegistry: MethodRegistry = MethodRegistry(),
+    private val metadataRegistry: DescriptorMetadataRegistry? = null
 ) {
+
+    fun descriptors(clazz: Class<*>, inheritanceLevel: InheritanceLevel): List<MethodDescriptor> {
+        val base: List<MethodDescriptor> = methodRegistry.descriptors(clazz, inheritanceLevel)
+        return metadataRegistry?.applyAll(base) ?: base
+    }
 
     fun descriptor(function: KFunction<*>): MethodDescriptor {
         val method: Method =
@@ -15,10 +20,6 @@ class ReflectionEngine(
 
         return methodRegistry.descriptors(method.declaringClass).first { it.rawMethod == method }
     }
-
-    fun descriptors(
-        clazz: Class<*>, inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-    ): List<MethodDescriptor> = methodRegistry.descriptors(clazz, inheritanceLevel)
 
     fun findDescriptorExact(
         clazz: Class<*>,

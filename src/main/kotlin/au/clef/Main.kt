@@ -4,11 +4,16 @@ import au.clef.model.AcmeService
 import au.clef.model.Person
 
 fun main() {
-    val reflectionEngine = ReflectionEngine()
-    showAllDescriptors(reflectionEngine)
-    runGuiStyleInstance(reflectionEngine)
-    runGuiStyleStatic(reflectionEngine)
-    runKotlinTopLevel(reflectionEngine)
+    val metadata = MetadataLoader.fromResourceOrEmpty("/config/method-metadata.json")
+
+    val engine = ReflectionEngine(
+        metadataRegistry = DescriptorMetadataRegistry(metadata)
+    )
+
+    showAllDescriptors(engine)
+    runGuiStyleInstance(engine)
+    runGuiStyleStatic(engine)
+    runKotlinTopLevel(engine)
 }
 
 // --------------------------GUI calls --------------------------------------
@@ -16,10 +21,9 @@ fun main() {
 fun showAllDescriptors(reflectionEngine: ReflectionEngine) {
     val descriptors = reflectionEngine.descriptors(clazz = Math::class.java, InheritanceLevel.DeclaredOnly)
     for (descriptor in descriptors) {
-        println(descriptor)
+        println(descriptor.name + " = " + descriptor.parameters.joinToString(", ") { it.name + "=" + it.type })
     }
 }
-
 
 fun runGuiStyleInstance(reflectionEngine: ReflectionEngine) {
     val service = AcmeService()

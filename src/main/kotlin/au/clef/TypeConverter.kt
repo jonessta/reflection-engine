@@ -11,14 +11,30 @@ class TypeConverter {
         tryConvert(value, targetType)?.value ?: throw TypeMismatchException(value, targetType)
 
     private fun normalize(type: Class<*>): Class<*> = when (type) {
-        Integer.TYPE -> Int::class.java
-        java.lang.Long.TYPE -> Long::class.java
-        java.lang.Double.TYPE -> Double::class.java
-        java.lang.Float.TYPE -> Float::class.java
-        java.lang.Boolean.TYPE -> Boolean::class.java
-        java.lang.Short.TYPE -> Short::class.java
-        java.lang.Byte.TYPE -> Byte::class.java
-        Character.TYPE -> Char::class.java
+        Int::class.javaPrimitiveType,
+        Int::class.javaObjectType -> Int::class.java
+
+        Long::class.javaPrimitiveType,
+        Long::class.javaObjectType -> Long::class.java
+
+        Double::class.javaPrimitiveType,
+        Double::class.javaObjectType -> Double::class.java
+
+        Float::class.javaPrimitiveType,
+        Float::class.javaObjectType -> Float::class.java
+
+        Boolean::class.javaPrimitiveType,
+        Boolean::class.javaObjectType -> Boolean::class.java
+
+        Short::class.javaPrimitiveType,
+        Short::class.javaObjectType -> Short::class.java
+
+        Byte::class.javaPrimitiveType,
+        Byte::class.javaObjectType -> Byte::class.java
+
+        Char::class.javaPrimitiveType,
+        Char::class.javaObjectType -> Char::class.java
+
         else -> type
     }
 

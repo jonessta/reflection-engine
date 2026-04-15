@@ -6,10 +6,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 class MethodRegistry {
 
-    private data class CacheKey(
-        val clazz: Class<*>,
-        val inheritanceLevel: InheritanceLevel
-    )
+    private data class CacheKey(val clazz: Class<*>, val inheritanceLevel: InheritanceLevel)
 
     private val descriptorCache: MutableMap<CacheKey, List<MethodDescriptor>> = ConcurrentHashMap()
 
@@ -46,8 +43,6 @@ class MethodRegistry {
     fun clearCache() {
         descriptorCache.clear()
     }
-
-    // ---------------- private pipeline ----------------
 
     private fun collectMethods(
         clazz: Class<*>,

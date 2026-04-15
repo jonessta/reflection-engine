@@ -28,15 +28,6 @@ class MethodNotFoundException(
         }
     })
 
-class AmbiguousMethodException(
-    val owner: Class<*>, val methodName: String, val candidates: List<String>, val staticOnly: Boolean
-) : EngineException(
-    buildString {
-        val prefix = if (staticOnly) "Ambiguous static call" else "Ambiguous call"
-        append("$prefix to '$methodName' on ${owner.name}. Matching overloads: ")
-        append(candidates.joinToString(" | "))
-    })
-
 class MissingInstanceException(methodName: String) : EngineException("Instance required for method $methodName")
 
 class TypeMismatchException(val value: Any?, targetType: Class<*>) :
@@ -44,6 +35,3 @@ class TypeMismatchException(val value: Any?, targetType: Class<*>) :
 
 class ObjectConstructionException(targetClass: Class<*>, details: String, cause: Throwable? = null) :
     EngineException("Failed to construct ${targetClass.name}: $details", cause)
-
-class ArgumentCountMismatchException(val expected: Int, val actual: Int, val methodName: String, val owner: Class<*>) :
-    EngineException("Argument count mismatch for '$methodName' on ${owner.name}: expected $expected but got $actual")

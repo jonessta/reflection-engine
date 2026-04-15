@@ -3,10 +3,18 @@ package au.clef
 import java.lang.reflect.*
 import kotlin.reflect.*
 import kotlin.reflect.full.primaryConstructor
+import kotlin.reflect.jvm.javaMethod
 
 class App {
 
     // ------------------------------ GUI methods ------------------------------------------------
+    fun descriptor(function: KFunction<*>): MethodDescriptor {
+        val method: Method =
+            function.javaMethod ?: throw EngineException("Function '${function.name}' is not backed by a Java method")
+
+        return buildMethods(listOf(method)).first()
+    }
+
     fun descriptors(
         clazz: Class<*>, inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): List<MethodDescriptor> = buildMethods(collectMethods(clazz, inheritanceLevel))
@@ -39,92 +47,10 @@ class App {
 
     // ------------------------- END GUI methods -------------------------------------------------------
 
-    fun call(
-        target: Any,
-        methodName: String,
-        args: List<Any?>,
-        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-    ): Any? {
-        val method: MethodDescriptor = resolveBestDescriptor(
-            methods = descriptors(target.javaClass, inheritanceLevel),
-            methodName = methodName,
-            args = args,
-            staticOnly = false,
-            owner = target.javaClass
-        )
-        return method.invoke(ExecutionContext(target), args)
-    }
-
-    fun callStatic(
-        clazz: Class<*>,
-        methodName: String,
-        args: List<Any?>,
-        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-    ): Any? {
-        val method: MethodDescriptor = resolveBestDescriptor(
-            methods = descriptors(clazz, inheritanceLevel),
-            methodName = methodName,
-            args = args,
-            staticOnly = true,
-            owner = clazz
-        )
-        return method.invoke(ExecutionContext(null), args)
-    }
-
-    fun callStaticExact(
-        clazz: Class<*>,
-        methodName: String,
-        args: List<Any?>,
-        parameterTypes: List<Class<*>>,
-        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-    ): Any? {
-        if (args.size != parameterTypes.size) {
-            throw ArgumentCountMismatchException(
-                expected = parameterTypes.size, actual = args.size, methodName = methodName, owner = clazz
-            )
-        }
-        val methods: List<MethodDescriptor> =
-            descriptors(clazz, inheritanceLevel).filter { it.name == methodName && it.isStatic }
-        val method: MethodDescriptor = methods.firstOrNull {
-            it.rawMethod.parameterTypes.contentEquals(parameterTypes.toTypedArray())
-        } ?: throw MethodNotFoundException(
-            owner = clazz,
-            methodName = methodName,
-            parameterTypes = parameterTypes,
-            staticOnly = true,
-            availableOverloads = methods.map { signature(it) })
-        return method.invoke(ExecutionContext(null), args)
-    }
-
-    fun callExact(
-        target: Any,
-        methodName: String,
-        args: List<Any?>,
-        parameterTypes: List<Class<*>>,
-        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-    ): Any? {
-        if (args.size != parameterTypes.size) {
-            throw ArgumentCountMismatchException(
-                expected = parameterTypes.size, actual = args.size, methodName = methodName, owner = target.javaClass
-            )
-        }
-        val methods: List<MethodDescriptor> =
-            descriptors(target.javaClass, inheritanceLevel).filter { it.name == methodName && !it.isStatic }
-        val method: MethodDescriptor = methods.firstOrNull {
-            it.rawMethod.parameterTypes.contentEquals(parameterTypes.toTypedArray())
-        } ?: throw MethodNotFoundException(
-            owner = target.javaClass,
-            methodName = methodName,
-            parameterTypes = parameterTypes,
-            staticOnly = false,
-            availableOverloads = methods.map { signature(it) })
-        return method.invoke(ExecutionContext(target), args)
-    }
-
-    fun materialize(value: Any?, targetType: Class<*>): Any? =
+    internal fun materialize(value: Any?, targetType: Class<*>): Any? =
         tryConvert(value, targetType)?.value ?: throw TypeMismatchException(value, targetType)
 
-    fun buildObject(obj: Value.Object): Any {
+    internal fun buildObject(obj: Value.Object): Any {
         val clazz: Class<*> = obj.type
         return if (isKotlinClass(clazz)) {
             buildKotlinObject(obj)
@@ -138,7 +64,7 @@ class App {
     internal fun collectMethods(clazz: Class<*>, level: InheritanceLevel): List<Method> {
         val result: MutableList<Method> = mutableListOf()
         var current: Class<*>? = clazz
-        var depth: Int = 0
+        var depth = 0
         val maxDepth: Int = when (level) {
             is InheritanceLevel.DeclaredOnly -> 0
             is InheritanceLevel.All -> Int.MAX_VALUE
@@ -180,53 +106,6 @@ class App {
 
     private fun signature(m: MethodDescriptor): String =
         "${m.name}(${m.parameters.joinToString(", ") { it.type.simpleName }})"
-
-    private fun resolveBestDescriptor(
-        methods: List<MethodDescriptor>, methodName: String, args: List<Any?>, staticOnly: Boolean, owner: Class<*>
-    ): MethodDescriptor {
-        val candidates: List<MethodDescriptor> = methods.filter {
-            it.name == methodName && it.isStatic == staticOnly
-        }
-        if (candidates.isEmpty()) {
-            throw MethodNotFoundException(
-                owner = owner, methodName = methodName, parameterTypes = null, staticOnly = staticOnly
-            )
-        }
-        val scored: List<Pair<MethodDescriptor, Int>> = candidates.mapNotNull { method: MethodDescriptor ->
-            matchScore(method, args)?.let { score: Int -> method to score }
-        }
-        if (scored.isEmpty()) {
-            throw MethodNotFoundException(
-                owner = owner,
-                methodName = methodName,
-                parameterTypes = null,
-                staticOnly = staticOnly,
-                availableOverloads = candidates.map { signature(it) })
-        }
-        val bestScore: Int = scored.minOf { it.second }
-        val best: List<Pair<MethodDescriptor, Int>> = scored.filter { it.second == bestScore }
-        if (best.size > 1) {
-            throw AmbiguousMethodException(
-                owner = owner,
-                methodName = methodName,
-                candidates = best.map { signature(it.first) },
-                staticOnly = staticOnly
-            )
-        }
-        return best.first().first
-    }
-
-    private fun conversionScore(value: Any?, targetType: Class<*>): Int? = tryConvert(value, targetType)?.score
-
-    private fun matchScore(method: MethodDescriptor, args: List<Any?>): Int? {
-        if (method.parameters.size != args.size) return null
-        var total: Int = 0
-        for (i: Int in method.parameters.indices) {
-            val score: Int = conversionScore(args[i], method.parameters[i].type) ?: return null
-            total += score
-        }
-        return total
-    }
 
     private fun normalize(type: Class<*>): Class<*> = when (type) {
         Integer.TYPE -> Int::class.java
@@ -346,7 +225,6 @@ class App {
                     val value: Value =
                         obj.fields[param.name] ?: obj.fields["arg$i"] ?: obj.fields.values.elementAtOrNull(i)
                         ?: throw ObjectConstructionException(clazz, "Missing value for param $i")
-
                     materialize(value, param.type)
                 }.toTypedArray()
                 ctor.isAccessible = true

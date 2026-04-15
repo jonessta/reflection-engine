@@ -2,9 +2,7 @@ package au.clef
 
 import java.lang.reflect.Constructor
 import java.lang.reflect.Field
-import kotlin.reflect.KClass
-import kotlin.reflect.KFunction
-import kotlin.reflect.KParameter
+import kotlin.reflect.*
 import kotlin.reflect.full.primaryConstructor
 
 class TypeConverter {
@@ -98,8 +96,8 @@ class TypeConverter {
 
     private fun buildKotlinObject(obj: Value.Object): Any {
         val kClass: KClass<out Any> = obj.type.kotlin
-        val ctor: KFunction<Any> = kClass.primaryConstructor
-            ?: throw ObjectConstructionException(obj.type, "No primary constructor")
+        val ctor: KFunction<Any> =
+            kClass.primaryConstructor ?: throw ObjectConstructionException(obj.type, "No primary constructor")
 
         val argsByParam: MutableMap<KParameter, Any?> = mutableMapOf()
 
@@ -118,8 +116,10 @@ class TypeConverter {
             }
 
             val paramClass: Class<out Any> =
-                (param.type.classifier as? KClass<*>)?.java
-                    ?: throw ObjectConstructionException(obj.type, "Unsupported type for '$name'")
+                (param.type.classifier as? KClass<*>)?.java ?: throw ObjectConstructionException(
+                    obj.type,
+                    "Unsupported type for '$name'"
+                )
 
             argsByParam[param] = materialize(rawValue, paramClass)
         }
@@ -142,10 +142,8 @@ class TypeConverter {
             try {
                 val args: Array<Any?> = params.mapIndexed { i: Int, param ->
                     val value: Value =
-                        obj.fields[param.name]
-                            ?: obj.fields["arg$i"]
-                            ?: obj.fields.values.elementAtOrNull(i)
-                            ?: throw ObjectConstructionException(clazz, "Missing value for param $i")
+                        obj.fields[param.name] ?: obj.fields["arg$i"] ?: obj.fields.values.elementAtOrNull(i)
+                        ?: throw ObjectConstructionException(clazz, "Missing value for param $i")
                     materialize(value, param.type)
                 }.toTypedArray()
 
@@ -175,6 +173,5 @@ class TypeConverter {
         }
     }
 
-    private fun isKotlinClass(clazz: Class<*>): Boolean =
-        clazz.getAnnotation(Metadata::class.java) != null
+    private fun isKotlinClass(clazz: Class<*>): Boolean = clazz.getAnnotation(Metadata::class.java) != null
 }

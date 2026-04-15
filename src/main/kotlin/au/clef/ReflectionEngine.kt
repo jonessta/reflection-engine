@@ -19,9 +19,7 @@ class ReflectionEngine {
     ): List<MethodDescriptor> = buildMethods(collectMethods(clazz, inheritanceLevel))
 
     fun invokeDescriptor(
-        descriptor: MethodDescriptor,
-        instance: Any? = null,
-        args: List<Any?>
+        descriptor: MethodDescriptor, instance: Any? = null, args: List<Any?>
     ): Any? {
         if (!descriptor.isStatic && instance == null) {
             throw MissingInstanceException(descriptor.name)
@@ -48,23 +46,10 @@ class ReflectionEngine {
             methodName = methodName,
             parameterTypes = parameterTypes,
             staticOnly = null,
-            availableOverloads = methods.filter { it.name == methodName }.map { signature(it) }
-        )
+            availableOverloads = methods.filter { it.name == methodName }.map { signature(it) })
     }
 
     // ------------------------- END GUI methods -------------------------------------------------------
-
-    internal fun materialize(value: Any?, targetType: Class<*>): Any? =
-        tryConvert(value, targetType)?.value ?: throw TypeMismatchException(value, targetType)
-
-    internal fun buildObject(obj: Value.Object): Any {
-        val clazz: Class<*> = obj.type
-        return if (isKotlinClass(clazz)) {
-            buildKotlinObject(obj)
-        } else {
-            buildJavaObject(obj)
-        }
-    }
 
     // ------------ internal ---------------------------------------------------
 
@@ -89,30 +74,38 @@ class ReflectionEngine {
         }
     }
 
-    internal fun buildMethods(methods: List<Method>): List<MethodDescriptor> =
-        methods.map { method: Method ->
-            val isStatic: Boolean = Modifier.isStatic(method.modifiers)
-            val params: List<ParamDescriptor> = method.parameters.mapIndexed { i: Int, p ->
-                ParamDescriptor(
-                    index = i,
-                    name = p.name ?: "arg$i",
-                    type = p.type,
-                    nullable = true
-                )
-            }
-            MethodDescriptor(
-                name = method.name,
-                parameters = params,
-                returnType = method.returnType,
-                isStatic = isStatic,
-                rawMethod = method
+    internal fun buildMethods(methods: List<Method>): List<MethodDescriptor> = methods.map { method: Method ->
+        val isStatic: Boolean = Modifier.isStatic(method.modifiers)
+        val params: List<ParamDescriptor> = method.parameters.mapIndexed { i: Int, p ->
+            ParamDescriptor(
+                index = i, name = p.name ?: "arg$i", type = p.type, nullable = true
             )
         }
+        MethodDescriptor(
+            name = method.name,
+            parameters = params,
+            returnType = method.returnType,
+            isStatic = isStatic,
+            rawMethod = method
+        )
+    }
 
     // ------------ private ---------------------------------------------------
 
     private fun signature(m: MethodDescriptor): String =
         "${m.name}(${m.parameters.joinToString(", ") { it.type.simpleName }})"
+
+    private fun materialize(value: Any?, targetType: Class<*>): Any? =
+        tryConvert(value, targetType)?.value ?: throw TypeMismatchException(value, targetType)
+
+    private fun buildObject(obj: Value.Object): Any {
+        val clazz: Class<*> = obj.type
+        return if (isKotlinClass(clazz)) {
+            buildKotlinObject(obj)
+        } else {
+            buildJavaObject(obj)
+        }
+    }
 
     private fun normalize(type: Class<*>): Class<*> = when (type) {
         Integer.TYPE -> Int::class.java
@@ -134,51 +127,51 @@ class ReflectionEngine {
             is Value.Object -> {
                 val built: Any = buildObject(value)
                 if (normalizedTarget.isAssignableFrom(built.javaClass)) {
-                    return ConversionResult(built, 10)
+                    return ConversionResult(built)
                 }
                 return null
             }
             else -> value
         }
         if (unwrapped == null) {
-            return if (targetType.isPrimitive) null else ConversionResult(null, 0)
+            return if (targetType.isPrimitive) null else ConversionResult(null)
         }
         return when (normalizedTarget) {
             // todo add Float and Short/Byte/Char ?
             Int::class.java -> when (unwrapped) {
-                is Int -> ConversionResult(unwrapped, 0)
-                is String -> unwrapped.toIntOrNull()?.let { ConversionResult(it, 1) }
+                is Int -> ConversionResult(unwrapped)
+                is String -> unwrapped.toIntOrNull()?.let { ConversionResult(it) }
                 else -> null
             }
             Long::class.java -> when (unwrapped) {
-                is Long -> ConversionResult(unwrapped, 0)
-                is Int -> ConversionResult(unwrapped.toLong(), 1)
-                is String -> unwrapped.toLongOrNull()?.let { ConversionResult(it, 1) }
+                is Long -> ConversionResult(unwrapped)
+                is Int -> ConversionResult(unwrapped.toLong())
+                is String -> unwrapped.toLongOrNull()?.let { ConversionResult(it) }
                 else -> null
             }
             Double::class.java -> when (unwrapped) {
-                is Double -> ConversionResult(unwrapped, 0)
-                is Int -> ConversionResult(unwrapped.toDouble(), 1)
-                is Long -> ConversionResult(unwrapped.toDouble(), 1)
-                is String -> unwrapped.toDoubleOrNull()?.let { ConversionResult(it, 2) }
+                is Double -> ConversionResult(unwrapped)
+                is Int -> ConversionResult(unwrapped.toDouble())
+                is Long -> ConversionResult(unwrapped.toDouble())
+                is String -> unwrapped.toDoubleOrNull()?.let { ConversionResult(it) }
                 else -> null
             }
             String::class.java -> when (unwrapped) {
-                is String -> ConversionResult(unwrapped, 0)
-                else -> ConversionResult(unwrapped.toString(), 3)
+                is String -> ConversionResult(unwrapped)
+                else -> ConversionResult(unwrapped.toString())
             }
             Boolean::class.java -> when (unwrapped) {
-                is Boolean -> ConversionResult(unwrapped, 0)
+                is Boolean -> ConversionResult(unwrapped)
                 is String -> when (unwrapped.lowercase()) {
-                    "true" -> ConversionResult(true, 1)
-                    "false" -> ConversionResult(false, 1)
+                    "true" -> ConversionResult(true)
+                    "false" -> ConversionResult(false)
                     else -> null
                 }
                 else -> null
             }
             else -> {
                 if (normalizedTarget.isAssignableFrom(unwrapped.javaClass)) {
-                    ConversionResult(unwrapped, 0)
+                    ConversionResult(unwrapped)
                 } else {
                     null
                 }
@@ -186,8 +179,7 @@ class ReflectionEngine {
         }
     }
 
-    // todo do I still need score?
-    private data class ConversionResult(val value: Any?, val score: Int)
+    private data class ConversionResult(val value: Any?)
 
     // Kotlin reflection
     private fun buildKotlinObject(obj: Value.Object): Any {

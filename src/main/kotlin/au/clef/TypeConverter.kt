@@ -10,77 +10,54 @@ class TypeConverter {
     fun materialize(value: Any?, targetType: Class<*>): Any? =
         tryConvert(value, targetType)?.value ?: throw TypeMismatchException(value, targetType)
 
-    private fun normalize(type: Class<*>): Class<*> = when (type) {
-        Int::class.javaPrimitiveType,
-        Int::class.javaObjectType -> Int::class.java
-
-        Long::class.javaPrimitiveType,
-        Long::class.javaObjectType -> Long::class.java
-
-        Double::class.javaPrimitiveType,
-        Double::class.javaObjectType -> Double::class.java
-
-        Float::class.javaPrimitiveType,
-        Float::class.javaObjectType -> Float::class.java
-
-        Boolean::class.javaPrimitiveType,
-        Boolean::class.javaObjectType -> Boolean::class.java
-
-        Short::class.javaPrimitiveType,
-        Short::class.javaObjectType -> Short::class.java
-
-        Byte::class.javaPrimitiveType,
-        Byte::class.javaObjectType -> Byte::class.java
-
-        Char::class.javaPrimitiveType,
-        Char::class.javaObjectType -> Char::class.java
-
-        else -> type
-    }
-
     private fun tryConvert(value: Any?, targetType: Class<*>): ConversionResult? {
-        val normalizedTarget: Class<*> = normalize(targetType)
         val unwrapped: Any? = when (value) {
             is Value.Primitive -> value.value
             is Value.Instance -> value.obj
             is Value.Object -> {
                 val built: Any = buildObject(value)
-                if (normalizedTarget.isAssignableFrom(built.javaClass)) {
+                if (targetType.isAssignableFrom(built.javaClass) || isBoxedOrPrimitiveMatch(
+                        targetType,
+                        built.javaClass
+                    )
+                ) {
                     return ConversionResult(built)
                 }
                 return null
             }
             else -> value
         }
-
         if (unwrapped == null) {
             return if (targetType.isPrimitive) null else ConversionResult(null)
         }
-
-        return when (normalizedTarget) {
-            Int::class.java -> when (unwrapped) {
+        return when {
+            isIntType(targetType) -> when (unwrapped) {
                 is Int -> ConversionResult(unwrapped)
                 is String -> unwrapped.toIntOrNull()?.let { ConversionResult(it) }
                 else -> null
             }
-            Long::class.java -> when (unwrapped) {
+            isLongType(targetType) -> when (unwrapped) {
                 is Long -> ConversionResult(unwrapped)
                 is Int -> ConversionResult(unwrapped.toLong())
                 is String -> unwrapped.toLongOrNull()?.let { ConversionResult(it) }
                 else -> null
             }
-            Double::class.java -> when (unwrapped) {
+            isDoubleType(targetType) -> when (unwrapped) {
                 is Double -> ConversionResult(unwrapped)
                 is Int -> ConversionResult(unwrapped.toDouble())
                 is Long -> ConversionResult(unwrapped.toDouble())
                 is String -> unwrapped.toDoubleOrNull()?.let { ConversionResult(it) }
                 else -> null
             }
-            String::class.java -> when (unwrapped) {
-                is String -> ConversionResult(unwrapped)
-                else -> ConversionResult(unwrapped.toString())
+            isFloatType(targetType) -> when (unwrapped) {
+                is Float -> ConversionResult(unwrapped)
+                is Int -> ConversionResult(unwrapped.toFloat())
+                is Long -> ConversionResult(unwrapped.toFloat())
+                is Double -> ConversionResult(unwrapped.toFloat())
+                is String -> unwrapped.toFloatOrNull()?.let { ConversionResult(it) }
+                else -> null
             }
-            Boolean::class.java -> when (unwrapped) {
+            isBooleanType(targetType) -> when (unwrapped) {
                 is Boolean -> ConversionResult(unwrapped)
                 is String -> when (unwrapped.lowercase()) {
                     "true" -> ConversionResult(true)
@@ -89,14 +66,68 @@ class TypeConverter {
                 }
                 else -> null
             }
-            else -> {
-                if (normalizedTarget.isAssignableFrom(unwrapped.javaClass)) {
-                    ConversionResult(unwrapped)
-                } else {
-                    null
-                }
+            isShortType(targetType) -> when (unwrapped) {
+                is Short -> ConversionResult(unwrapped)
+                is Int -> unwrapped.toShort().let { ConversionResult(it) }
+                is String -> unwrapped.toShortOrNull()?.let { ConversionResult(it) }
+                else -> null
             }
+            isByteType(targetType) -> when (unwrapped) {
+                is Byte -> ConversionResult(unwrapped)
+                is Int -> unwrapped.toByte().let { ConversionResult(it) }
+                is String -> unwrapped.toByteOrNull()?.let { ConversionResult(it) }
+                else -> null
+            }
+            isCharType(targetType) -> when (unwrapped) {
+                is Char -> ConversionResult(unwrapped)
+                is String -> unwrapped.singleOrNull()?.let { ConversionResult(it) }
+                else -> null
+            }
+            isStringType(targetType) -> when (unwrapped) {
+                is String -> ConversionResult(unwrapped)
+                else -> ConversionResult(unwrapped.toString())
+            }
+            targetType.isAssignableFrom(unwrapped.javaClass) -> ConversionResult(unwrapped)
+            else -> null
         }
+    }
+
+    private fun isIntType(type: Class<*>): Boolean =
+        type == Int::class.javaPrimitiveType || type == Int::class.javaObjectType
+
+    private fun isLongType(type: Class<*>): Boolean =
+        type == Long::class.javaPrimitiveType || type == Long::class.javaObjectType
+
+    private fun isDoubleType(type: Class<*>): Boolean =
+        type == Double::class.javaPrimitiveType || type == Double::class.javaObjectType
+
+    private fun isFloatType(type: Class<*>): Boolean =
+        type == Float::class.javaPrimitiveType || type == Float::class.javaObjectType
+
+    private fun isBooleanType(type: Class<*>): Boolean =
+        type == Boolean::class.javaPrimitiveType || type == Boolean::class.javaObjectType
+
+    private fun isShortType(type: Class<*>): Boolean =
+        type == Short::class.javaPrimitiveType || type == Short::class.javaObjectType
+
+    private fun isByteType(type: Class<*>): Boolean =
+        type == Byte::class.javaPrimitiveType || type == Byte::class.javaObjectType
+
+    private fun isCharType(type: Class<*>): Boolean =
+        type == Char::class.javaPrimitiveType || type == Char::class.javaObjectType
+
+    private fun isStringType(type: Class<*>): Boolean = type == String::class.java
+
+    private fun isBoxedOrPrimitiveMatch(targetType: Class<*>, actualType: Class<*>): Boolean = when {
+        isIntType(targetType) -> isIntType(actualType)
+        isLongType(targetType) -> isLongType(actualType)
+        isDoubleType(targetType) -> isDoubleType(actualType)
+        isFloatType(targetType) -> isFloatType(actualType)
+        isBooleanType(targetType) -> isBooleanType(actualType)
+        isShortType(targetType) -> isShortType(actualType)
+        isByteType(targetType) -> isByteType(actualType)
+        isCharType(targetType) -> isCharType(actualType)
+        else -> false
     }
 
     private data class ConversionResult(val value: Any?)
@@ -133,8 +164,7 @@ class TypeConverter {
 
             val paramClass: Class<out Any> =
                 (param.type.classifier as? KClass<*>)?.java ?: throw ObjectConstructionException(
-                    obj.type,
-                    "Unsupported type for '$name'"
+                    obj.type, "Unsupported type for '$name'"
                 )
 
             argsByParam[param] = materialize(rawValue, paramClass)

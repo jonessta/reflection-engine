@@ -5,13 +5,12 @@ import kotlin.reflect.*
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.javaMethod
 
-class App {
+class ReflectionEngine {
 
     // ------------------------------ GUI methods ------------------------------------------------
     fun descriptor(function: KFunction<*>): MethodDescriptor {
         val method: Method =
             function.javaMethod ?: throw EngineException("Function '${function.name}' is not backed by a Java method")
-
         return buildMethods(listOf(method)).first()
     }
 
@@ -75,14 +74,19 @@ class App {
             current = current.superclass
             depth++
         }
-        return result.filter { Modifier.isPublic(it.modifiers) && !it.isSynthetic && !it.isBridge }
-            .distinctBy { "${it.name}(${it.parameterTypes.joinToString(",") { t -> t.name }})" }
+        return result.filter { method: Method ->
+            Modifier.isPublic(method.modifiers) && !method.isSynthetic && !method.isBridge
+        }.distinctBy { method: Method ->
+            "${method.name}(${method.parameterTypes.joinToString(",") { t: Class<*> -> t.name }})"
+        }
     }
 
     internal fun buildMethods(methods: List<Method>): List<MethodDescriptor> = methods.map { method: Method ->
         val isStatic: Boolean = Modifier.isStatic(method.modifiers)
-        val params: List<ParamDescriptor> = method.parameters.mapIndexed { i: Int, p ->
-            ParamDescriptor(index = i, name = p.name ?: "arg$i", type = p.type, nullable = true)
+        val params: List<ParamDescriptor> = method.parameters.mapIndexed { i: Int, p: Parameter ->
+            ParamDescriptor(
+                index = i, name = p.name ?: "arg$i", type = p.type, nullable = true
+            )
         }
         MethodDescriptor(
             name = method.name,

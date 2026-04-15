@@ -1,10 +1,9 @@
 package au.clef
 
-import au.clef.model.OverloadedService
 import au.clef.model.Person
 
 fun main() {
-    val app = App()
+    val reflectionEngine = ReflectionEngine()
 //    runComposite(app)
 //    runAcme(app)
 //    runStatic(app)
@@ -13,9 +12,9 @@ fun main() {
 //    runOverloadedAmbiguous(app)
 //    runOverloadedExact(app)
 
-    runGuiStyleInstance(app)
-    runGuiStyleStatic(app)
-    runKotlinTopLevel(app)
+    runGuiStyleInstance(reflectionEngine)
+    runGuiStyleStatic(reflectionEngine)
+    runKotlinTopLevel(reflectionEngine)
 }
 
 //fun runComposite(app: App) {
@@ -92,14 +91,14 @@ fun main() {
 //}
 
 // --------------------------GUI calls --------------------------------------
-fun runGuiStyleInstance(app: App) {
+fun runGuiStyleInstance(reflectionEngine: ReflectionEngine) {
     val service = AcmeService()
-    val descriptor: MethodDescriptor = app.findDescriptorExact(
+    val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(
         clazz = AcmeService::class.java,
         methodName = "personName",
         parameterTypes = listOf(Person::class.java)
     )
-    val result: Any? = app.invokeDescriptor(
+    val result: Any? = reflectionEngine.invokeDescriptor(
         descriptor = descriptor,
         instance = service,
         args = listOf(personValue())
@@ -107,13 +106,13 @@ fun runGuiStyleInstance(app: App) {
     println("-----------> runGuiStyleInstance: $result")
 }
 
-fun runGuiStyleStatic(app: App) {
-    val descriptor: MethodDescriptor = app.findDescriptorExact(
+fun runGuiStyleStatic(reflectionEngine: ReflectionEngine) {
+    val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(
         clazz = Math::class.java,
         methodName = "max",
         parameterTypes = listOf(Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!)
     )
-    val result = app.invokeDescriptor(
+    val result = reflectionEngine.invokeDescriptor(
         descriptor = descriptor,
         args = listOf(Value.Primitive("10"), Value.Primitive("20"))
     )
@@ -127,9 +126,9 @@ private fun personValue(name: String = "Alice", age: String = "25"): Value.Objec
 
 fun add(a: Int, b: Int): Int = a + b
 
-fun runKotlinTopLevel(app: App) {
-    val descriptor: MethodDescriptor = app.descriptor(::add)
-    val result: Any? = app.invokeDescriptor(
+fun runKotlinTopLevel(reflectionEngine: ReflectionEngine) {
+    val descriptor: MethodDescriptor = reflectionEngine.descriptor(::add)
+    val result: Any? = reflectionEngine.invokeDescriptor(
         descriptor = descriptor,
         args = listOf(
             Value.Primitive("10"),

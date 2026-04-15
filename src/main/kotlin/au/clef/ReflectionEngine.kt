@@ -34,14 +34,14 @@ class ReflectionEngine {
     ): MethodDescriptor {
         val methods: List<MethodDescriptor> = descriptors(clazz, inheritanceLevel)
         return methods.firstOrNull {
-            val rawMethod: Method = it.rawMethod
-            it.name == methodName && rawMethod.parameterTypes.toList() == parameterTypes
+            it.name == methodName && it.rawMethod.parameterTypes.toList() == parameterTypes
         } ?: throw MethodNotFoundException(
             owner = clazz,
             methodName = methodName,
             parameterTypes = parameterTypes,
             staticOnly = null,
-            availableOverloads = methods.filter { it.name == methodName }.map { signature(it) })
+            availableOverloads = methods.filter { it.name == methodName }.map { signature(it) }
+        )
     }
 
     // ------------------------- END GUI methods -------------------------------------------------------

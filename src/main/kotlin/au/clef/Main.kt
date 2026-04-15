@@ -7,7 +7,7 @@ fun main() {
     val metadata = MetadataLoader.fromResourceOrEmpty("/config/method-metadata.json")
     val engine = ReflectionEngine(metadataRegistry = DescriptorMetadataRegistry(metadata))
 
-//    showAllDescriptors(engine)
+    showAllDescriptors(engine)
     runGuiStyleInstance(engine)
     runGuiStyleStatic(engine)
     runKotlinTopLevel(engine)

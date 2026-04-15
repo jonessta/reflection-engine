@@ -7,8 +7,10 @@ import kotlin.reflect.full.primaryConstructor
 
 class TypeConverter {
 
-    fun materialize(value: Any?, targetType: Class<*>): Any? =
-        tryConvert(value, targetType)?.value ?: throw TypeMismatchException(value, targetType)
+    fun materialize(value: Any?, targetType: Class<*>): Any? {
+        val result: ConversionResult? = tryConvert(value, targetType)
+        return result?.value ?: throw TypeMismatchException(value, targetType)
+    }
 
     private fun tryConvert(value: Any?, targetType: Class<*>): ConversionResult? {
         val unwrapped: Any? = when (value) {
@@ -17,8 +19,7 @@ class TypeConverter {
             is Value.Object -> {
                 val built: Any = buildObject(value)
                 if (targetType.isAssignableFrom(built.javaClass) || isBoxedOrPrimitiveMatch(
-                        targetType,
-                        built.javaClass
+                        targetType, built.javaClass
                     )
                 ) {
                     return ConversionResult(built)
@@ -27,9 +28,11 @@ class TypeConverter {
             }
             else -> value
         }
+
         if (unwrapped == null) {
             return if (targetType.isPrimitive) null else ConversionResult(null)
         }
+
         return when {
             isIntType(targetType) -> when (unwrapped) {
                 is Int -> ConversionResult(unwrapped)
@@ -68,13 +71,13 @@ class TypeConverter {
             }
             isShortType(targetType) -> when (unwrapped) {
                 is Short -> ConversionResult(unwrapped)
-                is Int -> unwrapped.toShort().let { ConversionResult(it) }
+                is Int -> ConversionResult(unwrapped.toShort())
                 is String -> unwrapped.toShortOrNull()?.let { ConversionResult(it) }
                 else -> null
             }
             isByteType(targetType) -> when (unwrapped) {
                 is Byte -> ConversionResult(unwrapped)
-                is Int -> unwrapped.toByte().let { ConversionResult(it) }
+                is Int -> ConversionResult(unwrapped.toByte())
                 is String -> unwrapped.toByteOrNull()?.let { ConversionResult(it) }
                 else -> null
             }
@@ -141,6 +144,7 @@ class TypeConverter {
         }
     }
 
+    // Kotlin reflection
     private fun buildKotlinObject(obj: Value.Object): Any {
         val kClass: KClass<out Any> = obj.type.kotlin
         val ctor: KFunction<Any> =
@@ -177,6 +181,7 @@ class TypeConverter {
         }
     }
 
+    // Java reflection fallback
     private fun buildJavaObject(obj: Value.Object): Any {
         val clazz: Class<*> = obj.type
         var lastFailure: Exception? = null
@@ -190,6 +195,7 @@ class TypeConverter {
                     val value: Value =
                         obj.fields[param.name] ?: obj.fields["arg$i"] ?: obj.fields.values.elementAtOrNull(i)
                         ?: throw ObjectConstructionException(clazz, "Missing value for param $i")
+
                     materialize(value, param.type)
                 }.toTypedArray()
 

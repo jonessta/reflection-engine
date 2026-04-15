@@ -3,6 +3,7 @@ package au.clef
 import java.lang.reflect.Method
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
+
 class ReflectionEngine(
     private val typeConverter: TypeConverter = TypeConverter(),
     private val methodRegistry: MethodRegistry = MethodRegistry(),
@@ -28,9 +29,7 @@ class ReflectionEngine(
         inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): MethodDescriptor = methodRegistry.findDescriptorExact(clazz, methodName, parameterTypes, inheritanceLevel)
 
-    fun invokeDescriptor(
-        descriptor: MethodDescriptor, instance: Any? = null, args: List<Any?>
-    ): Any? {
+    fun invokeDescriptor(descriptor: MethodDescriptor, instance: Any? = null, args: List<Any?>): Any? {
         if (!descriptor.isStatic && instance == null) {
             throw MissingInstanceException(descriptor.name)
         }

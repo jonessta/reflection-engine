@@ -33,22 +33,6 @@ class App {
         return descriptor.invoke(ExecutionContext(instance), args)
     }
 
-    private fun signature(m: MethodDescriptor): String =
-        "${m.name}(${m.parameters.joinToString(", ") { it.type.simpleName }})"
-
-    private fun conversionScore(value: Any?, targetType: Class<*>): Int? = tryConvert(value, targetType)?.score
-
-    private fun matchScore(method: MethodDescriptor, args: List<Any?>): Int? {
-        if (method.parameters.size != args.size)
-            return null
-        var total = 0
-        for (i in method.parameters.indices) {
-            val score = conversionScore(args[i], method.parameters[i].type) ?: return null
-            total += score
-        }
-        return total
-    }
-
     fun call(
         target: Any,
         methodName: String,
@@ -161,11 +145,22 @@ class App {
         return method.invoke(ExecutionContext(target), args)
     }
 
-    // --------------------------------------------------
-    // METHOD DISCOVERY
-    // --------------------------------------------------
+    fun materialize(value: Any?, targetType: Class<*>): Any? =
+        tryConvert(value, targetType)?.value
+            ?: throw TypeMismatchException("Cannot convert $value to ${targetType.simpleName}")
 
-    fun collectMethods(clazz: Class<*>, level: InheritanceLevel): List<Method> {
+    fun buildObject(obj: Value.Object): Any {
+        val clazz = obj.type
+        return if (isKotlinClass(clazz)) {
+            buildKotlinObject(obj)
+        } else {
+            buildJavaObject(obj)
+        }
+    }
+
+    // ------------ internal ---------------------------------------------------
+
+    internal fun collectMethods(clazz: Class<*>, level: InheritanceLevel): List<Method> {
         val result: MutableList<Method> = mutableListOf()
         var current: Class<*>? = clazz
         var depth = 0
@@ -184,7 +179,7 @@ class App {
             .distinctBy { it.name + it.parameterTypes.joinToString { t -> t.name } }
     }
 
-    fun buildMethods(methods: List<Method>): List<MethodDescriptor> {
+    internal fun buildMethods(methods: List<Method>): List<MethodDescriptor> {
         return methods.map { method ->
             val isStatic = Modifier.isStatic(method.modifiers)
             val params: List<ParamDescriptor> = method.parameters.mapIndexed { i, p ->
@@ -212,13 +207,23 @@ class App {
         }
     }
 
-    // --------------------------------------------------
-    // VALUE MATERIALIZATION
-    // --------------------------------------------------
+    // ------------ private ---------------------------------------------------
 
-    fun materialize(value: Any?, targetType: Class<*>): Any? =
-        tryConvert(value, targetType)?.value
-            ?: throw TypeMismatchException("Cannot convert $value to ${targetType.simpleName}")
+    private fun signature(m: MethodDescriptor): String =
+        "${m.name}(${m.parameters.joinToString(", ") { it.type.simpleName }})"
+
+    private fun conversionScore(value: Any?, targetType: Class<*>): Int? = tryConvert(value, targetType)?.score
+
+    private fun matchScore(method: MethodDescriptor, args: List<Any?>): Int? {
+        if (method.parameters.size != args.size)
+            return null
+        var total = 0
+        for (i in method.parameters.indices) {
+            val score = conversionScore(args[i], method.parameters[i].type) ?: return null
+            total += score
+        }
+        return total
+    }
 
     private fun normalize(type: Class<*>): Class<*> =
         when (type) {
@@ -232,8 +237,6 @@ class App {
             Character.TYPE -> Char::class.java
             else -> type
         }
-
-    private data class ConversionResult(val value: Any?, val score: Int)
 
     private fun tryConvert(value: Any?, targetType: Class<*>): ConversionResult? {
         val normalizedTarget: Class<*> = normalize(targetType)
@@ -302,20 +305,9 @@ class App {
         }
     }
 
-    // --------------------------------------------------
-    // OBJECT CONSTRUCTION (HYBRID: KOTLIN + JAVA)
-    // --------------------------------------------------
+    private data class ConversionResult(val value: Any?, val score: Int)
 
-    fun buildObject(obj: Value.Object): Any {
-        val clazz = obj.type
-        return if (isKotlinClass(clazz)) {
-            buildKotlinObject(obj)
-        } else {
-            buildJavaObject(obj)
-        }
-    }
-
-    // ✅ Kotlin reflection (clean, reliable)
+    // Kotlin reflection (clean, reliable)
     private fun buildKotlinObject(obj: Value.Object): Any {
         val kClass: KClass<*> = obj.type.kotlin
         val ctor =
@@ -340,7 +332,7 @@ class App {
         return ctor.callBy(argsByParam)
     }
 
-    // ✅ Java reflection fallback
+    // Java reflection fallback
     private fun buildJavaObject(obj: Value.Object): Any {
         val clazz = obj.type
         for (ctor: Constructor<*> in clazz.declaredConstructors) {

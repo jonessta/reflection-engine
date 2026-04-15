@@ -100,16 +100,15 @@ fun runOverloadedExact(app: App) {
 // --------------------------GUI calls --------------------------------------
 fun runGuiStyleInstance(app: App) {
     val service = AcmeService()
-    val descriptor: MethodDescriptor = app.buildMethods(
-        app.collectMethods(AcmeService::class.java, InheritanceLevel.DeclaredOnly)
-    ).first { it.name == "personName" }
-
+    val descriptor: MethodDescriptor = app.findDescriptorExact(
+        clazz = AcmeService::class.java,
+        methodName = "personName",
+        parameterTypes = listOf(Person::class.java)
+    )
     val result = app.invokeDescriptor(
         descriptor = descriptor,
         instance = service,
-        args = listOf(
-            personValue()
-        )
+        args = listOf(personValue())
     )
     println("-----------> runGuiStyleInstance: $result")
 }
@@ -123,7 +122,6 @@ fun runGuiStyleStatic(app: App) {
             Int::class.javaPrimitiveType!!
         )
     )
-
     val result = app.invokeDescriptor(
         descriptor = descriptor,
         args = listOf(
@@ -131,7 +129,6 @@ fun runGuiStyleStatic(app: App) {
             Value.Primitive("20")
         )
     )
-
     println("-----------> runGuiStyleStatic: $result")
 }
 

@@ -15,9 +15,10 @@ data class ClassMetadata(
 @Serializable
 data class MethodMetadata(
     val displayName: String? = null,
+    val hidden: Boolean = false,
+    val order: Int? = null,
     val parameters: List<ParamMetadata> = emptyList()
 )
-
 @Serializable
 data class ParamMetadata(
     val name: String? = null,

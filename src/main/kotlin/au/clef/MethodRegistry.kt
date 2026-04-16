@@ -80,6 +80,7 @@ class MethodRegistry {
                     ParamDescriptor(
                         index = i,
                         name = p.name ?: "arg$i",
+                        label = null,
                         type = p.type,
                         nullable = true
                     )

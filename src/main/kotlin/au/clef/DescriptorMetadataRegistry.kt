@@ -12,7 +12,10 @@ class DescriptorMetadataRegistry(private val metadata: MetadataRoot) {
             if (paramMeta == null) {
                 param
             } else {
-                param.copy(name = paramMeta.name ?: param.name)
+                param.copy(
+                    name = paramMeta.name ?: param.name,
+                    label = paramMeta.label ?: param.label
+                )
             }
         }
         return descriptor.copy(parameters = updatedParams)

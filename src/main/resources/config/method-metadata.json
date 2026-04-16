@@ -1,14 +1,1350 @@
 {
-  "classes": {
-    "java.lang.Math": {
-      "methods": {
-        "max(int,int)": {
-          "parameters": [
-            { "name": "left" },
-            { "name": "right" }
-          ]
+    "classes": {
+        "au.clef.model.AcmeService": {
+            "methods": {
+                "personDescription(au.clef.model.Person)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": "SSSS"
+                        }
+                    ]
+                },
+                "personName(au.clef.model.Person)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": "EEEE"
+                        }
+                    ]
+                }
+            }
+        },
+        "java.lang.Math": {
+            "methods": {
+                "IEEEremainder(double,double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "abs(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "abs(float)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "abs(long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "abs(int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "absExact(long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "absExact(int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "acos(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "addExact(long,long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "addExact(int,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "asin(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "atan(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "atan2(double,double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "cbrt(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "ceil(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "ceilDiv(long,long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "ceilDiv(long,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "ceilDiv(int,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "ceilDivExact(long,long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "ceilDivExact(int,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "ceilMod(long,long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "ceilMod(long,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "ceilMod(int,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "clamp(float,float,float)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        },
+                        {
+                            "name": "param2",
+                            "label": null
+                        }
+                    ]
+                },
+                "clamp(long,long,long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        },
+                        {
+                            "name": "param2",
+                            "label": null
+                        }
+                    ]
+                },
+                "clamp(double,double,double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        },
+                        {
+                            "name": "param2",
+                            "label": null
+                        }
+                    ]
+                },
+                "clamp(long,int,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        },
+                        {
+                            "name": "param2",
+                            "label": null
+                        }
+                    ]
+                },
+                "copySign(double,double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "copySign(float,float)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "cos(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "cosh(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "decrementExact(int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "decrementExact(long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "divideExact(int,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "divideExact(long,long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "exp(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "expm1(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "floor(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "floorDiv(long,long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "floorDiv(long,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "floorDiv(int,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "floorDivExact(long,long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "floorDivExact(int,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "floorMod(int,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "floorMod(long,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "floorMod(long,long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "fma(double,double,double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        },
+                        {
+                            "name": "param2",
+                            "label": null
+                        }
+                    ]
+                },
+                "fma(float,float,float)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        },
+                        {
+                            "name": "param2",
+                            "label": null
+                        }
+                    ]
+                },
+                "getExponent(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "getExponent(float)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "hypot(double,double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "incrementExact(long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "incrementExact(int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "log(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "log10(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "log1p(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "max(double,double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": "AAAAAAA"
+                        },
+                        {
+                            "name": "param1",
+                            "label": "BBBBBBB"
+                        }
+                    ]
+                },
+                "max(float,float)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "max(long,long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "max(int,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "min(double,double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "min(float,float)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "min(long,long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "min(int,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "multiplyExact(long,long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "multiplyExact(long,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "multiplyExact(int,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "multiplyFull(int,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "multiplyHigh(long,long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "negateExact(int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "negateExact(long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "nextAfter(float,double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "nextAfter(double,double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "nextDown(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "nextDown(float)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "nextUp(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "nextUp(float)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "pow(double,double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "random()": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": []
+                },
+                "rint(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "round(float)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "round(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "scalb(float,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "scalb(double,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "signum(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "signum(float)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "sin(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "sinh(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "sqrt(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "subtractExact(long,long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "subtractExact(int,int)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                },
+                "tan(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "tanh(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "toDegrees(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "toIntExact(long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "toRadians(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "ulp(double)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "ulp(float)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "unsignedMultiplyHigh(long,long)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        },
+                        {
+                            "name": "param1",
+                            "label": null
+                        }
+                    ]
+                }
+            }
         }
-      }
     }
-  }
 }

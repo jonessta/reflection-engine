@@ -1,8 +1,6 @@
 package au.clef
 
-class MetadataValidator(
-    private val methodRegistry: MethodRegistry = MethodRegistry()
-) {
+class MetadataValidator(private val methodRegistry: MethodRegistry = MethodRegistry()) {
 
     fun validate(metadata: MetadataRoot): List<ValidationIssue> {
         val issues: MutableList<ValidationIssue> = mutableListOf()
@@ -12,22 +10,18 @@ class MetadataValidator(
                 Class.forName(className)
             } catch (_: ClassNotFoundException) {
                 issues += ValidationIssue(
-                    severity = Severity.ERROR,
-                    location = className,
-                    message = "Class not found"
+                    severity = Severity.ERROR, location = className, message = "Class not found"
                 )
                 return@forEach
             }
 
             val descriptors: List<MethodDescriptor> =
-                methodRegistry.descriptors(clazz, InheritanceLevel.All)
+                methodRegistry.bindings(clazz, InheritanceLevel.All).map { it.descriptor }
 
-            val descriptorMap: Map<String, MethodDescriptor> =
-                descriptors.associateBy { buildMethodKey(it) }
+            val descriptorMap: Map<String, MethodDescriptor> = descriptors.associateBy { buildMethodKey(it) }
 
             classMetadata.methods.forEach { (methodKey: String, methodMetadata: MethodMetadata) ->
                 val descriptor: MethodDescriptor? = descriptorMap[methodKey]
-
                 if (descriptor == null) {
                     issues += ValidationIssue(
                         severity = Severity.ERROR,
@@ -71,19 +65,14 @@ class MetadataValidator(
     }
 
     private fun buildMethodKey(descriptor: MethodDescriptor): String {
-        val paramTypes: String =
-            descriptor.method.parameterTypes.joinToString(",") { it.name }
-        return "${descriptor.name}($paramTypes)"
+        return descriptor.id.substringAfter("#")
     }
 }
 
 data class ValidationIssue(
-    val severity: Severity,
-    val location: String,
-    val message: String
+    val severity: Severity, val location: String, val message: String
 )
 
 enum class Severity {
-    WARNING,
-    ERROR
+    WARNING, ERROR
 }

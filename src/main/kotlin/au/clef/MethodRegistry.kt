@@ -10,34 +10,38 @@ class MethodRegistry {
 
     private val descriptorCache: MutableMap<CacheKey, List<MethodDescriptor>> = ConcurrentHashMap()
 
-    fun descriptors(
+    fun bindings(
         clazz: Class<*>,
         inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-    ): List<MethodDescriptor> {
-        val key = CacheKey(clazz, inheritanceLevel)
-        return descriptorCache.getOrPut(key) {
-            buildMethods(collectMethods(clazz, inheritanceLevel))
+    ): List<MethodBinding> {
+        val methods = collectMethods(clazz, inheritanceLevel)
+
+        return methods.map { method ->
+            val isStatic = Modifier.isStatic(method.modifiers)
+            val params = method.parameters.mapIndexed { i, p ->
+                ParamDescriptor(
+                    index = i,
+                    name = p.name ?: "arg$i",
+                    label = null,
+                    type = p.type.name,
+                    nullable = true
+                )
+            }
+            val descriptor = MethodDescriptor(
+                id = buildId(clazz, method),
+                name = method.name,
+                parameters = params,
+                returnType = method.returnType.name,
+                isStatic = isStatic
+            )
+
+            MethodBinding(descriptor = descriptor, method = method)
         }
     }
 
-    fun findDescriptorExact(
-        clazz: Class<*>,
-        methodName: String,
-        parameterTypes: List<Class<*>>,
-        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-    ): MethodDescriptor {
-        val methods: List<MethodDescriptor> = descriptors(clazz, inheritanceLevel)
-        return methods.firstOrNull {
-            it.name == methodName && it.method.parameterTypes.toList() == parameterTypes
-        } ?: throw MethodNotFoundException(
-            owner = clazz,
-            methodName = methodName,
-            parameterTypes = parameterTypes,
-            staticOnly = null,
-            availableOverloads = methods
-                .filter { it.name == methodName }
-                .map { signature(it) }
-        )
+    private fun buildId(clazz: Class<*>, method: Method): String {
+        val paramTypes = method.parameterTypes.joinToString(",") { it.name }
+        return "${clazz.name}#${method.name}($paramTypes)"
     }
 
     fun clearCache() {
@@ -71,29 +75,4 @@ class MethodRegistry {
                 "${method.name}(${method.parameterTypes.joinToString(",") { it.name }})"
             }
     }
-
-    private fun buildMethods(methods: List<Method>): List<MethodDescriptor> =
-        methods.map { method: Method ->
-            val isStatic: Boolean = Modifier.isStatic(method.modifiers)
-            val params: List<ParamDescriptor> =
-                method.parameters.mapIndexed { i: Int, p ->
-                    ParamDescriptor(
-                        index = i,
-                        name = p.name ?: "arg$i",
-                        label = null,
-                        type = p.type,
-                        nullable = true
-                    )
-                }
-            MethodDescriptor(
-                name = method.name,
-                parameters = params,
-                returnType = method.returnType,
-                isStatic = isStatic,
-                method = method
-            )
-        }
-
-    private fun signature(m: MethodDescriptor): String =
-        "${m.name}(${m.parameters.joinToString(", ") { it.type.simpleName }})"
 }

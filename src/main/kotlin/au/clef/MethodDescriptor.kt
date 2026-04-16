@@ -1,14 +1,10 @@
 package au.clef
 
 data class MethodDescriptor(
+    val id: String,
     val name: String,
+    val displayName: String? = null,
     val parameters: List<ParamDescriptor>,
-    val returnType: Class<*>,
-    val isStatic: Boolean,
-    // todo should rawMethod be here? or mapped
-    val method: java.lang.reflect.Method
-) {
-    override fun toString(): String {
-        return "MethodDescriptor(name='$name', parameters=$parameters, returnType=$returnType, isStatic=$isStatic, rawMethod=$method)"
-    }
-}
+    val returnType: String,
+    val isStatic: Boolean
+)

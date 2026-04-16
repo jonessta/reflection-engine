@@ -9,7 +9,7 @@ class MetadataGenerator(
         inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): MetadataRoot {
         val descriptors: List<MethodDescriptor> =
-            methodRegistry.descriptors(clazz, inheritanceLevel)
+            methodRegistry.bindings(clazz, inheritanceLevel).map { it.descriptor }
 
         val methods: Map<String, MethodMetadata> =
             descriptors
@@ -44,11 +44,8 @@ class MetadataGenerator(
         return MetadataRoot(classes = classEntries)
     }
 
-    private fun buildMethodKey(descriptor: MethodDescriptor): String {
-        val paramTypes: String =
-            descriptor.method.parameterTypes.joinToString(",") { it.name }
-        return "${descriptor.name}($paramTypes)"
-    }
+    private fun buildMethodKey(descriptor: MethodDescriptor): String =
+        descriptor.id.substringAfter("#")
 
     private fun defaultParameterName(param: ParamDescriptor): String =
         if (param.name.startsWith("arg")) "param${param.index}" else param.name

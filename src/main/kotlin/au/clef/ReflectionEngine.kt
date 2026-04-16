@@ -1,45 +1,69 @@
 package au.clef
 
-import java.lang.reflect.Method
-import kotlin.reflect.KFunction
-import kotlin.reflect.jvm.javaMethod
-
 class ReflectionEngine(
     private val typeConverter: TypeConverter = TypeConverter(),
     private val methodRegistry: MethodRegistry = MethodRegistry(),
     private val metadataRegistry: DescriptorMetadataRegistry? = null
 ) {
 
-    fun descriptors(clazz: Class<*>, inheritanceLevel: InheritanceLevel): List<MethodDescriptor> {
-        val base: List<MethodDescriptor> = methodRegistry.descriptors(clazz, inheritanceLevel)
-        return metadataRegistry?.applyAll(base) ?: base
+    fun descriptors(clazz: Class<*>): List<MethodDescriptor> {
+        val bindings = methodRegistry.bindings(clazz)
+        val descriptors = bindings.map { it.descriptor }
+
+        return metadataRegistry?.applyAll(descriptors) ?: descriptors
     }
 
-    fun descriptor(function: KFunction<*>): MethodDescriptor {
-        val method: Method =
-            function.javaMethod ?: throw EngineException("Function '${function.name}' is not backed by a Java method")
+    fun findBindingById(clazz: Class<*>, id: String): MethodBinding {
+        val bindings = methodRegistry.bindings(clazz)
 
-        return methodRegistry.descriptors(method.declaringClass).first { it.method == method }
+        return bindings.firstOrNull { it.descriptor.id == id }
+            ?: throw MethodNotFoundException(
+                owner = clazz,
+                methodName = id,
+                parameterTypes = emptyList(),
+                staticOnly = null,
+                availableOverloads = bindings.map { it.descriptor.id }
+            )
     }
 
     fun findDescriptorExact(
         clazz: Class<*>,
         methodName: String,
-        parameterTypes: List<Class<*>>,
-        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-    ): MethodDescriptor = methodRegistry.findDescriptorExact(clazz, methodName, parameterTypes, inheritanceLevel)
+        parameterTypes: List<Class<*>>
+    ): MethodDescriptor {
+        val methods: List<MethodDescriptor> = descriptors(clazz)
+        return methods.firstOrNull {
+            it.name == methodName && methodKey(it) == "$methodName(${parameterTypes.joinToString(",") { it.name }})"
+        } ?: throw MethodNotFoundException(
+            owner = clazz,
+            methodName = methodName,
+            parameterTypes = parameterTypes,
+            staticOnly = null,
+            availableOverloads = methods.filter { it.name == methodName }.map { it.id.substringAfter("#") }
+        )
+    }
 
-    fun invokeDescriptor(descriptor: MethodDescriptor, instance: Any? = null, args: List<Any?>): Any? {
+    private fun methodKey(descriptor: MethodDescriptor): String =
+        descriptor.id.substringAfter("#")
+
+    fun invokeBinding(
+        binding: MethodBinding,
+        instance: Any? = null,
+        args: List<Any?>
+    ): Any? {
+        val descriptor = binding.descriptor
+
         if (!descriptor.isStatic && instance == null) {
             throw MissingInstanceException(descriptor.name)
         }
 
-        val convertedArgs: List<Any?> = args.mapIndexed { i: Int, arg: Any? ->
-            typeConverter.materialize(arg, descriptor.parameters[i].type)
+        val convertedArgs = args.mapIndexed { i, arg ->
+            val paramType = binding.method.parameterTypes[i]
+            typeConverter.materialize(arg, paramType)
         }
 
-        val target: Any? = if (descriptor.isStatic) null else instance
+        val target = if (descriptor.isStatic) null else instance
 
-        return descriptor.method.invoke(target, *convertedArgs.toTypedArray())
+        return binding.method.invoke(target, *convertedArgs.toTypedArray())
     }
 }

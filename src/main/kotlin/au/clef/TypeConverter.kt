@@ -6,7 +6,6 @@ import kotlin.reflect.*
 import kotlin.reflect.full.primaryConstructor
 
 class TypeConverter {
-
     fun materialize(value: Any?, targetType: Class<*>): Any? {
         val result: ConversionResult? = tryConvert(value, targetType)
         return result?.value ?: throw TypeMismatchException(value, targetType)

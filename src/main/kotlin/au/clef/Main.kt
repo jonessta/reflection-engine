@@ -9,35 +9,35 @@ val outputFile = File("src/main/resources").resolve(resourcePath.removePrefix("/
 
 fun main() {
     val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(resourcePath)
+
     val engine = ReflectionEngine(
         metadataRegistry = DescriptorMetadataRegistry(metadata)
     )
+
 //    generateMetadata()
+//    validate()
+
     showAllDescriptors(engine)
-//    runGuiStyleInstance(engine)
-//    runGuiStyleStatic(engine)
-//    runKotlinTopLevel(engine)
+    runGuiStyleInstance(engine)
+    runGuiStyleStatic(engine)
+    runKotlinTopLevel(engine)
 }
 
-// --------------------------GUI calls --------------------------------------
-
 fun generateMetadata() {
-
     val generator = MetadataGenerator()
     val metadata: MetadataRoot = generator.generate(
         classes = listOf(
-            AcmeService::class.java,
-            Math::class.java
-        ),
-        inheritanceLevel = InheritanceLevel.DeclaredOnly
+            AcmeService::class.java, Math::class.java, Class.forName("au.clef.MainKt")
+        ), inheritanceLevel = InheritanceLevel.DeclaredOnly
     )
+
     MetadataWriter.writeToFile(metadata, outputFile)
+
     println("Metadata written to: ${outputFile.absolutePath}")
     println(MetadataWriter.toJson(metadata))
 }
 
 fun validate() {
-    // use at startup
     val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(resourcePath)
 
     val validator = MetadataValidator()
@@ -53,16 +53,12 @@ fun validate() {
 }
 
 fun showAllDescriptors(reflectionEngine: ReflectionEngine) {
-//    val descriptors = reflectionEngine.descriptors(clazz = Math::class.java, InheritanceLevel.DeclaredOnly)
-//    for (descriptor in descriptors) {
-//        println(descriptor.name + " = " + descriptor.parameters.joinToString(", ") { it.name })
-//    }
+    val all: List<MethodDescriptor> = reflectionEngine.descriptors(AcmeService::class.java)
 
-    val all: List<MethodDescriptor> = reflectionEngine.descriptors(AcmeService::class.java, InheritanceLevel.DeclaredOnly)
-    all.forEach { d ->
-        println("METHOD: ${d.name}")
-        d.parameters.forEach { p ->
-            println("  name=${p.name}, label=${p.label}")
+    all.forEach { descriptor: MethodDescriptor ->
+        println("METHOD: ${descriptor.id}")
+        descriptor.parameters.forEach { param: ParamDescriptor ->
+            println("  name=${param.name}, label=${param.label}, type=${param.type}")
         }
     }
 }
@@ -72,40 +68,66 @@ fun runGuiStyleInstance(reflectionEngine: ReflectionEngine) {
     val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(
         clazz = AcmeService::class.java, methodName = "personName", parameterTypes = listOf(Person::class.java)
     )
-    println(descriptor)
-    descriptor.parameters.forEach {
-        println("name=${it.name}, label=${it.label}")
-    }
-    val result: Any? = reflectionEngine.invokeDescriptor(
-        descriptor = descriptor, instance = service, args = listOf(personValue())
+
+    val binding: MethodBinding = reflectionEngine.findBindingById(
+        clazz = AcmeService::class.java, id = descriptor.id
     )
+
+    val result: Any? = reflectionEngine.invokeBinding(
+        binding = binding, instance = service, args = listOf(personValue())
+    )
+
     println("-----------> runGuiStyleInstance: $result")
 }
 
 fun runGuiStyleStatic(reflectionEngine: ReflectionEngine) {
     val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(
-        clazz = Math::class.java,
-        methodName = "max",
-        parameterTypes = listOf(Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!)
+        clazz = Math::class.java, methodName = "max", parameterTypes = listOf(
+            Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!
+        )
     )
-    val result = reflectionEngine.invokeDescriptor(
-        descriptor = descriptor, args = listOf(Value.Primitive("10"), Value.Primitive("20"))
+
+    val binding: MethodBinding = reflectionEngine.findBindingById(
+        clazz = Math::class.java, id = descriptor.id
     )
+
+    val result: Any? = reflectionEngine.invokeBinding(
+        binding = binding, args = listOf(
+            Value.Primitive("10"), Value.Primitive("20")
+        )
+    )
+
     println("-----------> runGuiStyleStatic: $result")
 }
-
-private fun personValue(name: String = "Alice", age: String = "25"): Value.Object = Value.Object(
-    type = Person::class.java, fields = mapOf("name" to Value.Primitive(name), "age" to Value.Primitive(age))
-)
 
 fun add(a: Int, b: Int): Int = a + b
 
 fun runKotlinTopLevel(reflectionEngine: ReflectionEngine) {
-    val descriptor: MethodDescriptor = reflectionEngine.descriptor(::add)
-    val result: Any? = reflectionEngine.invokeDescriptor(
-        descriptor = descriptor, args = listOf(
+    val declaringClass: Class<*> = Class.forName("au.clef.MainKt")
+
+    val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(
+        clazz = declaringClass, methodName = "add", parameterTypes = listOf(
+            Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!
+        )
+    )
+
+    val binding: MethodBinding = reflectionEngine.findBindingById(
+        clazz = declaringClass, id = descriptor.id
+    )
+
+    val result: Any? = reflectionEngine.invokeBinding(
+        binding = binding, args = listOf(
             Value.Primitive("10"), Value.Primitive("20")
         )
     )
+
     println("-----------> runTopLevelFunction: $result")
 }
+
+private fun personValue(
+    name: String = "Alice", age: String = "25"
+): Value.Object = Value.Object(
+    type = Person::class.java, fields = mapOf(
+        "name" to Value.Primitive(name), "age" to Value.Primitive(age)
+    )
+)

@@ -1,0 +1,30 @@
+{
+    "classes": {
+        "au.clef.model.AcmeService": {
+            "methods": {
+                "personDescription(au.clef.model.Person)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                },
+                "personName(au.clef.model.Person)": {
+                    "displayName": null,
+                    "hidden": false,
+                    "order": null,
+                    "parameters": [
+                        {
+                            "name": "param0",
+                            "label": null
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

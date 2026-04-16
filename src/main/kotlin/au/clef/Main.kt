@@ -14,21 +14,19 @@ fun main() {
         metadataRegistry = DescriptorMetadataRegistry(metadata)
     )
 
-//    generateMetadata()
+    generateMetadata()
 //    validate()
 
-    showAllDescriptors(engine)
-    runGuiStyleInstance(engine)
-    runGuiStyleStatic(engine)
-    runKotlinTopLevel(engine)
+//    showAllDescriptors(engine)
+//    runGuiStyleInstance(engine)
+//    runGuiStyleStatic(engine)
+//    runKotlinTopLevel(engine)
 }
 
 fun generateMetadata() {
     val generator = MetadataGenerator()
     val metadata: MetadataRoot = generator.generate(
-        classes = listOf(
-            AcmeService::class.java, Math::class.java, Class.forName("au.clef.MainKt")
-        ), inheritanceLevel = InheritanceLevel.DeclaredOnly
+        classes = listOf(AcmeService::class.java), inheritanceLevel = InheritanceLevel.DeclaredOnly
     )
 
     MetadataWriter.writeToFile(metadata, outputFile)

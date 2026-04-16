@@ -7,14 +7,14 @@ class ReflectionEngine(
 ) {
 
     fun descriptors(clazz: Class<*>): List<MethodDescriptor> {
-        val bindings = methodRegistry.bindings(clazz)
-        val descriptors = bindings.map { it.descriptor }
+        val bindings: List<MethodBinding> = methodRegistry.bindings(clazz)
+        val descriptors: List<MethodDescriptor> = bindings.map { it.descriptor }
 
         return metadataRegistry?.applyAll(descriptors) ?: descriptors
     }
 
     fun findBindingById(clazz: Class<*>, id: String): MethodBinding {
-        val bindings = methodRegistry.bindings(clazz)
+        val bindings: List<MethodBinding> = methodRegistry.bindings(clazz)
 
         return bindings.firstOrNull { it.descriptor.id == id }
             ?: throw MethodNotFoundException(
@@ -51,14 +51,14 @@ class ReflectionEngine(
         instance: Any? = null,
         args: List<Any?>
     ): Any? {
-        val descriptor = binding.descriptor
+        val descriptor: MethodDescriptor = binding.descriptor
 
         if (!descriptor.isStatic && instance == null) {
             throw MissingInstanceException(descriptor.name)
         }
 
-        val convertedArgs = args.mapIndexed { i, arg ->
-            val paramType = binding.method.parameterTypes[i]
+        val convertedArgs: List<Any?> = args.mapIndexed { i, arg ->
+            val paramType: Class<*> = binding.method.parameterTypes[i]
             typeConverter.materialize(arg, paramType)
         }
 

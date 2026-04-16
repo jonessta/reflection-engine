@@ -3,12 +3,12 @@ package au.clef
 class DescriptorMetadataRegistry(private val metadata: MetadataRoot) {
 
     fun apply(descriptor: MethodDescriptor): MethodDescriptor {
-        val (className, methodKey) = splitId(descriptor.id)
-        val classMeta = metadata.classes[className] ?: return descriptor
-        val methodMeta = classMeta.methods[methodKey] ?: return descriptor
+        val (className: String, methodKey: String) = splitId(descriptor.id)
+        val classMeta: ClassMetadata = metadata.classes[className] ?: return descriptor
+        val methodMeta: MethodMetadata = classMeta.methods[methodKey] ?: return descriptor
 
-        val updatedParams = descriptor.parameters.map { param ->
-            val paramMeta = methodMeta.parameters.getOrNull(param.index)
+        val updatedParams: List<ParamDescriptor> = descriptor.parameters.map { param ->
+            val paramMeta: ParamMetadata? = methodMeta.parameters.getOrNull(param.index)
             if (paramMeta == null) {
                 param
             } else {
@@ -27,8 +27,6 @@ class DescriptorMetadataRegistry(private val metadata: MetadataRoot) {
 
     fun applyAll(descriptors: List<MethodDescriptor>): List<MethodDescriptor> =
         descriptors.map { apply(it) }
-
-    // ---------------- helpers ----------------
 
     private fun splitId(id: String): Pair<String, String> {
         val parts = id.split("#", limit = 2)

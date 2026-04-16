@@ -14,11 +14,11 @@ class MethodRegistry {
         clazz: Class<*>,
         inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): List<MethodBinding> {
-        val methods = collectMethods(clazz, inheritanceLevel)
+        val methods: List<Method> = collectMethods(clazz, inheritanceLevel)
 
         return methods.map { method ->
             val isStatic = Modifier.isStatic(method.modifiers)
-            val params = method.parameters.mapIndexed { i, p ->
+            val params: List<ParamDescriptor> = method.parameters.mapIndexed { i, p ->
                 ParamDescriptor(
                     index = i,
                     name = p.name ?: "arg$i",
@@ -40,7 +40,7 @@ class MethodRegistry {
     }
 
     private fun buildId(clazz: Class<*>, method: Method): String {
-        val paramTypes = method.parameterTypes.joinToString(",") { it.name }
+        val paramTypes: String = method.parameterTypes.joinToString(",") { it.name }
         return "${clazz.name}#${method.name}($paramTypes)"
     }
 

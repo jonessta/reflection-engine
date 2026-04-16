@@ -1,6 +1,7 @@
 package au.clef
 
 import kotlinx.serialization.json.Json
+import java.io.InputStream
 
 object MetadataLoader {
 
@@ -10,11 +11,10 @@ object MetadataLoader {
     }
 
     fun fromResourceOrEmpty(path: String): MetadataRoot {
-        val stream = MetadataLoader::class.java.getResourceAsStream(path)
+        val stream: InputStream = MetadataLoader::class.java.getResourceAsStream(path)
             ?: return MetadataRoot()
 
         val text: String = stream.bufferedReader().use { it.readText() }
-
         if (text.isBlank()) {
             return MetadataRoot()
         }

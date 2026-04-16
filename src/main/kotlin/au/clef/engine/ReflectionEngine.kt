@@ -2,8 +2,6 @@ package au.clef.engine
 
 import au.clef.engine.model.MethodBinding
 import au.clef.engine.model.MethodDescriptor
-import au.clef.MethodNotFoundException
-import au.clef.MissingInstanceException
 import au.clef.engine.convert.TypeConverter
 import au.clef.engine.registry.MethodRegistry
 import au.clef.metadata.DescriptorMetadataRegistry

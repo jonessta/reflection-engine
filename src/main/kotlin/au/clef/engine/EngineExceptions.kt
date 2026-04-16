@@ -1,4 +1,4 @@
-package au.clef
+package au.clef.engine
 
 open class EngineException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 

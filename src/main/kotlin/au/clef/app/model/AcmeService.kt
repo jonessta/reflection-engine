@@ -1,4 +1,4 @@
-package au.clef.model
+package au.clef.app.model
 
 class AcmeService {
 

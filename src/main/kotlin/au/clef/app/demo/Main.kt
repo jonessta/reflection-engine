@@ -1,4 +1,4 @@
-package au.clef
+package au.clef.app.demo
 
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.InheritanceLevel
@@ -13,8 +13,8 @@ import au.clef.metadata.MetadataValidator
 import au.clef.metadata.MetadataWriter
 import au.clef.metadata.ValidationIssue
 import au.clef.metadata.model.MetadataRoot
-import au.clef.model.AcmeService
-import au.clef.model.Person
+import au.clef.app.model.AcmeService
+import au.clef.app.model.Person
 import java.io.File
 
 const val resourcePath = "/config/method-metadata.json"

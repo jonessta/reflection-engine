@@ -1,4 +1,4 @@
-package au.clef.model
+package au.clef.app.model
 
 data class Person(val name: String, val age: Int) {
     override fun toString(): String {

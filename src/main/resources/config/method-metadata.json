@@ -1,8 +1,8 @@
 {
     "classes": {
-        "au.clef.model.AcmeService": {
+        "au.clef.app.model.AcmeService": {
             "methods": {
-                "personDescription(au.clef.model.Person)": {
+                "personDescription(au.clef.app.model.Person)": {
                     "displayName": null,
                     "hidden": false,
                     "order": null,
@@ -13,7 +13,7 @@
                         }
                     ]
                 },
-                "personName(au.clef.model.Person)": {
+                "personName(au.clef.app.model.Person)": {
                     "displayName": null,
                     "hidden": false,
                     "order": null,

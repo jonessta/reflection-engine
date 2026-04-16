@@ -1,5 +1,18 @@
 package au.clef
 
+import au.clef.engine.ReflectionEngine
+import au.clef.engine.model.InheritanceLevel
+import au.clef.engine.model.MethodBinding
+import au.clef.engine.model.MethodDescriptor
+import au.clef.engine.model.ParamDescriptor
+import au.clef.engine.model.Value
+import au.clef.metadata.DescriptorMetadataRegistry
+import au.clef.metadata.MetadataGenerator
+import au.clef.metadata.MetadataLoader
+import au.clef.metadata.MetadataValidator
+import au.clef.metadata.MetadataWriter
+import au.clef.metadata.ValidationIssue
+import au.clef.metadata.model.MetadataRoot
 import au.clef.model.AcmeService
 import au.clef.model.Person
 import java.io.File

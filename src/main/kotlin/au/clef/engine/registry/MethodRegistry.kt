@@ -1,5 +1,9 @@
-package au.clef
+package au.clef.engine.registry
 
+import au.clef.engine.model.InheritanceLevel
+import au.clef.engine.model.MethodBinding
+import au.clef.engine.model.MethodDescriptor
+import au.clef.engine.model.ParamDescriptor
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import java.util.concurrent.ConcurrentHashMap
@@ -20,11 +24,7 @@ class MethodRegistry {
             val isStatic = Modifier.isStatic(method.modifiers)
             val params: List<ParamDescriptor> = method.parameters.mapIndexed { i, p ->
                 ParamDescriptor(
-                    index = i,
-                    name = p.name ?: "arg$i",
-                    label = null,
-                    type = p.type.name,
-                    nullable = true
+                    index = i, name = p.name ?: "arg$i", label = null, type = p.type.name, nullable = true
                 )
             }
             val descriptor = MethodDescriptor(

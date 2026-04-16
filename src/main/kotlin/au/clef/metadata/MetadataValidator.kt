@@ -1,4 +1,12 @@
-package au.clef
+package au.clef.metadata
+
+import au.clef.metadata.model.ClassMetadata
+import au.clef.engine.model.InheritanceLevel
+import au.clef.metadata.model.MetadataRoot
+import au.clef.engine.model.MethodDescriptor
+import au.clef.metadata.model.MethodMetadata
+import au.clef.metadata.model.ParamMetadata
+import au.clef.engine.registry.MethodRegistry
 
 class MetadataValidator(private val methodRegistry: MethodRegistry = MethodRegistry()) {
 

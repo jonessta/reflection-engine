@@ -1,4 +1,4 @@
-package au.clef
+package au.clef.engine.model
 
 import java.lang.reflect.Method
 

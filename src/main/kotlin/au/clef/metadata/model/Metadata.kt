@@ -1,4 +1,4 @@
-package au.clef
+package au.clef.metadata.model
 
 import kotlinx.serialization.Serializable
 

@@ -1,4 +1,12 @@
-package au.clef
+package au.clef.engine
+
+import au.clef.engine.model.MethodBinding
+import au.clef.engine.model.MethodDescriptor
+import au.clef.MethodNotFoundException
+import au.clef.MissingInstanceException
+import au.clef.engine.convert.TypeConverter
+import au.clef.engine.registry.MethodRegistry
+import au.clef.metadata.DescriptorMetadataRegistry
 
 class ReflectionEngine(
     private val typeConverter: TypeConverter = TypeConverter(),
@@ -22,8 +30,7 @@ class ReflectionEngine(
                 methodName = id,
                 parameterTypes = emptyList(),
                 staticOnly = null,
-                availableOverloads = bindings.map { it.descriptor.id }
-            )
+                availableOverloads = bindings.map { it.descriptor.id })
     }
 
     fun findDescriptorExact(
@@ -39,8 +46,7 @@ class ReflectionEngine(
             methodName = methodName,
             parameterTypes = parameterTypes,
             staticOnly = null,
-            availableOverloads = methods.filter { it.name == methodName }.map { it.id.substringAfter("#") }
-        )
+            availableOverloads = methods.filter { it.name == methodName }.map { it.id.substringAfter("#") })
     }
 
     private fun methodKey(descriptor: MethodDescriptor): String =

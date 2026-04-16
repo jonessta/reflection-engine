@@ -1,4 +1,4 @@
-package au.clef
+package au.clef.engine.model
 
 data class MethodDescriptor(
     val id: String,

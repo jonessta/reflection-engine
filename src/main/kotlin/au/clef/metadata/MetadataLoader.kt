@@ -1,5 +1,6 @@
-package au.clef
+package au.clef.metadata
 
+import au.clef.metadata.model.MetadataRoot
 import kotlinx.serialization.json.Json
 import java.io.InputStream
 

@@ -1,4 +1,6 @@
-package au.clef
+package au.clef.api
+
+import au.clef.EngineException
 
 class InstanceRegistry(
     private val instances: Map<String, Any>

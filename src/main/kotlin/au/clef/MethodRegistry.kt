@@ -28,7 +28,7 @@ class MethodRegistry {
     ): MethodDescriptor {
         val methods: List<MethodDescriptor> = descriptors(clazz, inheritanceLevel)
         return methods.firstOrNull {
-            it.name == methodName && it.rawMethod.parameterTypes.toList() == parameterTypes
+            it.name == methodName && it.method.parameterTypes.toList() == parameterTypes
         } ?: throw MethodNotFoundException(
             owner = clazz,
             methodName = methodName,
@@ -90,7 +90,7 @@ class MethodRegistry {
                 parameters = params,
                 returnType = method.returnType,
                 isStatic = isStatic,
-                rawMethod = method
+                method = method
             )
         }
 

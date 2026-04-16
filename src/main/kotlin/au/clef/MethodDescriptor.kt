@@ -6,9 +6,9 @@ data class MethodDescriptor(
     val returnType: Class<*>,
     val isStatic: Boolean,
     // todo should rawMethod be here? or mapped
-    val rawMethod: java.lang.reflect.Method
+    val method: java.lang.reflect.Method
 ) {
     override fun toString(): String {
-        return "MethodDescriptor(name='$name', parameters=$parameters, returnType=$returnType, isStatic=$isStatic, rawMethod=$rawMethod)"
+        return "MethodDescriptor(name='$name', parameters=$parameters, returnType=$returnType, isStatic=$isStatic, rawMethod=$method)"
     }
 }

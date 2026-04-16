@@ -46,7 +46,7 @@ class MetadataGenerator(
 
     private fun buildMethodKey(descriptor: MethodDescriptor): String {
         val paramTypes: String =
-            descriptor.rawMethod.parameterTypes.joinToString(",") { it.name }
+            descriptor.method.parameterTypes.joinToString(",") { it.name }
         return "${descriptor.name}($paramTypes)"
     }
 

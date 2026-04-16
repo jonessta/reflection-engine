@@ -3,7 +3,7 @@ package au.clef
 class DescriptorMetadataRegistry(private val metadata: MetadataRoot) {
 
     fun apply(descriptor: MethodDescriptor): MethodDescriptor {
-        val className: String = descriptor.rawMethod.declaringClass.name
+        val className: String = descriptor.method.declaringClass.name
         val methodKey: String = buildMethodKey(descriptor)
         val classMeta = metadata.classes[className] ?: return descriptor
         val methodMeta = classMeta.methods[methodKey] ?: return descriptor
@@ -24,7 +24,7 @@ class DescriptorMetadataRegistry(private val metadata: MetadataRoot) {
     fun applyAll(descriptors: List<MethodDescriptor>): List<MethodDescriptor> = descriptors.map { apply(it) }
 
     private fun buildMethodKey(descriptor: MethodDescriptor): String {
-        val paramTypes = descriptor.rawMethod.parameterTypes.joinToString(",") { it.name }
+        val paramTypes = descriptor.method.parameterTypes.joinToString(",") { it.name }
         return "${descriptor.name}($paramTypes)"
     }
 }

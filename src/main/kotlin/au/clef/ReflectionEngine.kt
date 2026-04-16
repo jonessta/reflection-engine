@@ -19,7 +19,7 @@ class ReflectionEngine(
         val method: Method =
             function.javaMethod ?: throw EngineException("Function '${function.name}' is not backed by a Java method")
 
-        return methodRegistry.descriptors(method.declaringClass).first { it.rawMethod == method }
+        return methodRegistry.descriptors(method.declaringClass).first { it.method == method }
     }
 
     fun findDescriptorExact(
@@ -40,6 +40,6 @@ class ReflectionEngine(
 
         val target: Any? = if (descriptor.isStatic) null else instance
 
-        return descriptor.rawMethod.invoke(target, *convertedArgs.toTypedArray())
+        return descriptor.method.invoke(target, *convertedArgs.toTypedArray())
     }
 }

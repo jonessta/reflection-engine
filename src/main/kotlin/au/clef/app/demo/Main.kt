@@ -14,24 +14,21 @@ val outputFile = File("src/main/resources").resolve(resourcePath.removePrefix("/
 
 fun main() {
     val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(resourcePath)
-
-    val engine = ReflectionEngine(
-        metadataRegistry = DescriptorMetadataRegistry(metadata)
-    )
+    val engine = ReflectionEngine(metadataRegistry = DescriptorMetadataRegistry(metadata))
 
     generateMetadata()
 //    validate()
-
-//    showAllDescriptors(engine)
-//    runGuiStyleInstance(engine)
-//    runGuiStyleStatic(engine)
-//    runKotlinTopLevel(engine)
+//
+    showAllDescriptors(engine)
+    runGuiStyleInstance(engine)
+    runGuiStyleStatic(engine)
+    runKotlinTopLevel(engine)
 }
 
 fun generateMetadata() {
     val generator = MetadataGenerator()
     val metadata: MetadataRoot = generator.generate(
-        classes = listOf(AcmeService::class.java), inheritanceLevel = InheritanceLevel.DeclaredOnly
+        classes = listOf(AcmeService::class.java, Math::class.java), inheritanceLevel = InheritanceLevel.DeclaredOnly
     )
 
     MetadataWriter.writeToFile(metadata, outputFile)
@@ -72,21 +69,26 @@ fun runGuiStyleInstance(reflectionEngine: ReflectionEngine) {
     val result: Any? = reflectionEngine.invokeDescriptor(
         descriptor = descriptor, instance = service, args = listOf(personValue())
     )
-
     println("-----------> runGuiStyleInstance: $result")
 }
 
 fun runGuiStyleStatic(reflectionEngine: ReflectionEngine) {
+    reflectionEngine.descriptors(Math::class.java)
+
     val method: Method = Math::class.java.getMethod(
-        "max", Int::class.javaPrimitiveType, Int::class.javaPrimitiveType
+        "max",
+        Int::class.javaPrimitiveType!!,
+        Int::class.javaPrimitiveType!!
     )
 
     val methodId: MethodId = MethodId.fromMethod(method)
     val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(methodId)
 
     val result: Any? = reflectionEngine.invokeDescriptor(
-        descriptor = descriptor, args = listOf(
-            Value.Primitive("10"), Value.Primitive("20")
+        descriptor = descriptor,
+        args = listOf(
+            Value.Primitive("10"),
+            Value.Primitive("20")
         )
     )
 
@@ -96,7 +98,7 @@ fun runGuiStyleStatic(reflectionEngine: ReflectionEngine) {
 fun add(a: Int, b: Int): Int = a + b
 
 fun runKotlinTopLevel(reflectionEngine: ReflectionEngine) {
-    val declaringClass: Class<*> = Class.forName("au.clef.MainKt")
+    val declaringClass: Class<*> = Class.forName("au.clef.app.demo.MainKt")
 
     val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(
         clazz = declaringClass, methodName = "add", parameterTypes = listOf(
@@ -107,7 +109,6 @@ fun runKotlinTopLevel(reflectionEngine: ReflectionEngine) {
     val result: Any? = reflectionEngine.invokeDescriptor(
         descriptor, args = listOf(Value.Primitive("10"), Value.Primitive("20"))
     )
-
     println("-----------> runTopLevelFunction: $result")
 }
 

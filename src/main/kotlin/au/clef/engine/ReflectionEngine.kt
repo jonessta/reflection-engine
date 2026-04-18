@@ -1,6 +1,7 @@
 package au.clef.engine
 
 import au.clef.engine.convert.TypeConverter
+import au.clef.engine.model.InheritanceLevel
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
 import au.clef.engine.registry.MethodRegistry
@@ -12,8 +13,13 @@ class ReflectionEngine(
     private val metadataRegistry: DescriptorMetadataRegistry? = null
 ) {
 
-    fun descriptors(clazz: Class<*>): List<MethodDescriptor> {
-        val descriptors: List<MethodDescriptor> = methodRegistry.descriptors(clazz)
+    fun descriptors(
+        clazz: Class<*>,
+        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
+    ): List<MethodDescriptor> {
+        val descriptors: List<MethodDescriptor> =
+            methodRegistry.descriptors(clazz, inheritanceLevel)
+
         return metadataRegistry?.applyAll(descriptors) ?: descriptors
     }
 

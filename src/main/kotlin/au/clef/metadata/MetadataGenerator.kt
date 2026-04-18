@@ -15,10 +15,10 @@ class MetadataGenerator(
 
     fun generate(
         clazz: Class<*>,
-        // todo put back use this
         inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): MetadataRoot {
-        val descriptors: List<MethodDescriptor> = methodRegistry.descriptors(clazz)
+        val descriptors: List<MethodDescriptor> =
+            methodRegistry.descriptors(clazz, inheritanceLevel)
 
         val methods: Map<MethodId, MethodMetadata> =
             descriptors

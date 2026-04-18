@@ -1,6 +1,7 @@
 package au.clef.engine.registry
 
 import au.clef.engine.MethodNotFoundException
+import au.clef.engine.model.InheritanceLevel
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
 import au.clef.engine.model.ParamDescriptor
@@ -9,12 +10,22 @@ import java.util.concurrent.ConcurrentHashMap
 
 class MethodRegistry {
 
-    private val descriptorsByClass: MutableMap<Class<*>, List<MethodDescriptor>> = ConcurrentHashMap()
+    private data class DescriptorCacheKey(
+        val clazz: Class<*>,
+        val inheritanceLevel: InheritanceLevel
+    )
+
+    private val descriptorsByQuery: MutableMap<DescriptorCacheKey, List<MethodDescriptor>> = ConcurrentHashMap()
     private val descriptorsById: MutableMap<MethodId, MethodDescriptor> = ConcurrentHashMap()
 
-    fun descriptors(clazz: Class<*>): List<MethodDescriptor> {
-        return descriptorsByClass.getOrPut(clazz) {
-            val descriptors: List<MethodDescriptor> = buildDescriptors(clazz)
+    fun descriptors(
+        clazz: Class<*>,
+        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
+    ): List<MethodDescriptor> {
+        val key: DescriptorCacheKey = DescriptorCacheKey(clazz, inheritanceLevel)
+
+        return descriptorsByQuery.getOrPut(key) {
+            val descriptors: List<MethodDescriptor> = buildDescriptors(clazz, inheritanceLevel)
 
             descriptors.forEach { descriptor: MethodDescriptor ->
                 descriptorsById[descriptor.id] = descriptor
@@ -31,17 +42,12 @@ class MethodRegistry {
         )
     }
 
-    /**
-     * Returns all descriptors that have been discovered so far.
-     * NOTE: Only includes classes that have already been scanned via descriptors(clazz).
-     */
     fun allDescriptors(): List<MethodDescriptor> {
         return descriptorsById.values.toList()
     }
 
-    private fun buildDescriptors(clazz: Class<*>): List<MethodDescriptor> {
-        val methods: Array<Method> = clazz.declaredMethods
-
+    private fun buildDescriptors(clazz: Class<*>, inheritanceLevel: InheritanceLevel): List<MethodDescriptor> {
+        val methods: List<Method> = collectMethods(clazz, inheritanceLevel)
         return methods.map { method: Method ->
             MethodDescriptor(
                 id = MethodId.fromMethod(method),
@@ -52,9 +58,54 @@ class MethodRegistry {
         }
     }
 
+    private fun collectMethods(
+        clazz: Class<*>,
+        inheritanceLevel: InheritanceLevel
+    ): List<Method> {
+        return when (inheritanceLevel) {
+            InheritanceLevel.DeclaredOnly -> {
+                clazz.declaredMethods.toList()
+            }
+
+            InheritanceLevel.All -> {
+                val methods: MutableList<Method> = mutableListOf()
+                var current: Class<*>? = clazz
+
+                while (current != null) {
+                    methods += current.declaredMethods
+                    current = current.superclass
+                }
+
+                methods.distinctBy { method: Method ->
+                    MethodId.fromMethod(method)
+                }
+            }
+
+            is InheritanceLevel.Depth -> {
+                // todo remove this this should be checked at construction
+                require(inheritanceLevel.value >= 0) {
+                    "Depth must be >= 0"
+                }
+
+                val methods: MutableList<Method> = mutableListOf()
+                var current: Class<*>? = clazz
+                var depth: Int = 0
+
+                while (current != null && depth <= inheritanceLevel.value) {
+                    methods += current.declaredMethods
+                    current = current.superclass
+                    depth++
+                }
+
+                methods.distinctBy { method: Method ->
+                    MethodId.fromMethod(method)
+                }
+            }
+        }
+    }
+
     private fun buildParamDescriptors(method: Method): List<ParamDescriptor> {
         val paramTypes: Array<Class<*>> = method.parameterTypes
-
         return paramTypes.mapIndexed { index: Int, type: Class<*> ->
             ParamDescriptor(
                 index = index,
@@ -68,7 +119,7 @@ class MethodRegistry {
     }
 
     fun clearCache(): Unit {
-        descriptorsByClass.clear()
+        descriptorsByQuery.clear()
         descriptorsById.clear()
     }
 }

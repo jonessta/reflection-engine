@@ -16,5 +16,9 @@ sealed class InheritanceLevel {
      * Depth(1): class + direct parent
      * Depth(2): class + parent + grandparent
      */
-    data class Depth(val value: Int) : InheritanceLevel()
+    data class Depth(val value: Int) : InheritanceLevel() {
+        init {
+            require(value >= 0) { "Depth must be >= 0" }
+        }
+    }
 }

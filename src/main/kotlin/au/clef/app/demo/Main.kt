@@ -17,7 +17,7 @@ fun main() {
     val engine = ReflectionEngine(metadataRegistry = DescriptorMetadataRegistry(metadata))
 
     generateMetadata()
-//    validate()
+    validate()
 //
     showAllDescriptors(engine)
     runGuiStyleInstance(engine)
@@ -95,27 +95,14 @@ fun add(a: Int, b: Int): Int = a + b
 
 fun runKotlinTopLevel(reflectionEngine: ReflectionEngine) {
     val declaringClass: Class<*> = Class.forName("au.clef.app.demo.MainKt")
-
-    reflectionEngine.descriptors(declaringClass)
-
     val method: Method = declaringClass.getMethod(
-        "add",
-        Int::class.javaPrimitiveType!!,
-        Int::class.javaPrimitiveType!!
+        "add", Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!
     )
-
-    val methodId: MethodId = MethodId.fromMethod(method)
-
+    val methodId = MethodId.fromMethod(method)
     val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(methodId)
-
     val result: Any? = reflectionEngine.invokeDescriptor(
-        descriptor = descriptor,
-        args = listOf(
-            Value.Primitive("10"),
-            Value.Primitive("20")
-        )
+        descriptor, args = listOf(Value.Primitive("10"), Value.Primitive("20"))
     )
-
     println("-----------> runTopLevelFunction: $result")
 }
 

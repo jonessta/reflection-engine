@@ -22,32 +22,41 @@ class MethodRegistry {
         clazz: Class<*>,
         inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): List<MethodDescriptor> {
-        val key: DescriptorCacheKey = DescriptorCacheKey(clazz, inheritanceLevel)
-
+        val key = DescriptorCacheKey(clazz, inheritanceLevel)
         return descriptorsByQuery.getOrPut(key) {
             val descriptors: List<MethodDescriptor> = buildDescriptors(clazz, inheritanceLevel)
-
             descriptors.forEach { descriptor: MethodDescriptor ->
                 descriptorsById[descriptor.id] = descriptor
             }
-
             descriptors
         }
     }
 
     fun findDescriptorById(id: MethodId): MethodDescriptor {
+        descriptorsById[id]?.let { descriptor: MethodDescriptor ->
+            return descriptor
+        }
+
+        val clazz: Class<*> = classFromMethodId(id)
+
+        // todo put InheritanceLevel in function param ?
+        descriptors(clazz, InheritanceLevel.All)
+
         return descriptorsById[id] ?: throw MethodNotFoundException(
             methodId = id,
             available = descriptorsById.keys.map { methodId: MethodId -> methodId.toString() }
         )
     }
 
-    fun allDescriptors(): List<MethodDescriptor> {
-        return descriptorsById.values.toList()
-    }
+    fun allDescriptors(): List<MethodDescriptor> =
+        descriptorsById.values.toList()
 
-    private fun buildDescriptors(clazz: Class<*>, inheritanceLevel: InheritanceLevel): List<MethodDescriptor> {
+    private fun buildDescriptors(
+        clazz: Class<*>,
+        inheritanceLevel: InheritanceLevel
+    ): List<MethodDescriptor> {
         val methods: List<Method> = collectMethods(clazz, inheritanceLevel)
+
         return methods.map { method: Method ->
             MethodDescriptor(
                 id = MethodId.fromMethod(method),
@@ -82,7 +91,6 @@ class MethodRegistry {
             }
 
             is InheritanceLevel.Depth -> {
-                // todo remove this this should be checked at construction
                 require(inheritanceLevel.value >= 0) {
                     "Depth must be >= 0"
                 }
@@ -105,17 +113,22 @@ class MethodRegistry {
     }
 
     private fun buildParamDescriptors(method: Method): List<ParamDescriptor> {
-        val paramTypes: Array<Class<*>> = method.parameterTypes
-        return paramTypes.mapIndexed { index: Int, type: Class<*> ->
+        val parameters: Array<java.lang.reflect.Parameter> = method.parameters
+        return parameters.mapIndexed { index: Int, parameter: java.lang.reflect.Parameter ->
             ParamDescriptor(
                 index = index,
-                type = type,
-                reflectedName = "arg$index",
-                name = "arg$index",
+                type = parameter.type,
+                reflectedName = parameter.name ?: "arg$index",
+                name = parameter.name ?: "arg$index",
                 label = null,
-                nullable = !type.isPrimitive
+                nullable = !parameter.type.isPrimitive
             )
         }
+    }
+
+    private fun classFromMethodId(id: MethodId): Class<*> {
+        val className: String = id.value.substringBefore("#")
+        return Class.forName(className)
     }
 
     fun clearCache(): Unit {

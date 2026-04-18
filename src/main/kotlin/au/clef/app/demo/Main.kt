@@ -76,19 +76,15 @@ fun runGuiStyleStatic(reflectionEngine: ReflectionEngine) {
     reflectionEngine.descriptors(Math::class.java)
 
     val method: Method = Math::class.java.getMethod(
-        "max",
-        Int::class.javaPrimitiveType!!,
-        Int::class.javaPrimitiveType!!
+        "max", Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!
     )
 
     val methodId: MethodId = MethodId.fromMethod(method)
     val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(methodId)
 
     val result: Any? = reflectionEngine.invokeDescriptor(
-        descriptor = descriptor,
-        args = listOf(
-            Value.Primitive("10"),
-            Value.Primitive("20")
+        descriptor = descriptor, args = listOf(
+            Value.Primitive("10"), Value.Primitive("20")
         )
     )
 
@@ -100,21 +96,30 @@ fun add(a: Int, b: Int): Int = a + b
 fun runKotlinTopLevel(reflectionEngine: ReflectionEngine) {
     val declaringClass: Class<*> = Class.forName("au.clef.app.demo.MainKt")
 
-    val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(
-        clazz = declaringClass, methodName = "add", parameterTypes = listOf(
-            Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!
+    reflectionEngine.descriptors(declaringClass)
+
+    val method: Method = declaringClass.getMethod(
+        "add",
+        Int::class.javaPrimitiveType!!,
+        Int::class.javaPrimitiveType!!
+    )
+
+    val methodId: MethodId = MethodId.fromMethod(method)
+
+    val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(methodId)
+
+    val result: Any? = reflectionEngine.invokeDescriptor(
+        descriptor = descriptor,
+        args = listOf(
+            Value.Primitive("10"),
+            Value.Primitive("20")
         )
     )
 
-    val result: Any? = reflectionEngine.invokeDescriptor(
-        descriptor, args = listOf(Value.Primitive("10"), Value.Primitive("20"))
-    )
     println("-----------> runTopLevelFunction: $result")
 }
 
-private fun personValue(
-    name: String = "Alice", age: String = "25"
-): Value.Object = Value.Object(
+private fun personValue(name: String = "Alice", age: String = "25"): Value.Object = Value.Object(
     type = Person::class.java, fields = mapOf(
         "name" to Value.Primitive(name), "age" to Value.Primitive(age)
     )

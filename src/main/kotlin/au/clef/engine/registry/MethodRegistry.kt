@@ -1,78 +1,60 @@
 package au.clef.engine.registry
 
-import au.clef.engine.model.InheritanceLevel
-import au.clef.engine.model.MethodBinding
+import au.clef.engine.MethodNotFoundException
 import au.clef.engine.model.MethodDescriptor
+import au.clef.engine.model.MethodId
 import au.clef.engine.model.ParamDescriptor
 import java.lang.reflect.Method
-import java.lang.reflect.Modifier
 import java.util.concurrent.ConcurrentHashMap
 
 class MethodRegistry {
 
-    private data class CacheKey(val clazz: Class<*>, val inheritanceLevel: InheritanceLevel)
+    private val cache: MutableMap<Class<*>, List<MethodDescriptor>> = ConcurrentHashMap()
 
-    private val descriptorCache: MutableMap<CacheKey, List<MethodDescriptor>> = ConcurrentHashMap()
+    fun descriptors(clazz: Class<*>): List<MethodDescriptor> =
+        cache.getOrPut(clazz) { buildDescriptors(clazz) }
 
-    fun bindings(
-        clazz: Class<*>,
-        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-    ): List<MethodBinding> {
-        val methods: List<Method> = collectMethods(clazz, inheritanceLevel)
+    fun findDescriptorById(clazz: Class<*>, id: MethodId): MethodDescriptor {
+        val descriptors: List<MethodDescriptor> = descriptors(clazz)
 
-        return methods.map { method ->
-            val isStatic = Modifier.isStatic(method.modifiers)
-            val params: List<ParamDescriptor> = method.parameters.mapIndexed { i, p ->
-                ParamDescriptor(
-                    index = i, name = p.name ?: "arg$i", label = null, type = p.type.name, nullable = true
-                )
-            }
-            val descriptor = MethodDescriptor(
-                id = buildId(clazz, method),
-                name = method.name,
-                parameters = params,
-                returnType = method.returnType.name,
-                isStatic = isStatic
+        return descriptors.firstOrNull { descriptor: MethodDescriptor ->
+            descriptor.id == id
+        } ?: throw MethodNotFoundException(
+            owner = clazz,
+            methodId = id,
+            available = descriptors.map { descriptor: MethodDescriptor -> descriptor.id.toString() }
+        )
+    }
+
+    fun findDescriptorById(id: MethodId): MethodDescriptor {
+        return findDescriptorById(id.clazz, id)
+    }
+
+    private fun buildDescriptors(clazz: Class<*>): List<MethodDescriptor> {
+        val methods: Array<Method> = clazz.declaredMethods
+
+        return methods.map { method: Method ->
+            MethodDescriptor(
+                id = MethodId.fromMethod(method),
+                method = method,
+                displayName = null,
+                parameters = buildParamDescriptors(method)
             )
-
-            MethodBinding(descriptor = descriptor, method = method)
         }
     }
 
-    private fun buildId(clazz: Class<*>, method: Method): String {
-        val paramTypes: String = method.parameterTypes.joinToString(",") { it.name }
-        return "${clazz.name}#${method.name}($paramTypes)"
-    }
+    private fun buildParamDescriptors(method: Method): List<ParamDescriptor> {
+        val paramTypes: Array<Class<*>> = method.parameterTypes
 
-    fun clearCache() {
-        descriptorCache.clear()
-    }
-
-    private fun collectMethods(
-        clazz: Class<*>,
-        level: InheritanceLevel
-    ): List<Method> {
-        val result: MutableList<Method> = mutableListOf()
-        var current: Class<*>? = clazz
-        var depth: Int = 0
-        val maxDepth: Int = when (level) {
-            is InheritanceLevel.DeclaredOnly -> 0
-            is InheritanceLevel.All -> Int.MAX_VALUE
-            is InheritanceLevel.Depth -> level.value
+        return paramTypes.mapIndexed { index: Int, type: Class<*> ->
+            ParamDescriptor(
+                index = index,
+                type = type,
+                rawName = "arg$index",
+                name = "arg$index",
+                label = null,
+                nullable = !type.isPrimitive
+            )
         }
-        while (current != null && depth <= maxDepth) {
-            result += current.declaredMethods
-            current = current.superclass
-            depth++
-        }
-        return result
-            .filter { method: Method ->
-                Modifier.isPublic(method.modifiers) &&
-                        !method.isSynthetic &&
-                        !method.isBridge
-            }
-            .distinctBy { method: Method ->
-                "${method.name}(${method.parameterTypes.joinToString(",") { it.name }})"
-            }
     }
 }

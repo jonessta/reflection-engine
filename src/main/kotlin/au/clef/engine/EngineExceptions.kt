@@ -1,32 +1,16 @@
 package au.clef.engine
 
+import au.clef.engine.model.MethodId
+
 open class EngineException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 
 class MethodNotFoundException(
     val owner: Class<*>,
-    val methodName: String,
-    val parameterTypes: List<Class<*>>? = null,
-    val staticOnly: Boolean? = null,
-    val availableOverloads: List<String> = emptyList()
-) : EngineException(
-    buildString {
-        val kind = when (staticOnly) {
-            true -> "static method"
-            false -> "method"
-            null -> "method"
-        }
-        append("No $kind '$methodName")
-        if (parameterTypes != null) {
-            append("(")
-            append(parameterTypes.joinToString(", ") { it.simpleName })
-            append(")")
-        }
-        append("' found on ${owner.name}")
-        if (availableOverloads.isNotEmpty()) {
-            append(". Available overloads: ")
-            append(availableOverloads.joinToString(" | "))
-        }
-    })
+    val methodId: MethodId,
+    val available: List<String>
+) : RuntimeException(
+    "Method '${methodId}' not found on ${owner.name}. Available: ${available.joinToString()}"
+)
 
 class MissingInstanceException(methodName: String) : EngineException("Instance required for method $methodName")
 

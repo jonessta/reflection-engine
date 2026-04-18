@@ -9,25 +9,32 @@ import java.util.concurrent.ConcurrentHashMap
 
 class MethodRegistry {
 
-    private val cache: MutableMap<Class<*>, List<MethodDescriptor>> = ConcurrentHashMap()
+    private val descriptorsByClass: MutableMap<Class<*>, List<MethodDescriptor>> = ConcurrentHashMap()
+    private val descriptorsById: MutableMap<MethodId, MethodDescriptor> = ConcurrentHashMap()
 
-    fun descriptors(clazz: Class<*>): List<MethodDescriptor> =
-        cache.getOrPut(clazz) { buildDescriptors(clazz) }
+    fun descriptors(clazz: Class<*>): List<MethodDescriptor> {
+        return descriptorsByClass.getOrPut(clazz) {
+            val descriptors: List<MethodDescriptor> = buildDescriptors(clazz)
+            descriptors.forEach { descriptor: MethodDescriptor ->
+                descriptorsById[descriptor.id] = descriptor
+            }
+            descriptors
+        }
+    }
 
-    fun findDescriptorById(clazz: Class<*>, id: MethodId): MethodDescriptor {
+    fun findDescriptorById(id: MethodId): MethodDescriptor {
+        descriptorsById[id]?.let { descriptor: MethodDescriptor ->
+            return descriptor
+        }
+
+        val clazz: Class<*> = id.declaringClass
         val descriptors: List<MethodDescriptor> = descriptors(clazz)
 
-        return descriptors.firstOrNull { descriptor: MethodDescriptor ->
-            descriptor.id == id
-        } ?: throw MethodNotFoundException(
+        return descriptorsById[id] ?: throw MethodNotFoundException(
             owner = clazz,
             methodId = id,
             available = descriptors.map { descriptor: MethodDescriptor -> descriptor.id.toString() }
         )
-    }
-
-    fun findDescriptorById(id: MethodId): MethodDescriptor {
-        return findDescriptorById(id.clazz, id)
     }
 
     private fun buildDescriptors(clazz: Class<*>): List<MethodDescriptor> {
@@ -50,11 +57,16 @@ class MethodRegistry {
             ParamDescriptor(
                 index = index,
                 type = type,
-                rawName = "arg$index",
+                reflectedName = "arg$index",
                 name = "arg$index",
                 label = null,
                 nullable = !type.isPrimitive
             )
         }
+    }
+
+    fun clearCache(): Unit {
+        descriptorsByClass.clear()
+        descriptorsById.clear()
     }
 }

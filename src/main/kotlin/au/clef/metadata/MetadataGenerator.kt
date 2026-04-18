@@ -17,7 +17,7 @@ class MetadataGenerator(private val methodRegistry: MethodRegistry = MethodRegis
         val descriptors: List<MethodDescriptor> = methodRegistry.bindings(clazz, inheritanceLevel).map { it.descriptor }
 
         val methods: Map<String, MethodMetadata> =
-            descriptors.sortedBy { it.name }.associate { descriptor: MethodDescriptor ->
+            descriptors.sortedBy { it.reflectedName }.associate { descriptor: MethodDescriptor ->
                     buildMethodKey(descriptor) to MethodMetadata(
                         parameters = descriptor.parameters.map { param: ParamDescriptor ->
                             ParamMetadata(name = defaultParameterName(param))

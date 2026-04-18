@@ -38,13 +38,13 @@ class ReflectionEngine(
     ): MethodDescriptor {
         val methods: List<MethodDescriptor> = descriptors(clazz)
         return methods.firstOrNull {
-            it.name == methodName && methodKey(it) == "$methodName(${parameterTypes.joinToString(",") { it.name }})"
+            it.reflectedName == methodName && methodKey(it) == "$methodName(${parameterTypes.joinToString(",") { it.name }})"
         } ?: throw MethodNotFoundException(
             owner = clazz,
             methodName = methodName,
             parameterTypes = parameterTypes,
             staticOnly = null,
-            availableOverloads = methods.filter { it.name == methodName }.map { it.id.substringAfter("#") })
+            availableOverloads = methods.filter { it.reflectedName == methodName }.map { it.id.substringAfter("#") })
     }
 
     private fun methodKey(descriptor: MethodDescriptor): String =
@@ -58,7 +58,7 @@ class ReflectionEngine(
         val descriptor: MethodDescriptor = binding.descriptor
 
         if (!descriptor.isStatic && instance == null) {
-            throw MissingInstanceException(descriptor.name)
+            throw MissingInstanceException(descriptor.reflectedName)
         }
 
         val convertedArgs: List<Any?> = args.mapIndexed { i, arg ->

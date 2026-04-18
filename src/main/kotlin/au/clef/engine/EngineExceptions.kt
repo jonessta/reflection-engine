@@ -5,8 +5,7 @@ import au.clef.engine.model.MethodId
 open class EngineException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 
 class MethodNotFoundException(
-    val methodId: MethodId,
-    val available: List<String>
+    val methodId: MethodId, val available: List<String>
 ) : RuntimeException(
     "Method '${methodId}' not found. Available: ${available.joinToString()}"
 )

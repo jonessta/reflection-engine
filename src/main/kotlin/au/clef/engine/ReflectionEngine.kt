@@ -15,7 +15,6 @@ class ReflectionEngine(
         clazz: Class<*>, inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): List<MethodDescriptor> {
         val descriptors: List<MethodDescriptor> = methodRegistry.descriptors(clazz, inheritanceLevel)
-
         return metadataRegistry?.applyAll(descriptors) ?: descriptors
     }
 

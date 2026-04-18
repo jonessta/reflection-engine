@@ -1,26 +1,21 @@
 package au.clef.engine.registry
 
 import au.clef.engine.MethodNotFoundException
-import au.clef.engine.model.InheritanceLevel
-import au.clef.engine.model.MethodDescriptor
-import au.clef.engine.model.MethodId
-import au.clef.engine.model.ParamDescriptor
+import au.clef.engine.model.*
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 
 class MethodRegistry {
 
     private data class DescriptorCacheKey(
-        val clazz: Class<*>,
-        val inheritanceLevel: InheritanceLevel
+        val clazz: Class<*>, val inheritanceLevel: InheritanceLevel
     )
 
     private val descriptorsByQuery: MutableMap<DescriptorCacheKey, List<MethodDescriptor>> = ConcurrentHashMap()
     private val descriptorsById: MutableMap<MethodId, MethodDescriptor> = ConcurrentHashMap()
 
     fun descriptors(
-        clazz: Class<*>,
-        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
+        clazz: Class<*>, inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): List<MethodDescriptor> {
         val key = DescriptorCacheKey(clazz, inheritanceLevel)
         return descriptorsByQuery.getOrPut(key) {
@@ -36,27 +31,17 @@ class MethodRegistry {
         descriptorsById[id]?.let { descriptor: MethodDescriptor ->
             return descriptor
         }
-
         val clazz: Class<*> = classFromMethodId(id)
-
         // todo put InheritanceLevel in function param ?
         descriptors(clazz, InheritanceLevel.All)
-
         return descriptorsById[id] ?: throw MethodNotFoundException(
-            methodId = id,
-            available = descriptorsById.keys.map { methodId: MethodId -> methodId.toString() }
-        )
+            methodId = id, available = descriptorsById.keys.map { methodId: MethodId -> methodId.toString() })
     }
 
-    fun allDescriptors(): List<MethodDescriptor> =
-        descriptorsById.values.toList()
+    fun allDescriptors(): List<MethodDescriptor> = descriptorsById.values.toList()
 
-    private fun buildDescriptors(
-        clazz: Class<*>,
-        inheritanceLevel: InheritanceLevel
-    ): List<MethodDescriptor> {
+    private fun buildDescriptors(clazz: Class<*>, inheritanceLevel: InheritanceLevel): List<MethodDescriptor> {
         val methods: List<Method> = collectMethods(clazz, inheritanceLevel)
-
         return methods.map { method: Method ->
             MethodDescriptor(
                 id = MethodId.fromMethod(method),
@@ -67,44 +52,34 @@ class MethodRegistry {
         }
     }
 
-    private fun collectMethods(
-        clazz: Class<*>,
-        inheritanceLevel: InheritanceLevel
-    ): List<Method> {
+    private fun collectMethods(clazz: Class<*>, inheritanceLevel: InheritanceLevel): List<Method> {
         return when (inheritanceLevel) {
             InheritanceLevel.DeclaredOnly -> {
                 clazz.declaredMethods.toList()
             }
-
             InheritanceLevel.All -> {
                 val methods: MutableList<Method> = mutableListOf()
                 var current: Class<*>? = clazz
-
                 while (current != null) {
                     methods += current.declaredMethods
                     current = current.superclass
                 }
-
                 methods.distinctBy { method: Method ->
                     MethodId.fromMethod(method)
                 }
             }
-
             is InheritanceLevel.Depth -> {
                 require(inheritanceLevel.value >= 0) {
                     "Depth must be >= 0"
                 }
-
                 val methods: MutableList<Method> = mutableListOf()
                 var current: Class<*>? = clazz
                 var depth: Int = 0
-
                 while (current != null && depth <= inheritanceLevel.value) {
                     methods += current.declaredMethods
                     current = current.superclass
                     depth++
                 }
-
                 methods.distinctBy { method: Method ->
                     MethodId.fromMethod(method)
                 }

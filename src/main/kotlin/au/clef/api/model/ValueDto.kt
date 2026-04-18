@@ -21,7 +21,6 @@ sealed class ValueDto {
     @Serializable
     @SerialName("object")
     data class Object(
-        val type: String,
-        val fields: Map<String, ValueDto>
+        val type: String, val fields: Map<String, ValueDto>
     ) : ValueDto()
 }

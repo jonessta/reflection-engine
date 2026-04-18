@@ -8,6 +8,7 @@ import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.MethodDescriptor
 import au.clef.metadata.DescriptorMetadataRegistry
 import au.clef.metadata.MetadataLoader
+import au.clef.metadata.model.MetadataRoot
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
@@ -17,58 +18,32 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-/*
-todo
+import io.ktor.http.HttpHeaders
+import io.ktor.server.application.install
+import io.ktor.server.plugins.cors.routing.CORS
+import io.ktor.http.*
 
-Invoke instance method
+fun Application.module() {
+    install(CORS) {
+        allowHost("localhost:63342", schemes = listOf("http"))
+        allowHeader(HttpHeaders.ContentType)
+        allowMethod(HttpMethod.Get)
+        allowMethod(HttpMethod.Post)
+    }
+}
 
-curl -X POST http://localhost:8080/invoke \
-  -H "Content-Type: application/json" \
-  -d '{
-    "methodId": "au.clef.model.AcmeService#personName(au.clef.model.Person)",
-    "targetId": "acmeService",
-    "args": [
-      {
-        "type": "object",
-        "value": {
-          "type": "au.clef.model.Person",
-          "fields": {
-            "name": { "type": "primitive", "value": "Alice" },
-            "age": { "type": "primitive", "value": "25" }
-          }
-        }
-      }
-    ]
-  }'
-
-Invoke static method
-
-curl -X POST http://localhost:8080/invoke \
-  -H "Content-Type: application/json" \
-  -d '{
-    "methodId": "java.lang.Math#max(int,int)",
-    "args": [
-      { "type": "primitive", "value": "10" },
-      { "type": "primitive", "value": "20" }
-    ]
-  }'
-
- */
 class WebServer {
 
-    fun start(): Unit {
-        val metadata = MetadataLoader.fromResourceOrEmpty("/config/method-metadata.json")
-
-        val engine: ReflectionEngine = ReflectionEngine(
+    fun start() {
+        val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty("/config/method-metadata.json")
+        val engine = ReflectionEngine(
             metadataRegistry = DescriptorMetadataRegistry(metadata)
         )
-
-        val instanceRegistry: InstanceRegistry = InstanceRegistry(
+        val instanceRegistry = InstanceRegistry(
             mapOf("acmeService" to AcmeService())
         )
-
-        val valueMapper: ValueMapper = ValueMapper(instanceRegistry)
-        val api: ReflectionServiceApi = ReflectionServiceApi(engine, instanceRegistry, valueMapper)
+        val valueMapper = ValueMapper(instanceRegistry)
+        val api = ReflectionServiceApi(engine, instanceRegistry, valueMapper)
 
         embeddedServer(Netty, port = 8080) {
             install(ContentNegotiation) { json() }

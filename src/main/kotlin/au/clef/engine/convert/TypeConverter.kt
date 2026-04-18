@@ -5,9 +5,7 @@ import au.clef.engine.TypeMismatchException
 import au.clef.engine.model.Value
 import java.lang.reflect.Constructor
 import java.lang.reflect.Field
-import kotlin.reflect.KClass
-import kotlin.reflect.KFunction
-import kotlin.reflect.KParameter
+import kotlin.reflect.*
 import kotlin.reflect.full.primaryConstructor
 
 class TypeConverter {

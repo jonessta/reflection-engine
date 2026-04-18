@@ -6,5 +6,7 @@ class AcmeService {
         return person.name
     }
 
-    fun personDescription(person: Person): String { return person.toString()}
+    fun personDescription(person: Person): String {
+        return person.toString()
+    }
 }

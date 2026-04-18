@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Reflection Engine Client</title>
     <style>
         :root {
@@ -18,7 +18,9 @@
             --warn: #ffd166;
         }
 
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
 
         body {
             margin: 0;
@@ -33,8 +35,13 @@
             padding: 24px;
         }
 
-        h1, h2, h3 { margin: 0 0 12px; }
-        p { color: var(--muted); }
+        h1, h2, h3 {
+            margin: 0 0 12px;
+        }
+
+        p {
+            color: var(--muted);
+        }
 
         .grid {
             display: grid;
@@ -48,10 +55,13 @@
             border: 1px solid var(--border);
             border-radius: 18px;
             padding: 18px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
         }
 
-        .stack { display: grid; gap: 12px; }
+        .stack {
+            display: grid;
+            gap: 12px;
+        }
 
         label {
             display: block;
@@ -126,7 +136,10 @@
             word-break: break-all;
         }
 
-        .muted { color: var(--muted); }
+        .muted {
+            color: var(--muted);
+        }
+
         .pill {
             display: inline-block;
             padding: 4px 8px;
@@ -154,15 +167,30 @@
             min-height: 88px;
         }
 
-        .status.ok { color: var(--ok); }
-        .status.err { color: var(--err); }
-        .status.warn { color: var(--warn); }
+        .status.ok {
+            color: var(--ok);
+        }
 
-        .small { font-size: 12px; }
+        .status.err {
+            color: var(--err);
+        }
+
+        .status.warn {
+            color: var(--warn);
+        }
+
+        .small {
+            font-size: 12px;
+        }
 
         @media (max-width: 900px) {
-            .grid { grid-template-columns: 1fr; }
-            .method-list { max-height: none; }
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .method-list {
+                max-height: none;
+            }
         }
     </style>
 </head>
@@ -179,52 +207,52 @@
 
             <div>
                 <label for="baseUrl">Base URL</label>
-                <input id="baseUrl" value="http://localhost:8080" />
+                <input id="baseUrl" value="http://localhost:8080"/>
             </div>
 
             <div>
                 <label for="className">Class name</label>
-                <input id="className" value="au.clef.app.demo.model.AcmeService" />
+                <input id="className" value="au.clef.app.demo.model.AcmeService"/>
             </div>
 
             <div class="row">
                 <div>
                     <label for="targetId">Target ID (instance methods)</label>
-                    <input id="targetId" value="acmeService" />
+                    <input id="targetId" value="acmeService"/>
                 </div>
                 <button id="loadBtn">Load Methods</button>
             </div>
 
             <div>
-                <span id="status" class="status muted">Not connected.</span>
+                <span class="status muted" id="status">Not connected.</span>
             </div>
 
             <div class="stack">
                 <h3>Methods</h3>
-                <div id="methodList" class="method-list"></div>
+                <div class="method-list" id="methodList"></div>
             </div>
         </section>
 
         <section class="card stack">
             <h2>Invoke</h2>
 
-            <div id="selectedMeta" class="muted">No method selected.</div>
+            <div class="muted" id="selectedMeta">No method selected.</div>
 
-            <div id="argsForm" class="stack"></div>
+            <div class="stack" id="argsForm"></div>
 
             <div class="row">
-                <button id="invokeBtn" disabled>Invoke</button>
-                <button id="sampleBtn" class="secondary" disabled>Fill Sample</button>
+                <button disabled id="invokeBtn">Invoke</button>
+                <button class="secondary" disabled id="sampleBtn">Fill Sample</button>
             </div>
 
             <div class="stack">
                 <h3>Request Preview</h3>
-                <div id="requestPreview" class="result small"></div>
+                <div class="result small" id="requestPreview"></div>
             </div>
 
             <div class="stack">
                 <h3>Response</h3>
-                <div id="responseBox" class="result"></div>
+                <div class="result" id="responseBox"></div>
             </div>
         </section>
     </div>
@@ -348,12 +376,12 @@
 
     function sampleValueForType(param) {
         const typeName = param.type || '';
-        if (typeName === 'au.clef.model.Person') {
+        if (typeName === 'au.clef.app.demo.model.Person') {
             return JSON.stringify({
-                type: 'au.clef.model.Person',
+                type: 'au.clef.app.demo.model.Person',
                 fields: {
-                    name: { type: 'primitive', value: 'Alice' },
-                    age: { type: 'primitive', value: '25' }
+                    name: {type: 'primitive', value: 'Alice'},
+                    age: {type: 'primitive', value: '25'}
                 }
             }, null, 2);
         }
@@ -372,7 +400,7 @@
     function parseArgInput(rawText, param) {
         const text = rawText.trim();
         if (!text) {
-            return { type: 'primitive', value: '' };
+            return {type: 'primitive', value: ''};
         }
 
         if (text.startsWith('{') || text.startsWith('[')) {
@@ -383,7 +411,7 @@
             }
         }
 
-        return { type: 'primitive', value: text };
+        return {type: 'primitive', value: text};
     }
 
     function buildRequest() {
@@ -470,7 +498,7 @@
         try {
             const response = await fetch(`${baseUrl}/invoke`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(request),
             });
 

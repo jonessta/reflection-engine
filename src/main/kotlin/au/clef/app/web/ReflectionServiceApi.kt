@@ -4,7 +4,8 @@ import au.clef.api.InstanceRegistry
 import au.clef.api.ValueMapper
 import au.clef.api.model.InvocationRequest
 import au.clef.engine.ReflectionEngine
-import au.clef.engine.model.MethodBinding
+import au.clef.engine.model.MethodDescriptor
+import au.clef.engine.model.MethodId
 import au.clef.engine.model.Value
 
 class ReflectionServiceApi(
@@ -14,13 +15,13 @@ class ReflectionServiceApi(
 ) {
 
     fun invoke(request: InvocationRequest): Any? {
-        val className: String = request.methodId.substringBefore("#")
-        val clazz: Class<*> = Class.forName(className)
+        // todo this should be normalize in the api layer invoke should just take a MethodId
+        val methodId: MethodId = MethodId.fromString(request.methodId)
 
-        val binding: MethodBinding = engine.findBindingById(clazz, request.methodId)
+        val descriptor: MethodDescriptor = engine.findDescriptorExact(methodId)
 
         val instance: Any? =
-            if (binding.descriptor.isStatic) {
+            if (descriptor.isStatic) {
                 null
             } else {
                 val targetId: String =
@@ -28,10 +29,13 @@ class ReflectionServiceApi(
                 instanceRegistry.get(targetId)
             }
 
-        val args: List<Value> = request.args.map { dto -> valueMapper.toEngineValue(dto) }
+        val args: List<Value> =
+            request.args.map { dto ->
+                valueMapper.toEngineValue(dto)
+            }
 
-        return engine.invokeBinding(
-            binding = binding,
+        return engine.invokeDescriptor(
+            descriptor = descriptor,
             instance = instance,
             args = args
         )

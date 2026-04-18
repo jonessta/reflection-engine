@@ -1,47 +1,65 @@
 package au.clef.metadata
 
-import au.clef.metadata.model.ClassMetadata
 import au.clef.engine.model.InheritanceLevel
-import au.clef.metadata.model.MetadataRoot
 import au.clef.engine.model.MethodDescriptor
-import au.clef.metadata.model.MethodMetadata
+import au.clef.engine.model.MethodId
 import au.clef.engine.model.ParamDescriptor
-import au.clef.metadata.model.ParamMetadata
 import au.clef.engine.registry.MethodRegistry
+import au.clef.metadata.model.MetadataRoot
+import au.clef.metadata.model.MethodMetadata
+import au.clef.metadata.model.ParamMetadata
 
-class MetadataGenerator(private val methodRegistry: MethodRegistry = MethodRegistry()) {
+class MetadataGenerator(
+    private val methodRegistry: MethodRegistry = MethodRegistry()
+) {
 
     fun generate(
-        clazz: Class<*>, inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
+        clazz: Class<*>,
+        // todo put back use this
+        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): MetadataRoot {
-        val descriptors: List<MethodDescriptor> = methodRegistry.bindings(clazz, inheritanceLevel).map { it.descriptor }
+        val descriptors: List<MethodDescriptor> = methodRegistry.descriptors(clazz)
 
-        val methods: Map<String, MethodMetadata> =
-            descriptors.sortedBy { it.reflectedName }.associate { descriptor: MethodDescriptor ->
-                    buildMethodKey(descriptor) to MethodMetadata(
+        val methods: Map<MethodId, MethodMetadata> =
+            descriptors
+                .sortedBy { descriptor: MethodDescriptor -> descriptor.reflectedName }
+                .associate { descriptor: MethodDescriptor ->
+                    descriptor.id to MethodMetadata(
                         parameters = descriptor.parameters.map { param: ParamDescriptor ->
-                            ParamMetadata(name = defaultParameterName(param))
-                        })
+                            ParamMetadata(
+                                name = defaultParameterName(param)
+                            )
+                        }
+                    )
                 }
 
         return MetadataRoot(
-            classes = mapOf(clazz.name to ClassMetadata(methods = methods))
+            methods = methods
         )
     }
 
     fun generate(
-        classes: List<Class<*>>, inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
+        classes: List<Class<*>>,
+        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): MetadataRoot {
-        val classEntries: Map<String, ClassMetadata> = classes.associate { clazz: Class<*> ->
-            val single: MetadataRoot = generate(clazz, inheritanceLevel)
-            clazz.name to (single.classes[clazz.name] ?: ClassMetadata())
-        }
+        val methods: Map<MethodId, MethodMetadata> =
+            classes
+                .flatMap { clazz: Class<*> ->
+                    generate(clazz, inheritanceLevel).methods.entries
+                }
+                .associate { entry: Map.Entry<MethodId, MethodMetadata> ->
+                    entry.key to entry.value
+                }
 
-        return MetadataRoot(classes = classEntries)
+        return MetadataRoot(
+            methods = methods
+        )
     }
 
-    private fun buildMethodKey(descriptor: MethodDescriptor): String = descriptor.id.substringAfter("#")
-
     private fun defaultParameterName(param: ParamDescriptor): String =
-        if (param.name.startsWith("arg")) "param${param.index}" else param.name
+        if (param.name.startsWith("arg")) {
+            "param${param.index}"
+        } else {
+            param.name
+        }
 }

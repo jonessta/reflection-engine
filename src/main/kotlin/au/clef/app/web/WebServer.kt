@@ -3,7 +3,7 @@ package au.clef.app.web
 import au.clef.api.InstanceRegistry
 import au.clef.api.ValueMapper
 import au.clef.api.model.InvocationRequest
-import au.clef.app.model.AcmeService
+import au.clef.app.demo.model.AcmeService
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.MethodDescriptor
 import au.clef.metadata.DescriptorMetadataRegistry

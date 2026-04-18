@@ -5,11 +5,10 @@ import au.clef.engine.model.MethodId
 open class EngineException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 
 class MethodNotFoundException(
-    val owner: Class<*>,
     val methodId: MethodId,
     val available: List<String>
 ) : RuntimeException(
-    "Method '${methodId}' not found on ${owner.name}. Available: ${available.joinToString()}"
+    "Method '${methodId}' not found. Available: ${available.joinToString()}"
 )
 
 class MissingInstanceException(methodName: String) : EngineException("Instance required for method $methodName")

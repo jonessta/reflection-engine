@@ -15,26 +15,28 @@ class MethodRegistry {
     fun descriptors(clazz: Class<*>): List<MethodDescriptor> {
         return descriptorsByClass.getOrPut(clazz) {
             val descriptors: List<MethodDescriptor> = buildDescriptors(clazz)
+
             descriptors.forEach { descriptor: MethodDescriptor ->
                 descriptorsById[descriptor.id] = descriptor
             }
+
             descriptors
         }
     }
 
     fun findDescriptorById(id: MethodId): MethodDescriptor {
-        descriptorsById[id]?.let { descriptor: MethodDescriptor ->
-            return descriptor
-        }
-
-        val clazz: Class<*> = id.declaringClass
-        val descriptors: List<MethodDescriptor> = descriptors(clazz)
-
         return descriptorsById[id] ?: throw MethodNotFoundException(
-            owner = clazz,
             methodId = id,
-            available = descriptors.map { descriptor: MethodDescriptor -> descriptor.id.toString() }
+            available = descriptorsById.keys.map { methodId: MethodId -> methodId.toString() }
         )
+    }
+
+    /**
+     * Returns all descriptors that have been discovered so far.
+     * NOTE: Only includes classes that have already been scanned via descriptors(clazz).
+     */
+    fun allDescriptors(): List<MethodDescriptor> {
+        return descriptorsById.values.toList()
     }
 
     private fun buildDescriptors(clazz: Class<*>): List<MethodDescriptor> {

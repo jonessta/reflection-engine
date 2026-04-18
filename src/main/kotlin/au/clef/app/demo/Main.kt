@@ -1,21 +1,13 @@
 package au.clef.app.demo
 
+import au.clef.app.demo.model.AcmeService
+import au.clef.app.demo.model.Person
 import au.clef.engine.ReflectionEngine
-import au.clef.engine.model.InheritanceLevel
-import au.clef.engine.model.MethodBinding
-import au.clef.engine.model.MethodDescriptor
-import au.clef.engine.model.ParamDescriptor
-import au.clef.engine.model.Value
-import au.clef.metadata.DescriptorMetadataRegistry
-import au.clef.metadata.MetadataGenerator
-import au.clef.metadata.MetadataLoader
-import au.clef.metadata.MetadataValidator
-import au.clef.metadata.MetadataWriter
-import au.clef.metadata.ValidationIssue
+import au.clef.engine.model.*
+import au.clef.metadata.*
 import au.clef.metadata.model.MetadataRoot
-import au.clef.app.model.AcmeService
-import au.clef.app.model.Person
 import java.io.File
+import java.lang.reflect.Method
 
 const val resourcePath = "/config/method-metadata.json"
 val outputFile = File("src/main/resources").resolve(resourcePath.removePrefix("/"))
@@ -50,10 +42,8 @@ fun generateMetadata() {
 
 fun validate() {
     val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(resourcePath)
-
     val validator = MetadataValidator()
     val issues: List<ValidationIssue> = validator.validate(metadata)
-
     if (issues.isEmpty()) {
         println("Metadata valid")
     } else {
@@ -65,7 +55,6 @@ fun validate() {
 
 fun showAllDescriptors(reflectionEngine: ReflectionEngine) {
     val all: List<MethodDescriptor> = reflectionEngine.descriptors(AcmeService::class.java)
-
     all.forEach { descriptor: MethodDescriptor ->
         println("METHOD: ${descriptor.id}")
         descriptor.parameters.forEach { param: ParamDescriptor ->
@@ -76,34 +65,27 @@ fun showAllDescriptors(reflectionEngine: ReflectionEngine) {
 
 fun runGuiStyleInstance(reflectionEngine: ReflectionEngine) {
     val service = AcmeService()
-    val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(
-        clazz = AcmeService::class.java, methodName = "personName", parameterTypes = listOf(Person::class.java)
-    )
+    val method: Method = AcmeService::class.java.getMethod("personName", Person::class.java)
+    val methodId: MethodId = MethodId.fromMethod(method)
+    val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(methodId)
 
-    val binding: MethodBinding = reflectionEngine.findBindingById(
-        clazz = AcmeService::class.java, id = descriptor.id
-    )
-
-    val result: Any? = reflectionEngine.invokeBinding(
-        binding = binding, instance = service, args = listOf(personValue())
+    val result: Any? = reflectionEngine.invokeDescriptor(
+        descriptor = descriptor, instance = service, args = listOf(personValue())
     )
 
     println("-----------> runGuiStyleInstance: $result")
 }
 
 fun runGuiStyleStatic(reflectionEngine: ReflectionEngine) {
-    val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(
-        clazz = Math::class.java, methodName = "max", parameterTypes = listOf(
-            Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!
-        )
+    val method: Method = Math::class.java.getMethod(
+        "max", Int::class.javaPrimitiveType, Int::class.javaPrimitiveType
     )
 
-    val binding: MethodBinding = reflectionEngine.findBindingById(
-        clazz = Math::class.java, id = descriptor.id
-    )
+    val methodId: MethodId = MethodId.fromMethod(method)
+    val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(methodId)
 
-    val result: Any? = reflectionEngine.invokeBinding(
-        binding = binding, args = listOf(
+    val result: Any? = reflectionEngine.invokeDescriptor(
+        descriptor = descriptor, args = listOf(
             Value.Primitive("10"), Value.Primitive("20")
         )
     )
@@ -122,14 +104,8 @@ fun runKotlinTopLevel(reflectionEngine: ReflectionEngine) {
         )
     )
 
-    val binding: MethodBinding = reflectionEngine.findBindingById(
-        clazz = declaringClass, id = descriptor.id
-    )
-
-    val result: Any? = reflectionEngine.invokeBinding(
-        binding = binding, args = listOf(
-            Value.Primitive("10"), Value.Primitive("20")
-        )
+    val result: Any? = reflectionEngine.invokeDescriptor(
+        descriptor, args = listOf(Value.Primitive("10"), Value.Primitive("20"))
     )
 
     println("-----------> runTopLevelFunction: $result")

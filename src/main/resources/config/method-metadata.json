@@ -1,30 +1,26 @@
 {
-    "classes": {
-        "au.clef.app.model.AcmeService": {
-            "methods": {
-                "personDescription(au.clef.app.model.Person)": {
-                    "displayName": null,
-                    "hidden": false,
-                    "order": null,
-                    "parameters": [
-                        {
-                            "name": "param0",
-                            "label": null
-                        }
-                    ]
-                },
-                "personName(au.clef.app.model.Person)": {
-                    "displayName": null,
-                    "hidden": false,
-                    "order": null,
-                    "parameters": [
-                        {
-                            "name": "param0",
-                            "label": null
-                        }
-                    ]
+    "methods": {
+        "au.clef.app.demo.model.AcmeService#personDescription(au.clef.app.demo.model.Person)": {
+            "displayName": null,
+            "hidden": false,
+            "order": null,
+            "parameters": [
+                {
+                    "name": "param0",
+                    "label": null
                 }
-            }
+            ]
+        },
+        "au.clef.app.demo.model.AcmeService#personName(au.clef.app.demo.model.Person)": {
+            "displayName": null,
+            "hidden": false,
+            "order": null,
+            "parameters": [
+                {
+                    "name": "param0",
+                    "label": null
+                }
+            ]
         }
     }
 }

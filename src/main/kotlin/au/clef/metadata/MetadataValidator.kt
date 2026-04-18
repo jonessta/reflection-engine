@@ -1,86 +1,91 @@
 package au.clef.metadata
 
-import au.clef.metadata.model.ClassMetadata
 import au.clef.engine.model.InheritanceLevel
-import au.clef.metadata.model.MetadataRoot
 import au.clef.engine.model.MethodDescriptor
+import au.clef.engine.model.MethodId
+import au.clef.engine.model.ParamDescriptor
+import au.clef.engine.registry.MethodRegistry
+import au.clef.metadata.model.MetadataRoot
 import au.clef.metadata.model.MethodMetadata
 import au.clef.metadata.model.ParamMetadata
-import au.clef.engine.registry.MethodRegistry
 
-class MetadataValidator(private val methodRegistry: MethodRegistry = MethodRegistry()) {
+class MetadataValidator(
+    private val methodRegistry: MethodRegistry = MethodRegistry()
+) {
 
     fun validate(metadata: MetadataRoot): List<ValidationIssue> {
         val issues: MutableList<ValidationIssue> = mutableListOf()
 
-        metadata.classes.forEach { (className: String, classMetadata: ClassMetadata) ->
-            val clazz: Class<*> = try {
-                Class.forName(className)
-            } catch (_: ClassNotFoundException) {
+        val allDescriptors: List<MethodDescriptor> =
+            methodRegistry.allDescriptors()
+
+        val descriptorMap: Map<MethodId, MethodDescriptor> =
+            allDescriptors.associateBy { descriptor: MethodDescriptor -> descriptor.id }
+
+        metadata.methods.forEach { (methodId: MethodId, methodMetadata: MethodMetadata) ->
+            val descriptor: MethodDescriptor? = descriptorMap[methodId]
+
+            if (descriptor == null) {
                 issues += ValidationIssue(
-                    severity = Severity.ERROR, location = className, message = "Class not found"
+                    severity = Severity.ERROR,
+                    location = methodId.toString(),
+                    message = "Method not found"
                 )
                 return@forEach
             }
 
-            val descriptors: List<MethodDescriptor> =
-                methodRegistry.bindings(clazz, InheritanceLevel.All).map { it.descriptor }
+            if (methodMetadata.parameters.size > descriptor.parameters.size) {
+                issues += ValidationIssue(
+                    severity = Severity.ERROR,
+                    location = methodId.toString(),
+                    message = "Metadata defines ${methodMetadata.parameters.size} parameters but method has ${descriptor.parameters.size}"
+                )
+            }
 
-            val descriptorMap: Map<String, MethodDescriptor> = descriptors.associateBy { buildMethodKey(it) }
-
-            classMetadata.methods.forEach { (methodKey: String, methodMetadata: MethodMetadata) ->
-                val descriptor: MethodDescriptor? = descriptorMap[methodKey]
-                if (descriptor == null) {
-                    issues += ValidationIssue(
-                        severity = Severity.ERROR,
-                        location = "$className::$methodKey",
-                        message = "Method signature not found"
-                    )
-                    return@forEach
+            methodMetadata.parameters.forEachIndexed { index: Int, paramMetadata: ParamMetadata ->
+                if (index >= descriptor.parameters.size) {
+                    return@forEachIndexed
                 }
 
-                if (methodMetadata.parameters.size > descriptor.parameters.size) {
+                val descriptorParam: ParamDescriptor = descriptor.parameters[index]
+
+                if (paramMetadata.name != null && paramMetadata.name.isBlank()) {
                     issues += ValidationIssue(
-                        severity = Severity.ERROR,
-                        location = "$className::$methodKey",
-                        message = "Metadata defines ${methodMetadata.parameters.size} parameters but method has ${descriptor.parameters.size}"
+                        severity = Severity.WARNING,
+                        location = "${methodId}:param[$index]",
+                        message = "Parameter name is blank"
                     )
                 }
 
-                methodMetadata.parameters.forEachIndexed { index: Int, paramMetadata: ParamMetadata ->
-                    if (index >= descriptor.parameters.size) return@forEachIndexed
+                if (paramMetadata.label != null && paramMetadata.label.isBlank()) {
+                    issues += ValidationIssue(
+                        severity = Severity.WARNING,
+                        location = "${methodId}:param[$index]",
+                        message = "Parameter label is blank"
+                    )
+                }
 
-                    if (paramMetadata.name != null && paramMetadata.name.isBlank()) {
-                        issues += ValidationIssue(
-                            severity = Severity.WARNING,
-                            location = "$className::$methodKey:param[$index]",
-                            message = "Parameter name is blank"
-                        )
-                    }
-
-                    if (paramMetadata.label != null && paramMetadata.label.isBlank()) {
-                        issues += ValidationIssue(
-                            severity = Severity.WARNING,
-                            location = "$className::$methodKey:param[$index]",
-                            message = "Parameter label is blank"
-                        )
-                    }
+                if (paramMetadata.name != null && paramMetadata.name == descriptorParam.reflectedName) {
+                    issues += ValidationIssue(
+                        severity = Severity.WARNING,
+                        location = "${methodId}:param[$index]",
+                        message = "Parameter name duplicates reflected name"
+                    )
                 }
             }
         }
 
         return issues
     }
-
-    private fun buildMethodKey(descriptor: MethodDescriptor): String {
-        return descriptor.id.substringAfter("#")
-    }
 }
 
 data class ValidationIssue(
-    val severity: Severity, val location: String, val message: String
+    val severity: Severity,
+    val location: String,
+    val message: String
 )
 
 enum class Severity {
-    WARNING, ERROR
+    WARNING,
+    ERROR
 }

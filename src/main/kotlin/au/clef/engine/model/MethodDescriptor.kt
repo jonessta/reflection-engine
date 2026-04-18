@@ -1,22 +1,14 @@
 package au.clef.engine.model
 
+import kotlinx.serialization.Serializable
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 
-class MethodId private constructor(val value: String, val declaringClass: Class<*>) {
+@Serializable
+@JvmInline
+value class MethodId private constructor(val value: String) {
 
     override fun toString(): String = value
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as MethodId
-
-        return value == other.value
-    }
-
-    override fun hashCode(): Int = value.hashCode()
 
     companion object {
         private const val CLASS_NAME_SEPARATOR: String = "#"
@@ -26,7 +18,7 @@ class MethodId private constructor(val value: String, val declaringClass: Class<
             val declaringClass: Class<*> = method.declaringClass
 
             return MethodId(
-                "${declaringClass.name}$CLASS_NAME_SEPARATOR${method.name}($paramTypes)", declaringClass
+                "${declaringClass.name}$CLASS_NAME_SEPARATOR${method.name}($paramTypes)"
             )
         }
 
@@ -37,8 +29,9 @@ class MethodId private constructor(val value: String, val declaringClass: Class<
                 "Invalid MethodId: expected methodName(paramTypes)"
             }
             val clazzName: String = value.substringBefore(CLASS_NAME_SEPARATOR)
+            // todo just need to throw if class deosnt exists with the parameters
             val declaringClass: Class<*> = Class.forName(clazzName)
-            return MethodId(value, declaringClass)
+            return MethodId(value)
         }
     }
 }

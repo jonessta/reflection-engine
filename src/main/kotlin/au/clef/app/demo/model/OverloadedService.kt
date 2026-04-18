@@ -1,4 +1,4 @@
-package au.clef.app.model
+package au.clef.app.demo.model
 
 class OverloadedService {
 

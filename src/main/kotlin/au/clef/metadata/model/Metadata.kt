@@ -1,15 +1,11 @@
 package au.clef.metadata.model
 
+import au.clef.engine.model.MethodId
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class MetadataRoot(
-    val classes: Map<String, ClassMetadata> = emptyMap()
-)
-
-@Serializable
-data class ClassMetadata(
-    val methods: Map<String, MethodMetadata> = emptyMap()
+    val methods: Map<MethodId, MethodMetadata> = emptyMap()
 )
 
 @Serializable
@@ -19,6 +15,7 @@ data class MethodMetadata(
     val order: Int? = null,
     val parameters: List<ParamMetadata> = emptyList()
 )
+
 @Serializable
 data class ParamMetadata(
     val name: String? = null,

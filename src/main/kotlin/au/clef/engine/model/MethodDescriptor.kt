@@ -7,9 +7,7 @@ import kotlin.reflect.KClass
 
 @Serializable
 @JvmInline
-value class MethodId private constructor(
-    val value: String
-) {
+value class MethodId private constructor(val value: String) {
 
     override fun toString(): String = value
 
@@ -19,50 +17,39 @@ value class MethodId private constructor(
         fun from(method: Method): MethodId {
             val paramTypes: String = method.parameterTypes.joinToString(",") { it.name }
             val declaringClass: Class<*> = method.declaringClass
-
-            return MethodId(
-                "${declaringClass.name}$CLASS_NAME_SEPARATOR${method.name}($paramTypes)"
-            )
+            return MethodId("${declaringClass.name}$CLASS_NAME_SEPARATOR${method.name}($paramTypes)")
         }
 
-        fun from(declaringClass: KClass<*>, methodName: String, vararg params: KClass<*>): MethodId {
-            val parameterTypes: Array<Class<*>> = params.map { it.java }.toTypedArray()
-            val method: Method = declaringClass.java.getDeclaredMethod(methodName, *parameterTypes)
+        fun from(declaringClass: KClass<*>, methodName: String, vararg parameterTypes: KClass<*>): MethodId {
+            val paramTypes: Array<Class<*>> = parameterTypes.map { it.java }.toTypedArray()
+            val method: Method = declaringClass.java.getDeclaredMethod(methodName, *paramTypes)
             return from(method)
         }
 
-        fun from(declaringClass: Class<*>, methodName: String, vararg parameterTypes: Class<*>): MethodId {
-            val method: Method = declaringClass.getDeclaredMethod(methodName, *parameterTypes)
-            return from(method)
-        }
-
-        fun fromString(value: String): MethodId {
-            require(value.isNotBlank()) { "MethodId cannot be blank" }
-            require(value.contains(CLASS_NAME_SEPARATOR)) {
-                "Invalid MethodId: missing '$CLASS_NAME_SEPARATOR'"
-            }
-            require(value.contains("(") && value.endsWith(")")) {
-                "Invalid MethodId: expected methodName(paramTypes)"
-            }
-            val clazzName: String = value.substringBefore(CLASS_NAME_SEPARATOR)
+        fun fromValue(idString: String): MethodId {
+            require(idString.isNotBlank()) { "MethodId cannot be blank" }
+            require(idString.contains(CLASS_NAME_SEPARATOR)) { "Invalid MethodId: missing '$CLASS_NAME_SEPARATOR'" }
+            require(idString.contains("(") && idString.endsWith(")")) { "Invalid MethodId: expected methodName(paramTypes)" }
+            val clazzName: String = idString.substringBefore(CLASS_NAME_SEPARATOR)
             // todo just need to throw if class deosnt exists with the parameters
             Class.forName(clazzName)
-            return MethodId(value)
+            return MethodId(idString)
         }
     }
 }
 
 class MethodDescriptor(
-    val id: MethodId, val method: Method, val displayName: String? = null, val parameters: List<ParamDescriptor>
+    val method: Method,
+    val displayName: String? = null,
+    val parameters: List<ParamDescriptor>
 ) {
-    val reflectedName: String
-        get() = method.name
+    val id: MethodId get() = MethodId.from(method)
 
-    val returnType: Class<*>
-        get() = method.returnType
+    val reflectedName: String get() = method.name
 
-    val isStatic: Boolean
-        get() = Modifier.isStatic(method.modifiers)
+    val returnType: Class<*> get() = method.returnType
+
+    val isStatic: Boolean get() = Modifier.isStatic(method.modifiers)
 
     override fun equals(other: Any?): Boolean = other is MethodDescriptor && id == other.id
 

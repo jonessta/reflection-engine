@@ -47,7 +47,6 @@ class MethodRegistry {
         val methods: List<Method> = collectMethods(clazz, inheritanceLevel)
         return methods.map { method: Method ->
             MethodDescriptor(
-                id = MethodId.from(method),
                 method = method,
                 displayName = null,
                 parameters = buildParamDescriptors(method)
@@ -87,6 +86,7 @@ class MethodRegistry {
         }
     }
 
+    // todo this can be put into MethodDescriptor itself
     private fun buildParamDescriptors(method: Method): List<ParamDescriptor> {
         val parameters: Array<java.lang.reflect.Parameter> = method.parameters
         return parameters.mapIndexed { index: Int, parameter: java.lang.reflect.Parameter ->

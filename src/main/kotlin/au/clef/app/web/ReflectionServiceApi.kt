@@ -15,7 +15,7 @@ class ReflectionServiceApi(
 ) {
 
     fun invoke(request: InvocationRequest): Any? {
-        val methodId: MethodId = MethodId.fromString(request.methodId)
+        val methodId: MethodId = MethodId.fromValue(request.methodId)
         val descriptor: MethodDescriptor = engine.findDescriptorExact(methodId)
         val instance: Any? = if (descriptor.isStatic) {
             null

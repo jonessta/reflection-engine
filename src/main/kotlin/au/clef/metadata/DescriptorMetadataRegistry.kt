@@ -28,7 +28,6 @@ class DescriptorMetadataRegistry(
             }
         }
         return MethodDescriptor(
-            id = descriptor.id,
             method = descriptor.method,
             displayName = methodMeta.displayName ?: descriptor.displayName,
             parameters = updatedParams

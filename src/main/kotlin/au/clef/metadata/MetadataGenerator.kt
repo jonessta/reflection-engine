@@ -12,7 +12,6 @@ class MetadataGenerator(
         clazz: Class<*>, inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ): MetadataRoot {
         val descriptors: List<MethodDescriptor> = methodRegistry.descriptors(clazz, inheritanceLevel)
-
         val methods: Map<MethodId, MethodMetadata> =
             descriptors.sortedBy { descriptor: MethodDescriptor -> descriptor.reflectedName }
                 .associate { descriptor: MethodDescriptor ->
@@ -37,7 +36,6 @@ class MetadataGenerator(
         }.associate { entry: Map.Entry<MethodId, MethodMetadata> ->
             entry.key to entry.value
         }
-
         return MetadataRoot(
             methods = methods
         )

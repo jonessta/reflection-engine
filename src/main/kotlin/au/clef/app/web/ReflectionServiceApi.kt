@@ -23,7 +23,7 @@ class ReflectionServiceApi(
                 null
             } else {
                 val targetId: String =
-                    request.targetId ?: throw RuntimeException("Missing targetId")
+                    request.targetId ?: throw RuntimeException("Missing targetId for instance method")
                 instanceRegistry.get(targetId)
             }
 

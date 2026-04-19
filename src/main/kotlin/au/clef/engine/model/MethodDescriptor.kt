@@ -3,6 +3,7 @@ package au.clef.engine.model
 import kotlinx.serialization.Serializable
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
+import kotlin.reflect.KClass
 
 @Serializable
 @JvmInline
@@ -13,7 +14,7 @@ value class MethodId private constructor(val value: String) {
     companion object {
         private const val CLASS_NAME_SEPARATOR: String = "#"
 
-        fun fromMethod(method: Method): MethodId {
+        fun from(method: Method): MethodId {
             val paramTypes: String = method.parameterTypes.joinToString(",") { it.name }
             val declaringClass: Class<*> = method.declaringClass
 
@@ -33,6 +34,13 @@ value class MethodId private constructor(val value: String) {
             val declaringClass: Class<*> = Class.forName(clazzName)
             return MethodId(value)
         }
+
+        fun from(clazz: KClass<*>, methodName: String, vararg params: KClass<*>): MethodId {
+            val params = params.map { it.java }.toTypedArray()
+            val  method: Method = clazz.java.getDeclaredMethod(methodName, *params)
+            return from(method)
+        }
+
     }
 }
 

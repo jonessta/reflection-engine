@@ -62,8 +62,9 @@ fun showAllDescriptors(reflectionEngine: ReflectionEngine) {
 
 fun runGuiStyleInstance(reflectionEngine: ReflectionEngine) {
     val service = AcmeService()
-    val method: Method = AcmeService::class.java.getMethod("personName", Person::class.java)
-    val methodId: MethodId = MethodId.fromMethod(method)
+//    val method: Method = AcmeService::class.java.getMethod("personName", Person::class.java)
+    val methodId: MethodId = MethodId.from(AcmeService::class, "personName", Person::class)
+//    val methodId: MethodId = MethodId.from(method)
     val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(methodId)
 
     val result: Any? = reflectionEngine.invokeDescriptor(
@@ -73,15 +74,13 @@ fun runGuiStyleInstance(reflectionEngine: ReflectionEngine) {
 }
 
 fun runGuiStyleStatic(reflectionEngine: ReflectionEngine) {
-    reflectionEngine.descriptors(Math::class.java)
-
-    val method: Method = Math::class.java.getMethod(
-        "max", Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!
-    )
-
-    val methodId: MethodId = MethodId.fromMethod(method)
+//    reflectionEngine.descriptors(Math::class.java)
+    val methodId = MethodId.from(Math::class, "max", Int::class, Int::class)
+//    val method: Method = Math::class.java.getMethod(
+//        "max", Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!
+//    )
+//    val methodId: MethodId = MethodId.from(method)
     val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(methodId)
-
     val result: Any? = reflectionEngine.invokeDescriptor(
         descriptor = descriptor, args = listOf(
             Value.Primitive("10"), Value.Primitive("20")
@@ -98,7 +97,7 @@ fun runKotlinTopLevel(reflectionEngine: ReflectionEngine) {
     val method: Method = declaringClass.getMethod(
         "add", Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!
     )
-    val methodId = MethodId.fromMethod(method)
+    val methodId = MethodId.from(method)
     val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(methodId)
     val result: Any? = reflectionEngine.invokeDescriptor(
         descriptor, args = listOf(Value.Primitive("10"), Value.Primitive("20"))

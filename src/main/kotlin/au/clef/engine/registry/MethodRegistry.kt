@@ -44,7 +44,7 @@ class MethodRegistry {
         val methods: List<Method> = collectMethods(clazz, inheritanceLevel)
         return methods.map { method: Method ->
             MethodDescriptor(
-                id = MethodId.fromMethod(method),
+                id = MethodId.from(method),
                 method = method,
                 displayName = null,
                 parameters = buildParamDescriptors(method)
@@ -65,7 +65,7 @@ class MethodRegistry {
                     current = current.superclass
                 }
                 methods.distinctBy { method: Method ->
-                    MethodId.fromMethod(method)
+                    MethodId.from(method)
                 }
             }
             is InheritanceLevel.Depth -> {
@@ -74,14 +74,14 @@ class MethodRegistry {
                 }
                 val methods: MutableList<Method> = mutableListOf()
                 var current: Class<*>? = clazz
-                var depth: Int = 0
+                var depth = 0
                 while (current != null && depth <= inheritanceLevel.value) {
                     methods += current.declaredMethods
                     current = current.superclass
                     depth++
                 }
                 methods.distinctBy { method: Method ->
-                    MethodId.fromMethod(method)
+                    MethodId.from(method)
                 }
             }
         }
@@ -106,7 +106,7 @@ class MethodRegistry {
         return Class.forName(className)
     }
 
-    fun clearCache(): Unit {
+    fun clearCache() {
         descriptorsByQuery.clear()
         descriptorsById.clear()
     }

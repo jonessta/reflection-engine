@@ -26,7 +26,7 @@ class ReflectionEngine(
     fun findDescriptorExact(
         clazz: Class<*>, methodName: String, parameterTypes: List<Class<*>>
     ): MethodDescriptor {
-        val methodId: MethodId = MethodId.fromMethod(
+        val methodId: MethodId = MethodId.from(
             clazz.getMethod(methodName, *parameterTypes.toTypedArray())
         )
         return findDescriptorExact(methodId)

@@ -363,7 +363,7 @@
             wrapper.innerHTML = `
           <div>
             <label>${escapeHtml(param.label || param.name)} <span class="small muted">(${escapeHtml(param.type)})</span></label>
-            <textarea data-param-index="${param.index}" placeholder="Enter a primitive value, or JSON object fields payload"></textarea>
+            <textarea data-param-index="${param.index}" placeholder="Enter a primitive value, or JSON object payload"></textarea>
           </div>
         `;
             el.argsForm.appendChild(wrapper);
@@ -378,10 +378,11 @@
         const typeName = param.type || '';
         if (typeName === 'au.clef.app.demo.model.Person') {
             return JSON.stringify({
+                kind: 'object',
                 type: 'au.clef.app.demo.model.Person',
                 fields: {
-                    name: {type: 'primitive', value: 'Alice'},
-                    age: {type: 'primitive', value: '25'}
+                    name: { kind: 'primitive', value: 'Alice' },
+                    age: { kind: 'primitive', value: '25' }
                 }
             }, null, 2);
         }
@@ -400,7 +401,7 @@
     function parseArgInput(rawText, param) {
         const text = rawText.trim();
         if (!text) {
-            return {type: 'primitive', value: ''};
+            return { kind: 'primitive', value: '' };
         }
 
         if (text.startsWith('{') || text.startsWith('[')) {
@@ -411,7 +412,7 @@
             }
         }
 
-        return {type: 'primitive', value: text};
+        return { kind: 'primitive', value: text };
     }
 
     function buildRequest() {
@@ -498,7 +499,7 @@
         try {
             const response = await fetch(`${baseUrl}/invoke`, {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(request),
             });
 

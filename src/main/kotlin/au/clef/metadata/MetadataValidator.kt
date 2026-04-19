@@ -4,9 +4,7 @@ import au.clef.engine.model.*
 import au.clef.engine.registry.MethodRegistry
 import au.clef.metadata.model.*
 
-class MetadataValidator(
-    private val methodRegistry: MethodRegistry = MethodRegistry()
-) {
+class MetadataValidator(private val methodRegistry: MethodRegistry = MethodRegistry()) {
 
     fun validate(metadata: MetadataRoot): List<ValidationIssue> {
         val issues: MutableList<ValidationIssue> = mutableListOf()
@@ -57,7 +55,6 @@ class MetadataValidator(
                 }
             }
         }
-
         return issues
     }
 }

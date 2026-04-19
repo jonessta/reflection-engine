@@ -381,8 +381,8 @@
                 kind: 'object',
                 type: 'au.clef.app.demo.model.Person',
                 fields: {
-                    name: { kind: 'primitive', value: 'Alice' },
-                    age: { kind: 'primitive', value: '25' }
+                    name: {kind: 'primitive', value: 'Alice'},
+                    age: {kind: 'primitive', value: '25'}
                 }
             }, null, 2);
         }
@@ -401,7 +401,7 @@
     function parseArgInput(rawText, param) {
         const text = rawText.trim();
         if (!text) {
-            return { kind: 'primitive', value: '' };
+            return {kind: 'primitive', value: ''};
         }
 
         if (text.startsWith('{') || text.startsWith('[')) {
@@ -412,7 +412,7 @@
             }
         }
 
-        return { kind: 'primitive', value: text };
+        return {kind: 'primitive', value: text};
     }
 
     function buildRequest() {
@@ -499,7 +499,7 @@
         try {
             const response = await fetch(`${baseUrl}/invoke`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(request),
             });
 

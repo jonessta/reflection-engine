@@ -8,11 +8,12 @@ import au.clef.engine.model.*
 import au.clef.metadata.*
 import au.clef.metadata.model.MetadataRoot
 import java.io.File
+import kotlin.reflect.KClass
 import kotlin.reflect.jvm.javaMethod
 
 private const val RESOURCE_PATH: String = "/config/method-metadata.json"
 private val OUTPUT_FILE: File = File("src/main/resources").resolve(RESOURCE_PATH.removePrefix("/"))
-private val DEMO_CLASSES: List<Class<*>> = listOf(AcmeService::class.java, Math::class.java)
+private val DEMO_CLASSES: List<KClass<*>> = listOf(AcmeService::class, Math::class)
 
 fun main() {
     generateMetadata()
@@ -31,7 +32,7 @@ private fun createEngine(): ReflectionEngine {
 
 fun generateMetadata() {
     val generator = MetadataGenerator()
-    val metadata: MetadataRoot = generator.generate(
+    val metadata: MetadataRoot = generator.generateKClasses(
         classes = DEMO_CLASSES, inheritanceLevel = InheritanceLevel.DeclaredOnly
     )
     MetadataWriter.writeToFile(metadata, OUTPUT_FILE)

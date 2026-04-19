@@ -5,7 +5,9 @@ import au.clef.engine.TypeMismatchException
 import au.clef.engine.model.Value
 import java.lang.reflect.Constructor
 import java.lang.reflect.Field
-import kotlin.reflect.*
+import kotlin.reflect.KClass
+import kotlin.reflect.KFunction
+import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
 
 class TypeConverter {
@@ -28,6 +30,7 @@ class TypeConverter {
                 }
                 return null
             }
+
             else -> value
         }
 
@@ -41,12 +44,14 @@ class TypeConverter {
                 is String -> unwrapped.toIntOrNull()?.let { ConversionResult(it) }
                 else -> null
             }
+
             isLongType(targetType) -> when (unwrapped) {
                 is Long -> ConversionResult(unwrapped)
                 is Int -> ConversionResult(unwrapped.toLong())
                 is String -> unwrapped.toLongOrNull()?.let { ConversionResult(it) }
                 else -> null
             }
+
             isDoubleType(targetType) -> when (unwrapped) {
                 is Double -> ConversionResult(unwrapped)
                 is Int -> ConversionResult(unwrapped.toDouble())
@@ -54,6 +59,7 @@ class TypeConverter {
                 is String -> unwrapped.toDoubleOrNull()?.let { ConversionResult(it) }
                 else -> null
             }
+
             isFloatType(targetType) -> when (unwrapped) {
                 is Float -> ConversionResult(unwrapped)
                 is Int -> ConversionResult(unwrapped.toFloat())
@@ -62,6 +68,7 @@ class TypeConverter {
                 is String -> unwrapped.toFloatOrNull()?.let { ConversionResult(it) }
                 else -> null
             }
+
             isBooleanType(targetType) -> when (unwrapped) {
                 is Boolean -> ConversionResult(unwrapped)
                 is String -> when (unwrapped.lowercase()) {
@@ -69,29 +76,35 @@ class TypeConverter {
                     "false" -> ConversionResult(false)
                     else -> null
                 }
+
                 else -> null
             }
+
             isShortType(targetType) -> when (unwrapped) {
                 is Short -> ConversionResult(unwrapped)
                 is Int -> ConversionResult(unwrapped.toShort())
                 is String -> unwrapped.toShortOrNull()?.let { ConversionResult(it) }
                 else -> null
             }
+
             isByteType(targetType) -> when (unwrapped) {
                 is Byte -> ConversionResult(unwrapped)
                 is Int -> ConversionResult(unwrapped.toByte())
                 is String -> unwrapped.toByteOrNull()?.let { ConversionResult(it) }
                 else -> null
             }
+
             isCharType(targetType) -> when (unwrapped) {
                 is Char -> ConversionResult(unwrapped)
                 is String -> unwrapped.singleOrNull()?.let { ConversionResult(it) }
                 else -> null
             }
+
             isStringType(targetType) -> when (unwrapped) {
                 is String -> ConversionResult(unwrapped)
                 else -> ConversionResult(unwrapped.toString())
             }
+
             targetType.isAssignableFrom(unwrapped.javaClass) -> ConversionResult(unwrapped)
             else -> null
         }

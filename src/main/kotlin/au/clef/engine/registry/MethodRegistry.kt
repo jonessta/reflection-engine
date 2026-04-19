@@ -1,7 +1,10 @@
 package au.clef.engine.registry
 
 import au.clef.engine.MethodNotFoundException
-import au.clef.engine.model.*
+import au.clef.engine.model.InheritanceLevel
+import au.clef.engine.model.MethodDescriptor
+import au.clef.engine.model.MethodId
+import au.clef.engine.model.ParamDescriptor
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 
@@ -54,9 +57,7 @@ class MethodRegistry {
 
     private fun collectMethods(clazz: Class<*>, inheritanceLevel: InheritanceLevel): List<Method> {
         return when (inheritanceLevel) {
-            InheritanceLevel.DeclaredOnly -> {
-                clazz.declaredMethods.toList()
-            }
+            InheritanceLevel.DeclaredOnly -> clazz.declaredMethods.toList()
             InheritanceLevel.All -> {
                 val methods: MutableList<Method> = mutableListOf()
                 var current: Class<*>? = clazz
@@ -68,10 +69,9 @@ class MethodRegistry {
                     MethodId.from(method)
                 }
             }
+
             is InheritanceLevel.Depth -> {
-                require(inheritanceLevel.value >= 0) {
-                    "Depth must be >= 0"
-                }
+                require(inheritanceLevel.value >= 0) { "Depth must be >= 0" }
                 val methods: MutableList<Method> = mutableListOf()
                 var current: Class<*>? = clazz
                 var depth = 0

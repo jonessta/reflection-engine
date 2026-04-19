@@ -2,7 +2,9 @@ package au.clef.metadata
 
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.ParamDescriptor
-import au.clef.metadata.model.*
+import au.clef.metadata.model.MetadataRoot
+import au.clef.metadata.model.MethodMetadata
+import au.clef.metadata.model.ParamMetadata
 
 class DescriptorMetadataRegistry(
     private val metadata: MetadataRoot

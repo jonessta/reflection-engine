@@ -4,7 +4,9 @@ import au.clef.api.InstanceRegistry
 import au.clef.api.ValueMapper
 import au.clef.api.model.InvocationRequest
 import au.clef.engine.ReflectionEngine
-import au.clef.engine.model.*
+import au.clef.engine.model.MethodDescriptor
+import au.clef.engine.model.MethodId
+import au.clef.engine.model.Value
 
 class ReflectionServiceApi(
     private val engine: ReflectionEngine,
@@ -15,7 +17,6 @@ class ReflectionServiceApi(
     fun invoke(request: InvocationRequest): Any? {
         val methodId: MethodId = MethodId.fromString(request.methodId)
         val descriptor: MethodDescriptor = engine.findDescriptorExact(methodId)
-
         val instance: Any? = if (descriptor.isStatic) {
             null
         } else {
@@ -23,12 +24,8 @@ class ReflectionServiceApi(
             instanceRegistry.get(targetId)
         }
 
-        val args: List<Value> = request.args.map { dto ->
-            valueMapper.toEngineValue(dto)
-        }
+        val args: List<Value> = request.args.map { dto -> valueMapper.toEngineValue(dto) }
 
-        return engine.invokeDescriptor(
-            descriptor, instance, args,
-        )
+        return engine.invokeDescriptor(descriptor, instance, args)
     }
 }

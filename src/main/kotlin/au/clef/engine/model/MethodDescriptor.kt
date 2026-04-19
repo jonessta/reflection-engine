@@ -42,23 +42,13 @@ value class MethodId private constructor(val value: String) {
             }
             val clazzName: String = value.substringBefore(CLASS_NAME_SEPARATOR)
             // todo just need to throw if class deosnt exists with the parameters
-            val declaringClass: Class<*> = Class.forName(clazzName)
+            Class.forName(clazzName)
             return MethodId(value)
         }
 
     }
 }
 
-/**
- * JSON with:
- *
- * id
- * name
- * displayName
- * parameters
- * returnType
- * isStatic
- */
 class MethodDescriptor(
     val id: MethodId, val method: Method, val displayName: String? = null, val parameters: List<ParamDescriptor>
 ) {

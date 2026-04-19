@@ -46,8 +46,8 @@ fun validate() {
     }
 }
 
-fun showAllDescriptors(reflectionEngine: ReflectionEngine) {
-    val all: List<MethodDescriptor> = reflectionEngine.descriptors(AcmeService::class.java)
+fun showAllDescriptors(engine: ReflectionEngine) {
+    val all: List<MethodDescriptor> = engine.descriptors(AcmeService::class.java)
     all.forEach { descriptor: MethodDescriptor ->
         println("METHOD: ${descriptor.id}")
         descriptor.parameters.forEach { param: ParamDescriptor ->
@@ -57,21 +57,15 @@ fun showAllDescriptors(reflectionEngine: ReflectionEngine) {
 }
 
 fun runGuiStyleInstance(engine: ReflectionEngine) {
-    val methodId = MethodId.from(AcmeService::class, "personName", Person::class)
-    val descriptor: MethodDescriptor = engine.findDescriptorExact(methodId)
     val instance = AcmeService()
-    val result: Any? = engine.invokeDescriptor(
-        descriptor, instance, personValue()
-    )
-    println("-----------> runGuiStyleInstance: $result")
+    val methodId = MethodId.from(AcmeService::class, "personName", Person::class)
+    val result = engine.invoke(methodId, instance, personValue())
+    println("-----------> $result")
 }
 
 fun runGuiStyleStatic(engine: ReflectionEngine) {
     val methodId = MethodId.from(Math::class, "max", Int::class, Int::class)
-    val descriptor: MethodDescriptor = engine.findDescriptorExact(methodId)
-    val result: Any? = engine.invokeDescriptor(
-        descriptor, Value.Primitive("10"), Value.Primitive("20")
-    )
+    val result: Any? = engine.invoke(methodId, Value.Primitive("10"), Value.Primitive("20"))
     println("-----------> runGuiStyleStatic: $result")
 }
 
@@ -82,10 +76,7 @@ fun runKotlinTopLevel(engine: ReflectionEngine) {
     val methodId = MethodId.from(
         declaringClass, "add", Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!
     )
-    val descriptor: MethodDescriptor = engine.findDescriptorExact(methodId)
-    val result: Any? = engine.invokeDescriptor(
-        descriptor, Value.Primitive("10"), Value.Primitive("20")
-    )
+    val result: Any? = engine.invoke(methodId, Value.Primitive("10"), Value.Primitive("20"))
     println("-----------> runTopLevelFunction: $result")
 }
 

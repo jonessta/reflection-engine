@@ -32,30 +32,43 @@ class ReflectionEngine(
         return findDescriptorExact(methodId)
     }
 
+    fun invoke(
+        methodId: MethodId, instance: Any? = null, args: List<Value>
+    ): Any? {
+        val descriptor: MethodDescriptor = findDescriptorExact(methodId)
+        return invokeDescriptor(descriptor, instance, args)
+    }
+
+    fun invoke(
+        methodId: MethodId, instance: Any? = null, vararg args: Value
+    ): Any? = invoke(methodId, instance, args.toList())
+
+    fun invoke(
+        methodId: MethodId, vararg args: Value
+    ): Any? = invoke(methodId, null, args.toList())
+
     fun invokeDescriptor(
         descriptor: MethodDescriptor, vararg args: Value
-    ): Any? = invokeDescriptor(descriptor, null, *args)
+    ): Any? = invokeDescriptor(descriptor, null, args.toList())
+
+    fun invokeDescriptor(
+        descriptor: MethodDescriptor, instance: Any, vararg args: Value
+    ): Any? = invokeDescriptor(descriptor, instance, args.toList())
 
     fun invokeDescriptor(
         descriptor: MethodDescriptor, instance: Any?, args: List<Value>
     ): Any? {
-        return invokeDescriptor(descriptor, instance, *args.toTypedArray())
-    }
-
-    fun invokeDescriptor(
-        descriptor: MethodDescriptor, instance: Any?, vararg args: Value
-    ): Any? {
         if (!descriptor.isStatic && instance == null) {
             throw MissingInstanceException(descriptor.reflectedName)
         }
-
+        require(args.size == descriptor.method.parameterCount) {
+            "Expected ${descriptor.method.parameterCount} arguments for ${descriptor.id}, but got ${args.size}"
+        }
         val convertedArgs: List<Any?> = args.mapIndexed { index: Int, arg: Value ->
             val paramType: Class<*> = descriptor.method.parameterTypes[index]
             typeConverter.materialize(arg, paramType)
         }
-
         val target: Any? = if (descriptor.isStatic) null else instance
-
         return descriptor.method.invoke(target, *convertedArgs.toTypedArray())
     }
 }

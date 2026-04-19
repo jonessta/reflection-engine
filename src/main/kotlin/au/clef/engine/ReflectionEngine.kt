@@ -33,16 +33,29 @@ class ReflectionEngine(
     }
 
     fun invokeDescriptor(
-        descriptor: MethodDescriptor, instance: Any? = null, args: List<Any?>
+        descriptor: MethodDescriptor, vararg args: Value
+    ): Any? = invokeDescriptor(descriptor, null, *args)
+
+    fun invokeDescriptor(
+        descriptor: MethodDescriptor, instance: Any?, args: List<Value>
+    ): Any? {
+        return invokeDescriptor(descriptor, instance, *args.toTypedArray())
+    }
+
+    fun invokeDescriptor(
+        descriptor: MethodDescriptor, instance: Any?, vararg args: Value
     ): Any? {
         if (!descriptor.isStatic && instance == null) {
             throw MissingInstanceException(descriptor.reflectedName)
         }
-        val convertedArgs: List<Any?> = args.mapIndexed { index: Int, arg: Any? ->
+
+        val convertedArgs: List<Any?> = args.mapIndexed { index: Int, arg: Value ->
             val paramType: Class<*> = descriptor.method.parameterTypes[index]
             typeConverter.materialize(arg, paramType)
         }
+
         val target: Any? = if (descriptor.isStatic) null else instance
+
         return descriptor.method.invoke(target, *convertedArgs.toTypedArray())
     }
 }

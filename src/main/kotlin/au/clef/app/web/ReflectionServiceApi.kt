@@ -4,9 +4,7 @@ import au.clef.api.InstanceRegistry
 import au.clef.api.ValueMapper
 import au.clef.api.model.InvocationRequest
 import au.clef.engine.ReflectionEngine
-import au.clef.engine.model.MethodDescriptor
-import au.clef.engine.model.MethodId
-import au.clef.engine.model.Value
+import au.clef.engine.model.*
 
 class ReflectionServiceApi(
     private val engine: ReflectionEngine,
@@ -18,24 +16,19 @@ class ReflectionServiceApi(
         val methodId: MethodId = MethodId.fromString(request.methodId)
         val descriptor: MethodDescriptor = engine.findDescriptorExact(methodId)
 
-        val instance: Any? =
-            if (descriptor.isStatic) {
-                null
-            } else {
-                val targetId: String =
-                    request.targetId ?: throw RuntimeException("Missing targetId for instance method")
-                instanceRegistry.get(targetId)
-            }
+        val instance: Any? = if (descriptor.isStatic) {
+            null
+        } else {
+            val targetId: String = request.targetId ?: throw RuntimeException("Missing targetId for instance method")
+            instanceRegistry.get(targetId)
+        }
 
-        val args: List<Value> =
-            request.args.map { dto ->
-                valueMapper.toEngineValue(dto)
-            }
+        val args: List<Value> = request.args.map { dto ->
+            valueMapper.toEngineValue(dto)
+        }
 
         return engine.invokeDescriptor(
-            descriptor = descriptor,
-            instance = instance,
-            args = args
+            descriptor, instance, args,
         )
     }
 }

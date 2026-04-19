@@ -56,40 +56,35 @@ fun showAllDescriptors(reflectionEngine: ReflectionEngine) {
     }
 }
 
-fun runGuiStyleInstance(reflectionEngine: ReflectionEngine) {
+fun runGuiStyleInstance(engine: ReflectionEngine) {
     val methodId = MethodId.from(AcmeService::class, "personName", Person::class)
-    val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(methodId)
+    val descriptor: MethodDescriptor = engine.findDescriptorExact(methodId)
     val instance = AcmeService()
-    val result: Any? = reflectionEngine.invokeDescriptor(
-        descriptor, instance, args = listOf(personValue())
+    val result: Any? = engine.invokeDescriptor(
+        descriptor, instance, personValue()
     )
     println("-----------> runGuiStyleInstance: $result")
 }
 
-fun runGuiStyleStatic(reflectionEngine: ReflectionEngine) {
+fun runGuiStyleStatic(engine: ReflectionEngine) {
     val methodId = MethodId.from(Math::class, "max", Int::class, Int::class)
-    val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(methodId)
-    val result: Any? = reflectionEngine.invokeDescriptor(
-        descriptor = descriptor, args = listOf(
-            Value.Primitive("10"), Value.Primitive("20")
-        )
+    val descriptor: MethodDescriptor = engine.findDescriptorExact(methodId)
+    val result: Any? = engine.invokeDescriptor(
+        descriptor, Value.Primitive("10"), Value.Primitive("20")
     )
     println("-----------> runGuiStyleStatic: $result")
 }
 
 fun add(a: Int, b: Int): Int = a + b
 
-fun runKotlinTopLevel(reflectionEngine: ReflectionEngine) {
+fun runKotlinTopLevel(engine: ReflectionEngine) {
     val declaringClass: Class<*> = Class.forName("au.clef.app.demo.MainKt")
     val methodId = MethodId.from(
-        declaringClass,
-        "add",
-        Int::class.javaPrimitiveType!!,
-        Int::class.javaPrimitiveType!!
+        declaringClass, "add", Int::class.javaPrimitiveType!!, Int::class.javaPrimitiveType!!
     )
-    val descriptor: MethodDescriptor = reflectionEngine.findDescriptorExact(methodId)
-    val result: Any? = reflectionEngine.invokeDescriptor(
-        descriptor, args = listOf(Value.Primitive("10"), Value.Primitive("20"))
+    val descriptor: MethodDescriptor = engine.findDescriptorExact(methodId)
+    val result: Any? = engine.invokeDescriptor(
+        descriptor, Value.Primitive("10"), Value.Primitive("20")
     )
     println("-----------> runTopLevelFunction: $result")
 }

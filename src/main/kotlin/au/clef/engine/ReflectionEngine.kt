@@ -4,6 +4,7 @@ import au.clef.engine.convert.TypeConverter
 import au.clef.engine.model.*
 import au.clef.engine.registry.MethodRegistry
 import au.clef.metadata.DescriptorMetadataRegistry
+import kotlin.reflect.KClass
 
 class ReflectionEngine(
     private val typeConverter: TypeConverter = TypeConverter(),

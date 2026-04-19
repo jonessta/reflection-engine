@@ -7,7 +7,9 @@ import kotlin.reflect.KClass
 
 @Serializable
 @JvmInline
-value class MethodId private constructor(val value: String) {
+value class MethodId private constructor(
+    val value: String
+) {
 
     override fun toString(): String = value
 
@@ -24,19 +26,21 @@ value class MethodId private constructor(val value: String) {
         }
 
         fun from(declaringClass: KClass<*>, methodName: String, vararg params: KClass<*>): MethodId {
-            val params: Array<Class<out Any>> = params.map { it.java }.toTypedArray()
-            val  method: Method = declaringClass.java.getDeclaredMethod(methodName, *params)
+            val parameterTypes: Array<Class<*>> = params.map { it.java }.toTypedArray()
+            val method: Method = declaringClass.java.getDeclaredMethod(methodName, *parameterTypes)
             return from(method)
         }
 
         fun from(declaringClass: Class<*>, methodName: String, vararg parameterTypes: Class<*>): MethodId {
-            val method: Method = declaringClass.getMethod(methodName, *parameterTypes)
+            val method: Method = declaringClass.getDeclaredMethod(methodName, *parameterTypes)
             return from(method)
         }
 
         fun fromString(value: String): MethodId {
             require(value.isNotBlank()) { "MethodId cannot be blank" }
-            require(value.contains(CLASS_NAME_SEPARATOR)) { "Invalid MethodId: missing '$CLASS_NAME_SEPARATOR'" }
+            require(value.contains(CLASS_NAME_SEPARATOR)) {
+                "Invalid MethodId: missing '$CLASS_NAME_SEPARATOR'"
+            }
             require(value.contains("(") && value.endsWith(")")) {
                 "Invalid MethodId: expected methodName(paramTypes)"
             }
@@ -45,18 +49,20 @@ value class MethodId private constructor(val value: String) {
             Class.forName(clazzName)
             return MethodId(value)
         }
-
     }
 }
 
 class MethodDescriptor(
     val id: MethodId, val method: Method, val displayName: String? = null, val parameters: List<ParamDescriptor>
 ) {
-    val reflectedName: String get() = method.name
+    val reflectedName: String
+        get() = method.name
 
-    val returnType: Class<*> get() = method.returnType
+    val returnType: Class<*>
+        get() = method.returnType
 
-    val isStatic: Boolean get() = Modifier.isStatic(method.modifiers)
+    val isStatic: Boolean
+        get() = Modifier.isStatic(method.modifiers)
 
     override fun equals(other: Any?): Boolean = other is MethodDescriptor && id == other.id
 

@@ -58,7 +58,7 @@ fun showAllDescriptors(engine: ReflectionEngine) {
     descriptors.forEach { descriptor: MethodDescriptor ->
         println("METHOD: ${descriptor.id}")
         descriptor.parameters.forEach { param: ParamDescriptor ->
-            println("  name=${param.name}, label=${param.label}, type=${param.type}")
+            println(" name=${param.name}, label=${param.label}, type=${param.type}")
         }
     }
 }
@@ -72,18 +72,17 @@ fun runGuiStyleInstance(engine: ReflectionEngine) {
 
 fun runGuiStyleStatic(engine: ReflectionEngine) {
     val methodId: MethodId = MethodId.from(Math::class, "max", Int::class, Int::class)
-    val result: Any? = engine.invoke(methodId, primitive("10"), primitive("20"))
+    val result: Any? = engine.invoke(methodId, Value.Primitive(10), Value.Primitive(20))
     println("-----------> runGuiStyleStatic: $result")
 }
 
 fun runKotlinTopLevel(engine: ReflectionEngine) {
     val methodId: MethodId = MethodId.from(::add.javaMethod!!)
-    val result: Any? = engine.invoke(methodId, Value.Primitive("10"), Value.Primitive("20"))
+    val result: Any? = engine.invoke(methodId, Value.Primitive(10), Value.Primitive(20))
     println("-----------> runTopLevelFunction: $result")
 }
 
-private fun primitive(value: String): Value.Primitive = Value.Primitive(value)
-
-private fun personValue(name: String = "Alice", age: String = "25"): Value.Object = Value.Object(
-    type = Person::class.java, fields = mapOf("name" to primitive(name), "age" to primitive(age))
+private fun personValue(name: String = "Alice", age: Int = 25): Value.Object = Value.Object(
+    type = Person::class.java,
+    fields = mapOf("name" to Value.Primitive(name), "age" to Value.Primitive(age))
 )

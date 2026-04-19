@@ -53,7 +53,7 @@ fun validate() {
 }
 
 fun showAllDescriptors(engine: ReflectionEngine) {
-    val descriptors: List<MethodDescriptor> = engine.descriptors(AcmeService::class.java)
+    val descriptors: List<MethodDescriptor> = engine.descriptors(AcmeService::class)
     descriptors.forEach { descriptor: MethodDescriptor ->
         println("METHOD: ${descriptor.id}")
         descriptor.parameters.forEach { param: ParamDescriptor ->

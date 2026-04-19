@@ -4,12 +4,19 @@ import au.clef.engine.convert.TypeConverter
 import au.clef.engine.model.*
 import au.clef.engine.registry.MethodRegistry
 import au.clef.metadata.DescriptorMetadataRegistry
+import kotlin.reflect.KClass
 
 class ReflectionEngine(
     private val typeConverter: TypeConverter = TypeConverter(),
     private val methodRegistry: MethodRegistry = MethodRegistry(),
     private val metadataRegistry: DescriptorMetadataRegistry? = null
 ) {
+
+    fun descriptors(
+        clazz: KClass<*>,
+        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
+    ): List<MethodDescriptor> =
+        descriptors(clazz.java, inheritanceLevel)
 
     fun descriptors(clazz: Class<*>,
                     inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly)

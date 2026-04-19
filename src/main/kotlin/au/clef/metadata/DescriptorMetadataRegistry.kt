@@ -27,6 +27,8 @@ class DescriptorMetadataRegistry(
                 )
             }
         }
+
+        // todo can we descriptor.with(parametrs=updateParams, displayName=methodMeta.displayName) ??
         return MethodDescriptor(
             method = descriptor.method,
             displayName = methodMeta.displayName ?: descriptor.displayName,

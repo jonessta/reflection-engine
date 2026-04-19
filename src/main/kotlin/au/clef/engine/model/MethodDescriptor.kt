@@ -38,11 +38,31 @@ value class MethodId private constructor(val value: String) {
     }
 }
 
+private fun buildParamDescriptors(method: Method): List<ParamDescriptor> {
+    val parameters: Array<java.lang.reflect.Parameter> = method.parameters
+    return parameters.mapIndexed { index: Int, parameter: java.lang.reflect.Parameter ->
+        ParamDescriptor(
+            index = index,
+            type = parameter.type,
+            reflectedName = parameter.name,
+            name = parameter.name,
+            label = null,
+            nullable = !parameter.type.isPrimitive
+        )
+    }
+}
+
 class MethodDescriptor(
     val method: Method,
     val displayName: String? = null,
     val parameters: List<ParamDescriptor>
 ) {
+
+    constructor(
+        method: Method,
+        displayName: String? = null
+    ) : this(method, displayName, buildParamDescriptors(method))
+
     val id: MethodId get() = MethodId.from(method)
 
     val reflectedName: String get() = method.name

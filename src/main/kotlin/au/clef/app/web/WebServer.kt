@@ -7,6 +7,7 @@ import au.clef.app.demo.model.AcmeService
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.ParamDescriptor
+import au.clef.engine.registry.MethodRegistry
 import au.clef.metadata.DescriptorMetadataRegistry
 import au.clef.metadata.MetadataLoader
 import au.clef.metadata.model.MetadataRoot
@@ -68,18 +69,28 @@ private fun MethodDescriptor.toResponse(): MethodDescriptorResponse = MethodDesc
 class WebServer {
 
     fun start() {
-        val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty("/config/method-metadata.json")
+        val metadata: MetadataRoot =
+            MetadataLoader.fromResourceOrEmpty("/config/method-metadata.json")
+
+        val methodRegistry = MethodRegistry(
+            AcmeService::class.java,
+            Math::class.java
+        )
+
         val engine = ReflectionEngine(
+            methodRegistry = methodRegistry,
             metadataRegistry = DescriptorMetadataRegistry(metadata)
         )
+
         val instanceRegistry = InstanceRegistry(
-            mapOf(
-                "acmeService" to AcmeService()
-            )
+            mapOf("acmeService" to AcmeService())
         )
+
         val valueMapper = ValueMapper(instanceRegistry)
         val api = ReflectionServiceApi(
-            engine = engine, instanceRegistry = instanceRegistry, valueMapper = valueMapper
+            engine = engine,
+            instanceRegistry = instanceRegistry,
+            valueMapper = valueMapper
         )
 
         embeddedServer(Netty, port = 8080) {

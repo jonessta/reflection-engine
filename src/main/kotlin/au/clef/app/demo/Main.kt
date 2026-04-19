@@ -4,7 +4,11 @@ import au.clef.api.model.add
 import au.clef.app.demo.model.AcmeService
 import au.clef.app.demo.model.Person
 import au.clef.engine.ReflectionEngine
-import au.clef.engine.model.*
+import au.clef.engine.model.MethodDescriptor
+import au.clef.engine.model.MethodId
+import au.clef.engine.model.ParamDescriptor
+import au.clef.engine.model.Value
+import au.clef.engine.registry.MethodRegistry
 import au.clef.metadata.*
 import au.clef.metadata.model.MetadataRoot
 import java.io.File
@@ -25,16 +29,21 @@ fun main() {
     runKotlinTopLevel(engine)
 }
 
+val methodRegistry = MethodRegistry(
+    // todo make kotlin classes
+    AcmeService::class.java,
+    Math::class.java,
+    Class.forName("au.clef.api.model.KotlinFuncsKt")
+)
+
 private fun createEngine(): ReflectionEngine {
     val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(RESOURCE_PATH)
-    return ReflectionEngine(metadataRegistry = DescriptorMetadataRegistry(metadata))
+    return ReflectionEngine(methodRegistry = methodRegistry, metadataRegistry = DescriptorMetadataRegistry(metadata))
 }
 
 fun generateMetadata() {
-    val generator = MetadataGenerator()
-    val metadata: MetadataRoot = generator.generateKClasses(
-        classes = DEMO_CLASSES, inheritanceLevel = InheritanceLevel.DeclaredOnly
-    )
+    val generator = MetadataGenerator(methodRegistry)
+    val metadata: MetadataRoot = generator.generateKClasses(classes = DEMO_CLASSES)
     MetadataWriter.writeToFile(metadata, OUTPUT_FILE)
     println("Metadata written to: ${OUTPUT_FILE.absolutePath}")
     println(MetadataWriter.toJson(metadata))
@@ -54,7 +63,8 @@ fun validate() {
 }
 
 fun showAllDescriptors(engine: ReflectionEngine) {
-    val descriptors: List<MethodDescriptor> = engine.descriptors(AcmeService::class)
+    // todo remove .java
+    val descriptors: List<MethodDescriptor> = engine.descriptors(AcmeService::class.java)
     descriptors.forEach { descriptor: MethodDescriptor ->
         println("METHOD: ${descriptor.id}")
         descriptor.parameters.forEach { param: ParamDescriptor ->
@@ -72,13 +82,13 @@ fun runGuiStyleInstance(engine: ReflectionEngine) {
 
 fun runGuiStyleStatic(engine: ReflectionEngine) {
     val methodId: MethodId = MethodId.from(Math::class, "max", Int::class, Int::class)
-    val result: Any? = engine.invoke(methodId, Value.Primitive(10), Value.Primitive(20))
+    val result: Any? = engine.invoke(methodId, instance = null, Value.Primitive(10), Value.Primitive(20))
     println("-----------> runGuiStyleStatic: $result")
 }
 
 fun runKotlinTopLevel(engine: ReflectionEngine) {
     val methodId: MethodId = MethodId.from(::add.javaMethod!!)
-    val result: Any? = engine.invoke(methodId, Value.Primitive(10), Value.Primitive(20))
+    val result: Any? = engine.invoke(methodId,  null, Value.Primitive(10), Value.Primitive(20))
     println("-----------> runTopLevelFunction: $result")
 }
 

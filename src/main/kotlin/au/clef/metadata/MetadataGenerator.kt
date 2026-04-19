@@ -1,6 +1,5 @@
 package au.clef.metadata
 
-import au.clef.engine.model.InheritanceLevel
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
 import au.clef.engine.model.ParamDescriptor
@@ -12,11 +11,8 @@ import kotlin.reflect.KClass
 
 class MetadataGenerator(private val methodRegistry: MethodRegistry = MethodRegistry()) {
 
-    fun generate(
-        clazz: Class<*>,
-        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-    ): MetadataRoot {
-        val descriptors: List<MethodDescriptor> = methodRegistry.descriptors(clazz, inheritanceLevel)
+    fun generate(clazz: Class<*>): MetadataRoot {
+        val descriptors: List<MethodDescriptor> = methodRegistry.descriptors(clazz)
         val methods: Map<MethodId, MethodMetadata> =
             descriptors
                 .sortedBy { descriptor: MethodDescriptor -> descriptor.reflectedName }
@@ -30,14 +26,11 @@ class MetadataGenerator(private val methodRegistry: MethodRegistry = MethodRegis
         return MetadataRoot(methods = methods)
     }
 
-    fun generate(
-        classes: List<Class<*>>,
-        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-    ): MetadataRoot {
+    fun generate(classes: List<Class<*>>): MetadataRoot {
         val methods: Map<MethodId, MethodMetadata> =
             classes
                 .flatMap { clazz: Class<*> ->
-                    generate(clazz, inheritanceLevel).methods.entries
+                    generate(clazz).methods.entries
                 }
                 .associate { entry: Map.Entry<MethodId, MethodMetadata> ->
                     entry.key to entry.value
@@ -46,14 +39,8 @@ class MetadataGenerator(private val methodRegistry: MethodRegistry = MethodRegis
         return MetadataRoot(methods = methods)
     }
 
-    fun generateKClasses(
-        classes: List<KClass<*>>,
-        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-    ): MetadataRoot =
-        generate(
-            classes = classes.map { kClass: KClass<*> -> kClass.java },
-            inheritanceLevel = inheritanceLevel
-        )
+    fun generateKClasses(classes: List<KClass<*>>): MetadataRoot =
+        generate(classes = classes.map { kClass: KClass<*> -> kClass.java })
 
     private fun defaultParameterName(param: ParamDescriptor): String =
         if (param.name.startsWith("arg")) {

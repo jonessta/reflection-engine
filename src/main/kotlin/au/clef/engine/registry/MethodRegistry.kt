@@ -4,55 +4,37 @@ import au.clef.engine.MethodNotFoundException
 import au.clef.engine.model.InheritanceLevel
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
-import au.clef.engine.model.ParamDescriptor
 import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.reflect.KClass
 
-class MethodRegistry {
+class MethodRegistry(private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly) {
 
-    private data class DescriptorCacheKey(
-        val clazz: Class<*>, val inheritanceLevel: InheritanceLevel
-    )
-
-    private val descriptorsByQuery: MutableMap<DescriptorCacheKey, List<MethodDescriptor>> = ConcurrentHashMap()
+    private val descriptorsByClass: MutableMap<Class<*>, List<MethodDescriptor>> = ConcurrentHashMap()
     private val descriptorsById: MutableMap<MethodId, MethodDescriptor> = ConcurrentHashMap()
 
-    fun descriptors(
-        clazz: Class<*>, inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-    ): List<MethodDescriptor> {
-        val key = DescriptorCacheKey(clazz, inheritanceLevel)
-        return descriptorsByQuery.getOrPut(key) {
-            val descriptors: List<MethodDescriptor> = buildDescriptors(clazz, inheritanceLevel)
-            descriptors.forEach { descriptor: MethodDescriptor ->
-                descriptorsById[descriptor.id] = descriptor
-            }
-            descriptors
-        }
+    constructor(
+        vararg classes: Class<*>,
+        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
+    ) : this(inheritanceLevel) {
+        classes.forEach { addClass(it) }
     }
 
-    fun findDescriptorById(id: MethodId): MethodDescriptor {
-        descriptorsById[id]?.let { descriptor: MethodDescriptor ->
-            return descriptor
-        }
-        val clazz: Class<*> = classFromMethodId(id)
-        // todo put InheritanceLevel in function param ?
-        descriptors(clazz, InheritanceLevel.All)
-        return descriptorsById[id] ?: throw MethodNotFoundException(
-            methodId = id, available = descriptorsById.keys.map { methodId: MethodId -> methodId.toString() })
+    // todo addKClass(clazz: KClass<*>
+    fun addClass(clazz: Class<*>) {
+        if (descriptorsByClass.containsKey(clazz))
+            return
+
+        val descriptors: List<MethodDescriptor> = buildDescriptors(clazz, inheritanceLevel)
+        descriptorsByClass[clazz] = descriptors
+        descriptors.forEach { descriptor -> descriptorsById[descriptor.id] = descriptor }
     }
 
-    fun allDescriptors(): List<MethodDescriptor> = descriptorsById.values.toList()
+    private fun collectMethods(clazz: Class<*>, inheritanceLevel: InheritanceLevel): List<Method> =
+        when (inheritanceLevel) {
+            InheritanceLevel.DeclaredOnly ->
+                clazz.declaredMethods.toList()
 
-    private fun buildDescriptors(clazz: Class<*>, inheritanceLevel: InheritanceLevel): List<MethodDescriptor> {
-        val methods: List<Method> = collectMethods(clazz, inheritanceLevel)
-        return methods.map { method: Method ->
-            MethodDescriptor(method = method, displayName = null)
-        }
-    }
-
-    private fun collectMethods(clazz: Class<*>, inheritanceLevel: InheritanceLevel): List<Method> {
-        return when (inheritanceLevel) {
-            InheritanceLevel.DeclaredOnly -> clazz.declaredMethods.toList()
             InheritanceLevel.All -> {
                 val methods: MutableList<Method> = mutableListOf()
                 var current: Class<*>? = clazz
@@ -66,29 +48,51 @@ class MethodRegistry {
             }
 
             is InheritanceLevel.Depth -> {
-                require(inheritanceLevel.value >= 0) { "Depth must be >= 0" }
                 val methods: MutableList<Method> = mutableListOf()
                 var current: Class<*>? = clazz
-                var depth = 0
+                var depth: Int = 0
                 while (current != null && depth <= inheritanceLevel.value) {
                     methods += current.declaredMethods
                     current = current.superclass
                     depth++
                 }
-                methods.distinctBy { method: Method ->
-                    MethodId.from(method)
-                }
+                methods.distinctBy { method: Method -> MethodId.from(method) }
             }
         }
+
+    private fun buildDescriptors(clazz: Class<*>, inheritanceLevel: InheritanceLevel): List<MethodDescriptor> {
+        val methods: List<Method> = collectMethods(clazz, inheritanceLevel)
+        return methods.map { method: Method -> MethodDescriptor(method) }
     }
 
-    private fun classFromMethodId(id: MethodId): Class<*> {
-        val className: String = id.value.substringBefore("#")
-        return Class.forName(className)
+    fun addClass(clazz: KClass<*>) {
+        addClass(clazz.java)
     }
 
-    fun clearCache() {
-        descriptorsByQuery.clear()
+    fun addClassByName(className: String) {
+        val clazz: Class<*> = try {
+            Class.forName(className)
+        } catch (e: ClassNotFoundException) {
+            throw IllegalArgumentException("Class not found: $className", e)
+        }
+        addClass(clazz)
+    }
+
+    fun descriptors(clazz: Class<*>): List<MethodDescriptor> =
+        descriptorsByClass[clazz] ?: throw IllegalArgumentException("Class not registered: ${clazz.name}")
+
+    fun descriptorsByKClass(clazz: KClass<*>): List<MethodDescriptor> = descriptors(clazz.java)
+
+    fun findDescriptorById(id: MethodId): MethodDescriptor =
+        descriptorsById[id] ?: throw MethodNotFoundException(
+            methodId = id,
+            available = descriptorsById.keys.map { it.toString() }
+        )
+
+    fun allDescriptors(): List<MethodDescriptor> = descriptorsById.values.toList()
+
+    fun clear() {
+        descriptorsByClass.clear()
         descriptorsById.clear()
     }
 }

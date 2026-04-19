@@ -23,6 +23,17 @@ value class MethodId private constructor(val value: String) {
             )
         }
 
+        fun from(declaringClass: KClass<*>, methodName: String, vararg params: KClass<*>): MethodId {
+            val params: Array<Class<out Any>> = params.map { it.java }.toTypedArray()
+            val  method: Method = declaringClass.java.getDeclaredMethod(methodName, *params)
+            return from(method)
+        }
+
+        fun from(declaringClass: Class<*>, methodName: String, vararg parameterTypes: Class<*>): MethodId {
+            val method: Method = declaringClass.getMethod(methodName, *parameterTypes)
+            return from(method)
+        }
+
         fun fromString(value: String): MethodId {
             require(value.isNotBlank()) { "MethodId cannot be blank" }
             require(value.contains(CLASS_NAME_SEPARATOR)) { "Invalid MethodId: missing '$CLASS_NAME_SEPARATOR'" }
@@ -33,12 +44,6 @@ value class MethodId private constructor(val value: String) {
             // todo just need to throw if class deosnt exists with the parameters
             val declaringClass: Class<*> = Class.forName(clazzName)
             return MethodId(value)
-        }
-
-        fun from(clazz: KClass<*>, methodName: String, vararg params: KClass<*>): MethodId {
-            val params = params.map { it.java }.toTypedArray()
-            val  method: Method = clazz.java.getDeclaredMethod(methodName, *params)
-            return from(method)
         }
 
     }

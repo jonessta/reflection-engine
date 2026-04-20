@@ -11,234 +11,241 @@ import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
 
 class TypeConverter {
-    fun materialize(value: Any?, targetType: Class<*>): Any? {
-        val result: ConversionResult? = tryConvert(value, targetType)
-        return result?.value ?: throw TypeMismatchException(value, targetType)
+
+    fun materialize(value: Value, targetType: Class<*>): Any? {
+        if (value is Value.Null) {
+            if (targetType.isPrimitive) {
+                throw TypeMismatchException(value, targetType)
+            }
+            return null
+        }
+
+        return when (value) {
+            is Value.Primitive -> convertPrimitive(value.value, targetType)
+            is Value.Object -> convertObject(value, targetType)
+            is Value.Instance -> convertInstance(value, targetType)
+            Value.Null -> null
+        }
     }
 
-    private fun tryConvert(value: Any?, targetType: Class<*>): ConversionResult? {
-        val unwrapped: Any? = when (value) {
-            is Value.Primitive -> value.value
-            is Value.Instance -> value.obj
-            is Value.Object -> {
-                val built: Any = buildObject(value)
-                if (targetType.isAssignableFrom(built.javaClass) || isBoxedOrPrimitiveMatch(
-                        targetType, built.javaClass
+    private fun convertPrimitive(rawValue: Any?, targetType: Class<*>): Any? {
+        if (rawValue == null) {
+            if (targetType.isPrimitive) {
+                throw TypeMismatchException(Value.Primitive(null), targetType)
+            }
+            return null
+        }
+
+        if (targetType.isInstance(rawValue)) {
+            return rawValue
+        }
+
+        val text: String = rawValue.toString()
+
+        return when (targetType) {
+            String::class.java -> text
+            java.lang.Integer::class.java, Int::class.javaPrimitiveType -> text.toInt()
+            java.lang.Long::class.java, Long::class.javaPrimitiveType -> text.toLong()
+            java.lang.Double::class.java, Double::class.javaPrimitiveType -> text.toDouble()
+            java.lang.Float::class.java, Float::class.javaPrimitiveType -> text.toFloat()
+            java.lang.Short::class.java, Short::class.javaPrimitiveType -> text.toShort()
+            java.lang.Byte::class.java, Byte::class.javaPrimitiveType -> text.toByte()
+            java.lang.Boolean::class.java, Boolean::class.javaPrimitiveType -> parseBoolean(text)
+            java.lang.Character::class.java, Char::class.javaPrimitiveType -> parseChar(text)
+            else -> {
+                if (targetType.isEnum) {
+                    convertEnum(text, targetType)
+                } else {
+                    throw TypeMismatchException(Value.Primitive(rawValue), targetType)
+                }
+            }
+        }
+    }
+
+    private fun convertEnum(text: String, targetType: Class<*>): Any {
+        val constants: Array<out Any> = targetType.enumConstants
+            ?: throw TypeMismatchException(Value.Primitive(text), targetType)
+
+        return constants.firstOrNull { constant: Any ->
+            constant.toString() == text
+        } ?: throw TypeMismatchException(Value.Primitive(text), targetType)
+    }
+
+    private fun parseBoolean(text: String): Boolean =
+        when (text.lowercase()) {
+            "true" -> true
+            "false" -> false
+            else -> throw IllegalArgumentException("Invalid boolean value: $text")
+        }
+
+    private fun parseChar(text: String): Char {
+        require(text.length == 1) { "Invalid char value: $text" }
+        return text[0]
+    }
+
+    private fun convertInstance(value: Value.Instance, targetType: Class<*>): Any {
+        val instance: Any = value.obj
+
+        if (!targetType.isInstance(instance)) {
+            throw TypeMismatchException(value, targetType)
+        }
+
+        return instance
+    }
+
+    private fun convertObject(value: Value.Object, targetType: Class<*>): Any {
+        if (!targetType.isAssignableFrom(value.type)) {
+            throw TypeMismatchException(value, targetType)
+        }
+
+        return buildObject(value, targetType)
+    }
+
+    private fun buildObject(value: Value.Object, targetType: Class<*>): Any {
+        val kotlinBuilt: Any? = buildKotlinObject(value, targetType)
+        if (kotlinBuilt != null) {
+            return kotlinBuilt
+        }
+
+        val constructors: List<Constructor<*>> = targetType.declaredConstructors.toList()
+
+        val noArgConstructor: Constructor<*>? =
+            constructors.firstOrNull { constructor: Constructor<*> ->
+                constructor.parameterCount == 0
+            }
+
+        if (noArgConstructor != null) {
+            return buildWithNoArgConstructor(value, targetType, noArgConstructor)
+        }
+
+        val singleConstructor: Constructor<*>? =
+            if (constructors.size == 1) constructors[0] else null
+
+        if (singleConstructor != null) {
+            return buildWithJavaConstructorArguments(value, targetType, singleConstructor)
+        }
+
+        throw ObjectConstructionException(
+            "No supported construction strategy found for ${targetType.name}"
+        )
+    }
+
+    private fun buildKotlinObject(value: Value.Object, targetType: Class<*>): Any? {
+        val kClass: KClass<*> = targetType.kotlin
+        val primary: KFunction<Any>? = kClass.primaryConstructor as KFunction<Any>?
+
+        if (primary == null) {
+            return null
+        }
+
+        try {
+            val arguments: Map<KParameter, Any?> =
+                primary.parameters.associateWith { parameter: KParameter ->
+                    val parameterName: String = parameter.name
+                        ?: throw ObjectConstructionException(
+                            "Unnamed Kotlin constructor parameter on ${targetType.name}"
+                        )
+
+                    val fieldValue: Value = value.fields[parameterName]
+                        ?: throw ObjectConstructionException(
+                            "Missing constructor argument '$parameterName' for ${targetType.name}"
+                        )
+
+                    val classifier: Any? = parameter.type.classifier
+                    val parameterType: Class<*> =
+                        if (classifier is KClass<*>) {
+                            classifier.java
+                        } else {
+                            throw ObjectConstructionException(
+                                "Unsupported Kotlin parameter type '$parameterName' on ${targetType.name}"
+                            )
+                        }
+
+                    materialize(fieldValue, parameterType)
+                }
+
+            return primary.callBy(arguments)
+        } catch (e: ObjectConstructionException) {
+            throw e
+        } catch (e: Exception) {
+            throw ObjectConstructionException(
+                "Failed to construct ${targetType.name}: ${e.message}",
+                e
+            )
+        }
+    }
+
+    private fun buildWithNoArgConstructor(
+        value: Value.Object,
+        targetType: Class<*>,
+        constructor: Constructor<*>
+    ): Any {
+        try {
+            constructor.isAccessible = true
+            val instance: Any = constructor.newInstance()
+
+            value.fields.forEach { (fieldName: String, fieldValue: Value) ->
+                val field: Field = findField(targetType, fieldName)
+                    ?: throw ObjectConstructionException(
+                        "No field '$fieldName' found on ${targetType.name}"
                     )
-                ) {
-                    return ConversionResult(built)
-                }
-                return null
-            }
 
-            else -> value
-        }
-
-        if (unwrapped == null) {
-            return if (targetType.isPrimitive) null else ConversionResult(null)
-        }
-
-        return when {
-            isIntType(targetType) -> when (unwrapped) {
-                is Int -> ConversionResult(unwrapped)
-                is String -> unwrapped.toIntOrNull()?.let { ConversionResult(it) }
-                else -> null
-            }
-
-            isLongType(targetType) -> when (unwrapped) {
-                is Long -> ConversionResult(unwrapped)
-                is Int -> ConversionResult(unwrapped.toLong())
-                is String -> unwrapped.toLongOrNull()?.let { ConversionResult(it) }
-                else -> null
-            }
-
-            isDoubleType(targetType) -> when (unwrapped) {
-                is Double -> ConversionResult(unwrapped)
-                is Int -> ConversionResult(unwrapped.toDouble())
-                is Long -> ConversionResult(unwrapped.toDouble())
-                is String -> unwrapped.toDoubleOrNull()?.let { ConversionResult(it) }
-                else -> null
-            }
-
-            isFloatType(targetType) -> when (unwrapped) {
-                is Float -> ConversionResult(unwrapped)
-                is Int -> ConversionResult(unwrapped.toFloat())
-                is Long -> ConversionResult(unwrapped.toFloat())
-                is Double -> ConversionResult(unwrapped.toFloat())
-                is String -> unwrapped.toFloatOrNull()?.let { ConversionResult(it) }
-                else -> null
-            }
-
-            isBooleanType(targetType) -> when (unwrapped) {
-                is Boolean -> ConversionResult(unwrapped)
-                is String -> when (unwrapped.lowercase()) {
-                    "true" -> ConversionResult(true)
-                    "false" -> ConversionResult(false)
-                    else -> null
-                }
-
-                else -> null
-            }
-
-            isShortType(targetType) -> when (unwrapped) {
-                is Short -> ConversionResult(unwrapped)
-                is Int -> ConversionResult(unwrapped.toShort())
-                is String -> unwrapped.toShortOrNull()?.let { ConversionResult(it) }
-                else -> null
-            }
-
-            isByteType(targetType) -> when (unwrapped) {
-                is Byte -> ConversionResult(unwrapped)
-                is Int -> ConversionResult(unwrapped.toByte())
-                is String -> unwrapped.toByteOrNull()?.let { ConversionResult(it) }
-                else -> null
-            }
-
-            isCharType(targetType) -> when (unwrapped) {
-                is Char -> ConversionResult(unwrapped)
-                is String -> unwrapped.singleOrNull()?.let { ConversionResult(it) }
-                else -> null
-            }
-
-            isStringType(targetType) -> when (unwrapped) {
-                is String -> ConversionResult(unwrapped)
-                else -> ConversionResult(unwrapped.toString())
-            }
-
-            targetType.isAssignableFrom(unwrapped.javaClass) -> ConversionResult(unwrapped)
-            else -> null
-        }
-    }
-
-    private fun isIntType(type: Class<*>): Boolean =
-        type == Int::class.javaPrimitiveType || type == Int::class.javaObjectType
-
-    private fun isLongType(type: Class<*>): Boolean =
-        type == Long::class.javaPrimitiveType || type == Long::class.javaObjectType
-
-    private fun isDoubleType(type: Class<*>): Boolean =
-        type == Double::class.javaPrimitiveType || type == Double::class.javaObjectType
-
-    private fun isFloatType(type: Class<*>): Boolean =
-        type == Float::class.javaPrimitiveType || type == Float::class.javaObjectType
-
-    private fun isBooleanType(type: Class<*>): Boolean =
-        type == Boolean::class.javaPrimitiveType || type == Boolean::class.javaObjectType
-
-    private fun isShortType(type: Class<*>): Boolean =
-        type == Short::class.javaPrimitiveType || type == Short::class.javaObjectType
-
-    private fun isByteType(type: Class<*>): Boolean =
-        type == Byte::class.javaPrimitiveType || type == Byte::class.javaObjectType
-
-    private fun isCharType(type: Class<*>): Boolean =
-        type == Char::class.javaPrimitiveType || type == Char::class.javaObjectType
-
-    private fun isStringType(type: Class<*>): Boolean = type == String::class.java
-
-    private fun isBoxedOrPrimitiveMatch(targetType: Class<*>, actualType: Class<*>): Boolean = when {
-        isIntType(targetType) -> isIntType(actualType)
-        isLongType(targetType) -> isLongType(actualType)
-        isDoubleType(targetType) -> isDoubleType(actualType)
-        isFloatType(targetType) -> isFloatType(actualType)
-        isBooleanType(targetType) -> isBooleanType(actualType)
-        isShortType(targetType) -> isShortType(actualType)
-        isByteType(targetType) -> isByteType(actualType)
-        isCharType(targetType) -> isCharType(actualType)
-        else -> false
-    }
-
-    private data class ConversionResult(val value: Any?)
-
-    private fun buildObject(obj: Value.Object): Any {
-        val clazz: Class<*> = obj.type
-        return if (isKotlinClass(clazz)) {
-            buildKotlinObject(obj)
-        } else {
-            buildJavaObject(obj)
-        }
-    }
-
-    // Kotlin reflection
-    private fun buildKotlinObject(obj: Value.Object): Any {
-        val kClass: KClass<out Any> = obj.type.kotlin
-        val ctor: KFunction<Any> =
-            kClass.primaryConstructor ?: throw ObjectConstructionException(obj.type, "No primary constructor")
-
-        val argsByParam: MutableMap<KParameter, Any?> = mutableMapOf()
-
-        for (param: KParameter in ctor.parameters) {
-            val name: String =
-                param.name ?: throw ObjectConstructionException(obj.type, "Unnamed constructor parameter")
-
-            val rawValue: Value? = obj.fields[name]
-            if (rawValue == null) {
-                if (param.isOptional) continue
-                if (param.type.isMarkedNullable) {
-                    argsByParam[param] = null
-                    continue
-                }
-                throw ObjectConstructionException(obj.type, "Missing field '$name'")
-            }
-
-            val paramClass: Class<out Any> =
-                (param.type.classifier as? KClass<*>)?.java ?: throw ObjectConstructionException(
-                    obj.type, "Unsupported type for '$name'"
-                )
-
-            argsByParam[param] = materialize(rawValue, paramClass)
-        }
-
-        return try {
-            ctor.callBy(argsByParam)
-        } catch (e: Exception) {
-            throw ObjectConstructionException(obj.type, "Constructor invocation failed", e)
-        }
-    }
-
-    // Java reflection fallback
-    private fun buildJavaObject(obj: Value.Object): Any {
-        val clazz: Class<*> = obj.type
-        var lastFailure: Exception? = null
-
-        for (ctor: Constructor<*> in clazz.declaredConstructors) {
-            val params = ctor.parameters
-            if (params.size != obj.fields.size) continue
-
-            try {
-                val args: Array<Any?> = params.mapIndexed { i: Int, param ->
-                    val value: Value =
-                        obj.fields[param.name] ?: obj.fields["arg$i"] ?: obj.fields.values.elementAtOrNull(i)
-                        ?: throw ObjectConstructionException(clazz, "Missing value for param $i")
-
-                    materialize(value, param.type)
-                }.toTypedArray()
-
-                ctor.isAccessible = true
-                return ctor.newInstance(*args)
-            } catch (e: Exception) {
-                lastFailure = e
-            }
-        }
-
-        val noArgCtor: Constructor<*> = clazz.declaredConstructors.firstOrNull { it.parameterCount == 0 }
-            ?: throw ObjectConstructionException(clazz, "No suitable constructor", lastFailure)
-
-        return try {
-            noArgCtor.isAccessible = true
-            val instance: Any = noArgCtor.newInstance()
-
-            obj.fields.forEach { (name: String, value: Value) ->
-                val field: Field = clazz.getDeclaredField(name)
                 field.isAccessible = true
-                field.set(instance, materialize(value, field.type))
+                val convertedValue: Any? = materialize(fieldValue, field.type)
+                field.set(instance, convertedValue)
             }
 
-            instance
+            return instance
+        } catch (e: ObjectConstructionException) {
+            throw e
         } catch (e: Exception) {
-            throw ObjectConstructionException(clazz, "No-arg construction failed", e)
+            throw ObjectConstructionException(
+                "Failed to construct ${targetType.name}: ${e.message}",
+                e
+            )
         }
     }
 
-    private fun isKotlinClass(clazz: Class<*>): Boolean = clazz.getAnnotation(Metadata::class.java) != null
+    private fun buildWithJavaConstructorArguments(
+        value: Value.Object,
+        targetType: Class<*>,
+        constructor: Constructor<*>
+    ): Any {
+        try {
+            val parameterTypes: Array<Class<*>> = constructor.parameterTypes
+            val arguments: Array<Any?> = Array(parameterTypes.size) { index: Int ->
+                val fieldName: String = "arg$index"
+                val fieldValue: Value = value.fields[fieldName]
+                    ?: throw ObjectConstructionException(
+                        "Missing constructor argument '$fieldName' for ${targetType.name}"
+                    )
+
+                materialize(fieldValue, parameterTypes[index])
+            }
+
+            constructor.isAccessible = true
+            return constructor.newInstance(*arguments)
+        } catch (e: ObjectConstructionException) {
+            throw e
+        } catch (e: Exception) {
+            throw ObjectConstructionException(
+                "Failed to construct ${targetType.name}: ${e.message}",
+                e
+            )
+        }
+    }
+
+    private fun findField(targetType: Class<*>, fieldName: String): Field? {
+        var current: Class<*>? = targetType
+
+        while (current != null) {
+            try {
+                return current.getDeclaredField(fieldName)
+            } catch (_: NoSuchFieldException) {
+                current = current.superclass
+            }
+        }
+
+        return null
+    }
 }

@@ -1,6 +1,7 @@
 package au.clef.engine
 
 import au.clef.engine.model.MethodId
+import au.clef.engine.model.Value
 
 open class EngineException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 
@@ -12,8 +13,12 @@ class MethodNotFoundException(
 
 class MissingInstanceException(methodName: String) : EngineException("Instance required for method $methodName")
 
-class TypeMismatchException(val value: Any?, targetType: Class<*>) :
-    EngineException("Cannot convert $value to ${targetType.simpleName}")
+class TypeMismatchException(
+    value: Value,
+    targetType: Class<*>
+) : RuntimeException("Cannot convert $value to ${targetType.name}")
 
-class ObjectConstructionException(targetClass: Class<*>, details: String, cause: Throwable? = null) :
-    EngineException("Failed to construct ${targetClass.name}: $details", cause)
+class ObjectConstructionException(
+    message: String,
+    cause: Throwable? = null
+) : RuntimeException(message, cause)

@@ -1,8 +1,8 @@
 package au.clef.app.demo
 
-import au.clef.api.model.add
 import au.clef.app.demo.model.AcmeService
 import au.clef.app.demo.model.Person
+import au.clef.app.demo.model.add
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
@@ -33,7 +33,7 @@ val methodRegistry = MethodRegistry(
     // todo make kotlin classes
     AcmeService::class.java,
     Math::class.java,
-    Class.forName("au.clef.api.model.KotlinFuncsKt")
+    Class.forName("au.clef.app.demo.model.KotlinFuncsKt")
 )
 
 private fun createEngine(): ReflectionEngine {

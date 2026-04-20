@@ -63,7 +63,7 @@ class MethodDescriptor(
         displayName: String? = null
     ) : this(method, displayName, buildParamDescriptors(method))
 
-    val id: MethodId get() = MethodId.from(method)
+    val id: MethodId = MethodId.from(method)
 
     val reflectedName: String get() = method.name
 

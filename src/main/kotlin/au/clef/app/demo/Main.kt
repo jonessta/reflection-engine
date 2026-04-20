@@ -82,13 +82,13 @@ fun runGuiStyleInstance(engine: ReflectionEngine) {
 
 fun runGuiStyleStatic(engine: ReflectionEngine) {
     val methodId: MethodId = MethodId.from(Math::class, "max", Int::class, Int::class)
-    val result: Any? = engine.invoke(methodId, instance = null, Value.Primitive(10), Value.Primitive(20))
+    val result: Any? = engine.invoke(methodId, Value.Primitive(10), Value.Primitive(20))
     println("-----------> runGuiStyleStatic: $result")
 }
 
 fun runKotlinTopLevel(engine: ReflectionEngine) {
     val methodId: MethodId = MethodId.from(::add.javaMethod!!)
-    val result: Any? = engine.invoke(methodId,  null, Value.Primitive(10), Value.Primitive(20))
+    val result: Any? = engine.invoke(methodId, Value.Primitive(10), Value.Primitive(20))
     println("-----------> runTopLevelFunction: $result")
 }
 

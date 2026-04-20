@@ -144,23 +144,37 @@ class TypeConverter {
 
     private fun buildKotlinObject(value: Value.Object, targetType: Class<*>): Any? {
         val kClass: KClass<*> = targetType.kotlin
-        val primary: KFunction<Any> = kClass.primaryConstructor ?: return null
+        val primary: KFunction<Any>? = kClass.primaryConstructor as KFunction<Any>?
+
+        if (primary == null) {
+            return null
+        }
+
+        if (primary.parameters.isEmpty() && value.fields.isNotEmpty()) {
+            return null
+        }
 
         try {
             val arguments: Map<KParameter, Any?> =
                 primary.parameters.associateWith { parameter: KParameter ->
                     val parameterName: String = parameter.name
-                        ?: throw ObjectConstructionException("Unnamed Kotlin constructor parameter on ${targetType.name}")
+                        ?: throw ObjectConstructionException(
+                            "Unnamed Kotlin constructor parameter on ${targetType.name}"
+                        )
 
                     val fieldValue: Value = value.fields[parameterName]
-                        ?: throw ObjectConstructionException("Missing constructor argument '$parameterName' for ${targetType.name}")
+                        ?: throw ObjectConstructionException(
+                            "Missing constructor argument '$parameterName' for ${targetType.name}"
+                        )
 
                     val classifier: Any? = parameter.type.classifier
                     val parameterType: Class<*> =
                         if (classifier is KClass<*>) {
                             classifier.java
                         } else {
-                            throw ObjectConstructionException("Unsupported Kotlin parameter type '$parameterName' on ${targetType.name}")
+                            throw ObjectConstructionException(
+                                "Unsupported Kotlin parameter type '$parameterName' on ${targetType.name}"
+                            )
                         }
 
                     materialize(fieldValue, parameterType)
@@ -170,7 +184,10 @@ class TypeConverter {
         } catch (e: ObjectConstructionException) {
             throw e
         } catch (e: Exception) {
-            throw ObjectConstructionException("Failed to construct ${targetType.name}: ${e.message}", e)
+            throw ObjectConstructionException(
+                "Failed to construct ${targetType.name}: ${e.message}",
+                e
+            )
         }
     }
 

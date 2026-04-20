@@ -8,19 +8,23 @@ import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
-class MethodRegistry(private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly) {
+class MethodRegistry(
+    clazz: KClass<*>, vararg classes: KClass<*>,
+    private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
+) {
 
     private val descriptorsByClass: MutableMap<Class<*>, List<MethodDescriptor>> = ConcurrentHashMap()
     private val descriptorsById: MutableMap<MethodId, MethodDescriptor> = ConcurrentHashMap()
 
-    constructor(
-        vararg classes: KClass<*>,
-        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-    ) : this(inheritanceLevel) {
+    init {
+        addClass(clazz)
         classes.forEach { addClass(it) }
     }
 
-    // todo addKClass(clazz: KClass<*>
+    fun addClass(clazz: KClass<*>) {
+        addClass(clazz.java)
+    }
+
     fun addClass(clazz: Class<*>) {
         if (descriptorsByClass.containsKey(clazz))
             return
@@ -63,10 +67,6 @@ class MethodRegistry(private val inheritanceLevel: InheritanceLevel = Inheritanc
     private fun buildDescriptors(clazz: Class<*>, inheritanceLevel: InheritanceLevel): List<MethodDescriptor> {
         val methods: List<Method> = collectMethods(clazz, inheritanceLevel)
         return methods.map { method: Method -> MethodDescriptor(method) }
-    }
-
-    fun addClass(clazz: KClass<*>) {
-        addClass(clazz.java)
     }
 
     fun addClassByName(className: String) {

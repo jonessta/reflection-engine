@@ -8,7 +8,7 @@ import au.clef.metadata.model.MetadataRoot
 import au.clef.metadata.model.MethodMetadata
 import au.clef.metadata.model.ParamMetadata
 
-class MetadataValidator(private val methodRegistry: MethodRegistry = MethodRegistry()) {
+class MetadataValidator(private val methodRegistry: MethodRegistry) {
 
     fun validate(metadata: MetadataRoot): List<ValidationIssue> {
         val issues: MutableList<ValidationIssue> = mutableListOf()

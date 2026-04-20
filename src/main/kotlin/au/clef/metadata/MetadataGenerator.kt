@@ -9,7 +9,7 @@ import au.clef.metadata.model.MethodMetadata
 import au.clef.metadata.model.ParamMetadata
 import kotlin.reflect.KClass
 
-class MetadataGenerator(private val methodRegistry: MethodRegistry = MethodRegistry()) {
+class MetadataGenerator(private val methodRegistry: MethodRegistry) {
 
     fun generate(clazz: Class<*>): MetadataRoot {
         val descriptors: List<MethodDescriptor> = methodRegistry.descriptors(clazz)

@@ -30,7 +30,6 @@ fun main() {
 }
 
 val methodRegistry = MethodRegistry(
-    // todo make kotlin classes
     AcmeService::class,
     Math::class,
     Class.forName("au.clef.app.demo.model.KotlinFuncsKt").kotlin
@@ -51,7 +50,7 @@ fun generateMetadata() {
 
 fun validate() {
     val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(RESOURCE_PATH)
-    val validator = MetadataValidator()
+    val validator = MetadataValidator(methodRegistry)
     val issues: List<ValidationIssue> = validator.validate(metadata)
     if (issues.isEmpty()) {
         println("Metadata valid")

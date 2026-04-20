@@ -102,11 +102,9 @@ class TypeConverter {
 
     private fun convertInstance(value: Value.Instance, targetType: Class<*>): Any {
         val instance: Any = value.obj
-
         if (!targetType.isInstance(instance)) {
             throw TypeMismatchException(value, targetType)
         }
-
         return instance
     }
 
@@ -114,7 +112,6 @@ class TypeConverter {
         if (!targetType.isAssignableFrom(value.type)) {
             throw TypeMismatchException(value, targetType)
         }
-
         return buildObject(value, targetType)
     }
 
@@ -142,40 +139,28 @@ class TypeConverter {
             return buildWithJavaConstructorArguments(value, targetType, singleConstructor)
         }
 
-        throw ObjectConstructionException(
-            "No supported construction strategy found for ${targetType.name}"
-        )
+        throw ObjectConstructionException("No supported construction strategy found for ${targetType.name}")
     }
 
     private fun buildKotlinObject(value: Value.Object, targetType: Class<*>): Any? {
         val kClass: KClass<*> = targetType.kotlin
-        val primary: KFunction<Any>? = kClass.primaryConstructor
-
-        if (primary == null) {
-            return null
-        }
+        val primary: KFunction<Any> = kClass.primaryConstructor ?: return null
 
         try {
             val arguments: Map<KParameter, Any?> =
                 primary.parameters.associateWith { parameter: KParameter ->
                     val parameterName: String = parameter.name
-                        ?: throw ObjectConstructionException(
-                            "Unnamed Kotlin constructor parameter on ${targetType.name}"
-                        )
+                        ?: throw ObjectConstructionException("Unnamed Kotlin constructor parameter on ${targetType.name}")
 
                     val fieldValue: Value = value.fields[parameterName]
-                        ?: throw ObjectConstructionException(
-                            "Missing constructor argument '$parameterName' for ${targetType.name}"
-                        )
+                        ?: throw ObjectConstructionException("Missing constructor argument '$parameterName' for ${targetType.name}")
 
                     val classifier: Any? = parameter.type.classifier
                     val parameterType: Class<*> =
                         if (classifier is KClass<*>) {
                             classifier.java
                         } else {
-                            throw ObjectConstructionException(
-                                "Unsupported Kotlin parameter type '$parameterName' on ${targetType.name}"
-                            )
+                            throw ObjectConstructionException("Unsupported Kotlin parameter type '$parameterName' on ${targetType.name}")
                         }
 
                     materialize(fieldValue, parameterType)
@@ -185,10 +170,7 @@ class TypeConverter {
         } catch (e: ObjectConstructionException) {
             throw e
         } catch (e: Exception) {
-            throw ObjectConstructionException(
-                "Failed to construct ${targetType.name}: ${e.message}",
-                e
-            )
+            throw ObjectConstructionException("Failed to construct ${targetType.name}: ${e.message}", e)
         }
     }
 
@@ -200,12 +182,9 @@ class TypeConverter {
         try {
             constructor.isAccessible = true
             val instance: Any = constructor.newInstance()
-
             value.fields.forEach { (fieldName: String, fieldValue: Value) ->
                 val field: Field = findField(targetType, fieldName)
-                    ?: throw ObjectConstructionException(
-                        "No field '$fieldName' found on ${targetType.name}"
-                    )
+                    ?: throw ObjectConstructionException("No field '$fieldName' found on ${targetType.name}")
 
                 field.isAccessible = true
                 val convertedValue: Any? = materialize(fieldValue, field.type)
@@ -216,10 +195,7 @@ class TypeConverter {
         } catch (e: ObjectConstructionException) {
             throw e
         } catch (e: Exception) {
-            throw ObjectConstructionException(
-                "Failed to construct ${targetType.name}: ${e.message}",
-                e
-            )
+            throw ObjectConstructionException("Failed to construct ${targetType.name}: ${e.message}", e)
         }
     }
 
@@ -233,9 +209,7 @@ class TypeConverter {
             val arguments: Array<Any?> = Array(parameterTypes.size) { index: Int ->
                 val fieldName: String = "arg$index"
                 val fieldValue: Value = value.fields[fieldName]
-                    ?: throw ObjectConstructionException(
-                        "Missing constructor argument '$fieldName' for ${targetType.name}"
-                    )
+                    ?: throw ObjectConstructionException("Missing constructor argument '$fieldName' for ${targetType.name}")
 
                 materialize(fieldValue, parameterTypes[index])
             }
@@ -245,16 +219,12 @@ class TypeConverter {
         } catch (e: ObjectConstructionException) {
             throw e
         } catch (e: Exception) {
-            throw ObjectConstructionException(
-                "Failed to construct ${targetType.name}: ${e.message}",
-                e
-            )
+            throw ObjectConstructionException("Failed to construct ${targetType.name}: ${e.message}", e)
         }
     }
 
     private fun findField(targetType: Class<*>, fieldName: String): Field? {
         var current: Class<*>? = targetType
-
         while (current != null) {
             try {
                 return current.getDeclaredField(fieldName)

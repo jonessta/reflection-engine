@@ -144,12 +144,7 @@ class TypeConverter {
 
     private fun buildKotlinObject(value: Value.Object, targetType: Class<*>): Any? {
         val kClass: KClass<*> = targetType.kotlin
-        val primary: KFunction<Any>? = kClass.primaryConstructor as KFunction<Any>?
-
-        if (primary == null) {
-            return null
-        }
-
+        val primary: KFunction<Any> = kClass.primaryConstructor ?: return null
         if (primary.parameters.isEmpty() && value.fields.isNotEmpty()) {
             return null
         }
@@ -158,9 +153,7 @@ class TypeConverter {
             val arguments: Map<KParameter, Any?> =
                 primary.parameters.associateWith { parameter: KParameter ->
                     val parameterName: String = parameter.name
-                        ?: throw ObjectConstructionException(
-                            "Unnamed Kotlin constructor parameter on ${targetType.name}"
-                        )
+                        ?: throw ObjectConstructionException("Unnamed Kotlin constructor parameter on ${targetType.name}")
 
                     val fieldValue: Value = value.fields[parameterName]
                         ?: throw ObjectConstructionException(
@@ -184,10 +177,7 @@ class TypeConverter {
         } catch (e: ObjectConstructionException) {
             throw e
         } catch (e: Exception) {
-            throw ObjectConstructionException(
-                "Failed to construct ${targetType.name}: ${e.message}",
-                e
-            )
+            throw ObjectConstructionException("Failed to construct ${targetType.name}: ${e.message}", e)
         }
     }
 
@@ -224,7 +214,7 @@ class TypeConverter {
         try {
             val parameterTypes: Array<Class<*>> = constructor.parameterTypes
             val arguments: Array<Any?> = Array(parameterTypes.size) { index: Int ->
-                val fieldName: String = "arg$index"
+                val fieldName = "arg$index"
                 val fieldValue: Value = value.fields[fieldName]
                     ?: throw ObjectConstructionException("Missing constructor argument '$fieldName' for ${targetType.name}")
 

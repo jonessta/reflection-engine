@@ -6,8 +6,7 @@ import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import kotlin.reflect.KClass
 
-// todo use
-class IllegalMethodIdException(val msg: String) : EngineException("Invalid MethodId: $msg")
+class IllegalMethodIdException(msg: String) : EngineException("Invalid MethodId: $msg")
 
 @Serializable
 @JvmInline
@@ -43,11 +42,11 @@ value class MethodId private constructor(val value: String) {
             val paramsPart: String = match.groupValues[3]
             if (paramsPart.isNotEmpty()) {
                 val paramTypes: List<String> = paramsPart.split(",")
-                require(paramTypes.none { it.isBlank() }) {
-                    "Invalid MethodId: parameter types must be comma-separated with no empty entries"
+                if (!(paramTypes.none { it.isBlank() })) {
+                    throw IllegalMethodIdException("parameter types must be comma-separated with no empty entries")
                 }
-                require(paramTypes.all { TYPE_NAME_REGEX.matches(it) }) {
-                    "Invalid MethodId: parameter type names are malformed"
+                if (!(paramTypes.all { TYPE_NAME_REGEX.matches(it) })) {
+                    throw IllegalMethodIdException("Invalid MethodId: parameter type names are malformed")
                 }
             }
             return MethodId(idString)

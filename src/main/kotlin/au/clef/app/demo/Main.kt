@@ -31,9 +31,9 @@ fun main() {
 
 val methodRegistry = MethodRegistry(
     // todo make kotlin classes
-    AcmeService::class.java,
-    Math::class.java,
-    Class.forName("au.clef.app.demo.model.KotlinFuncsKt")
+    AcmeService::class,
+    Math::class,
+    Class.forName("au.clef.app.demo.model.KotlinFuncsKt").kotlin
 )
 
 private fun createEngine(): ReflectionEngine {
@@ -63,8 +63,7 @@ fun validate() {
 }
 
 fun showAllDescriptors(engine: ReflectionEngine) {
-    // todo remove .java
-    val descriptors: List<MethodDescriptor> = engine.descriptors(AcmeService::class.java)
+    val descriptors: List<MethodDescriptor> = engine.descriptors(AcmeService::class)
     descriptors.forEach { descriptor: MethodDescriptor ->
         println("METHOD: ${descriptor.id}")
         descriptor.parameters.forEach { param: ParamDescriptor ->

@@ -6,12 +6,15 @@ import au.clef.engine.model.MethodId
 import au.clef.engine.model.Value
 import au.clef.engine.registry.MethodRegistry
 import au.clef.metadata.DescriptorMetadataRegistry
+import kotlin.reflect.KClass
 
 class ReflectionEngine(
     private val typeConverter: TypeConverter = TypeConverter(),
     private val methodRegistry: MethodRegistry,
     private val metadataRegistry: DescriptorMetadataRegistry? = null
 ) {
+
+    fun descriptors(clazz: KClass<*>): List<MethodDescriptor> = descriptors(clazz.java)
 
     fun descriptors(clazz: Class<*>): List<MethodDescriptor> {
         val descriptors: List<MethodDescriptor> = methodRegistry.descriptors(clazz)

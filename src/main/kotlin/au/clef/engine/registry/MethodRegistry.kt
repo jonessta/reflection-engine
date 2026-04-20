@@ -14,7 +14,7 @@ class MethodRegistry(private val inheritanceLevel: InheritanceLevel = Inheritanc
     private val descriptorsById: MutableMap<MethodId, MethodDescriptor> = ConcurrentHashMap()
 
     constructor(
-        vararg classes: Class<*>,
+        vararg classes: KClass<*>,
         inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
     ) : this(inheritanceLevel) {
         classes.forEach { addClass(it) }

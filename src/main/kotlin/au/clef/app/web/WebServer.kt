@@ -73,8 +73,8 @@ class WebServer {
             MetadataLoader.fromResourceOrEmpty("/config/method-metadata.json")
 
         val methodRegistry = MethodRegistry(
-            AcmeService::class.java,
-            Math::class.java
+            AcmeService::class,
+            Math::class
         )
 
         val engine = ReflectionEngine(

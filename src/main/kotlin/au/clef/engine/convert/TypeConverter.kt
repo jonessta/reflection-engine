@@ -44,14 +44,31 @@ class TypeConverter {
 
         return when (targetType) {
             String::class.java -> text
-            java.lang.Integer::class.java, Int::class.javaPrimitiveType -> text.toInt()
-            java.lang.Long::class.java, Long::class.javaPrimitiveType -> text.toLong()
-            java.lang.Double::class.java, Double::class.javaPrimitiveType -> text.toDouble()
-            java.lang.Float::class.java, Float::class.javaPrimitiveType -> text.toFloat()
-            java.lang.Short::class.java, Short::class.javaPrimitiveType -> text.toShort()
-            java.lang.Byte::class.java, Byte::class.javaPrimitiveType -> text.toByte()
-            java.lang.Boolean::class.java, Boolean::class.javaPrimitiveType -> parseBoolean(text)
-            java.lang.Character::class.java, Char::class.javaPrimitiveType -> parseChar(text)
+
+            Int::class.javaObjectType,
+            Int::class.javaPrimitiveType -> text.toInt()
+
+            Long::class.javaObjectType,
+            Long::class.javaPrimitiveType -> text.toLong()
+
+            Double::class.javaObjectType,
+            Double::class.javaPrimitiveType -> text.toDouble()
+
+            Float::class.javaObjectType,
+            Float::class.javaPrimitiveType -> text.toFloat()
+
+            Short::class.javaObjectType,
+            Short::class.javaPrimitiveType -> text.toShort()
+
+            Byte::class.javaObjectType,
+            Byte::class.javaPrimitiveType -> text.toByte()
+
+            Boolean::class.javaObjectType,
+            Boolean::class.javaPrimitiveType -> parseBoolean(text)
+
+            Char::class.javaObjectType,
+            Char::class.javaPrimitiveType -> parseChar(text)
+
             else -> {
                 if (targetType.isEnum) {
                     convertEnum(text, targetType)
@@ -132,7 +149,7 @@ class TypeConverter {
 
     private fun buildKotlinObject(value: Value.Object, targetType: Class<*>): Any? {
         val kClass: KClass<*> = targetType.kotlin
-        val primary: KFunction<Any>? = kClass.primaryConstructor as KFunction<Any>?
+        val primary: KFunction<Any>? = kClass.primaryConstructor
 
         if (primary == null) {
             return null

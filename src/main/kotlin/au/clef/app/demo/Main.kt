@@ -27,6 +27,7 @@ fun main() {
     runGuiStyleInstance(engine)
     runGuiStyleStatic(engine)
     runKotlinTopLevel(engine)
+    checkMethodId()
 }
 
 val methodRegistry = MethodRegistry(
@@ -88,6 +89,11 @@ fun runKotlinTopLevel(engine: ReflectionEngine) {
     val methodId: MethodId = MethodId.from(::add.javaMethod!!)
     val result: Any? = engine.invoke(methodId, Value.Primitive(10), Value.Primitive(20))
     println("-----------> runTopLevelFunction: $result")
+}
+
+fun checkMethodId() {
+    val methodIdValue: String = "au.blob.Thing#someMethod(int)"
+    MethodId.fromValue(methodIdValue)
 }
 
 private fun personValue(name: String = "Alice", age: Int = 25): Value.Object = Value.Object(

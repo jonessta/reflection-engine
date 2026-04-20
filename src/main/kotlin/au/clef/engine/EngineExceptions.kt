@@ -7,7 +7,7 @@ open class EngineException(message: String, cause: Throwable? = null) : RuntimeE
 
 class MethodNotFoundException(
     val methodId: MethodId, val available: List<String>
-) : RuntimeException(
+) : EngineException(
     "Method '${methodId}' not found. Available: ${available.joinToString()}"
 )
 
@@ -16,9 +16,9 @@ class MissingInstanceException(methodName: String) : EngineException("Instance r
 class TypeMismatchException(
     value: Value,
     targetType: Class<*>
-) : RuntimeException("Cannot convert $value to ${targetType.name}")
+) : EngineException("Cannot convert $value to ${targetType.name}")
 
 class ObjectConstructionException(
     message: String,
     cause: Throwable? = null
-) : RuntimeException(message, cause)
+) : EngineException(message, cause)

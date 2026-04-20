@@ -4,6 +4,7 @@ import au.clef.api.model.ValueDto
 import au.clef.engine.model.Value
 
 class ValueMapper(private val instanceRegistry: InstanceRegistry) {
+
     fun toEngineValue(dto: ValueDto): Value = when (dto) {
         is ValueDto.Primitive -> Value.Primitive(dto.value)
 

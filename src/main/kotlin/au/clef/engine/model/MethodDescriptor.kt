@@ -1,9 +1,13 @@
 package au.clef.engine.model
 
+import au.clef.engine.EngineException
 import kotlinx.serialization.Serializable
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import kotlin.reflect.KClass
+
+// todo use
+class IllegalMethodIdException(val msg: String) : EngineException("Invalid MethodId: $msg")
 
 @Serializable
 @JvmInline
@@ -26,13 +30,26 @@ value class MethodId private constructor(val value: String) {
             return from(method)
         }
 
+        private val METHOD_ID_OUTER_REGEX = Regex(
+            """^([A-Za-z_][A-Za-z0-9_$.]*)$CLASS_NAME_SEPARATOR([A-Za-z_][A-Za-z0-9_$]*)\((.*)\)$"""
+        )
+
+        private val TYPE_NAME_REGEX = Regex("""^[A-Za-z_][A-Za-z0-9_$.]*$""")
+
         fun fromValue(idString: String): MethodId {
-            require(idString.isNotBlank()) { "MethodId cannot be blank" }
-            require(idString.contains(CLASS_NAME_SEPARATOR)) { "Invalid MethodId: missing '$CLASS_NAME_SEPARATOR'" }
-            require(idString.contains("(") && idString.endsWith(")")) { "Invalid MethodId: expected methodName(paramTypes)" }
-            val clazzName: String = idString.substringBefore(CLASS_NAME_SEPARATOR)
-            // todo just need to throw if class deosnt exists with the parameters
-            Class.forName(clazzName)
+            val match: MatchResult = METHOD_ID_OUTER_REGEX.matchEntire(idString)
+                ?: throw IllegalMethodIdException("expected <class>#<method>(<paramTypes>)")
+
+            val paramsPart: String = match.groupValues[3]
+            if (paramsPart.isNotEmpty()) {
+                val paramTypes: List<String> = paramsPart.split(",")
+                require(paramTypes.none { it.isBlank() }) {
+                    "Invalid MethodId: parameter types must be comma-separated with no empty entries"
+                }
+                require(paramTypes.all { TYPE_NAME_REGEX.matches(it) }) {
+                    "Invalid MethodId: parameter type names are malformed"
+                }
+            }
             return MethodId(idString)
         }
     }

@@ -12,7 +12,7 @@ class TypeConverterTest {
     @Test
     fun materialize_convertsStringToIntPrimitive() {
         val result: Any? = converter.materialize(
-            Value.Primitive("25"),
+            Value.Scalar("25"),
             Int::class.javaPrimitiveType!!
         )
         assertEquals(25, result)
@@ -21,7 +21,7 @@ class TypeConverterTest {
     @Test
     fun materialize_convertsStringToBoxedInt() {
         val result: Any? = converter.materialize(
-            Value.Primitive("25"),
+            Value.Scalar("25"),
             Int::class.javaObjectType
         )
         assertEquals(25, result)
@@ -30,7 +30,7 @@ class TypeConverterTest {
     @Test
     fun materialize_convertsStringToLongPrimitive() {
         val result: Any? = converter.materialize(
-            Value.Primitive("25"),
+            Value.Scalar("25"),
             Long::class.javaPrimitiveType!!
         )
         assertEquals(25L, result)
@@ -39,7 +39,7 @@ class TypeConverterTest {
     @Test
     fun materialize_convertsStringToDoublePrimitive() {
         val result: Any? = converter.materialize(
-            Value.Primitive("25.5"),
+            Value.Scalar("25.5"),
             Double::class.javaPrimitiveType!!
         )
         assertEquals(25.5, result)
@@ -48,7 +48,7 @@ class TypeConverterTest {
     @Test
     fun materialize_convertsStringToBooleanPrimitive() {
         val result: Any? = converter.materialize(
-            Value.Primitive("true"),
+            Value.Scalar("true"),
             Boolean::class.javaPrimitiveType!!
         )
         assertEquals(true, result)
@@ -57,7 +57,7 @@ class TypeConverterTest {
     @Test
     fun materialize_convertsStringToCharPrimitive() {
         val result: Any? = converter.materialize(
-            Value.Primitive("A"),
+            Value.Scalar("A"),
             Char::class.javaPrimitiveType!!
         )
         assertEquals('A', result)
@@ -66,7 +66,7 @@ class TypeConverterTest {
     @Test
     fun materialize_convertsPrimitiveToString() {
         val result: Any? = converter.materialize(
-            Value.Primitive(123),
+            Value.Scalar(123),
             String::class.java
         )
         assertEquals("123", result)
@@ -75,7 +75,7 @@ class TypeConverterTest {
     @Test
     fun materialize_returnsPrimitiveValueDirectly_whenAlreadyCorrectType() {
         val result: Any? = converter.materialize(
-            Value.Primitive(123),
+            Value.Scalar(123),
             Int::class.javaObjectType
         )
         assertEquals(123, result)
@@ -84,7 +84,7 @@ class TypeConverterTest {
     @Test
     fun materialize_convertsEnumByName() {
         val result: Any? = converter.materialize(
-            Value.Primitive("ACTIVE"),
+            Value.Scalar("ACTIVE"),
             SampleStatus::class.java
         )
         assertEquals(SampleStatus.ACTIVE, result)
@@ -94,7 +94,7 @@ class TypeConverterTest {
     fun materialize_rejectsInvalidEnumValue() {
         assertFailsWith<TypeMismatchException> {
             converter.materialize(
-                Value.Primitive("MISSING"),
+                Value.Scalar("MISSING"),
                 SampleStatus::class.java
             )
         }
@@ -122,11 +122,11 @@ class TypeConverterTest {
     @Test
     fun materialize_buildsKotlinDataClassFromNamedFields() {
         val result: Any? = converter.materialize(
-            Value.Object(
+            Value.Record(
                 type = SamplePerson::class.java,
                 fields = mapOf(
-                    "name" to Value.Primitive("Alice"),
-                    "age" to Value.Primitive("25")
+                    "name" to Value.Scalar("Alice"),
+                    "age" to Value.Scalar("25")
                 )
             ),
             SamplePerson::class.java
@@ -140,9 +140,9 @@ class TypeConverterTest {
     fun materialize_rejectsMissingKotlinConstructorField() {
         val ex: ObjectConstructionException = assertFailsWith<ObjectConstructionException> {
             converter.materialize(
-                Value.Object(
+                Value.Record(
                     type = SamplePerson::class.java,
-                    fields = mapOf("name" to Value.Primitive("Alice"))
+                    fields = mapOf("name" to Value.Scalar("Alice"))
                 ),
                 SamplePerson::class.java
             )
@@ -153,11 +153,11 @@ class TypeConverterTest {
     @Test
     fun materialize_buildsJavaBeanStyleObjectWithNoArgConstructor() {
         val result: Any? = converter.materialize(
-            Value.Object(
+            Value.Record(
                 type = SampleMutablePerson::class.java,
                 fields = mapOf(
-                    "name" to Value.Primitive("Bob"),
-                    "age" to Value.Primitive("41")
+                    "name" to Value.Scalar("Bob"),
+                    "age" to Value.Scalar("41")
                 )
             ),
             SampleMutablePerson::class.java
@@ -171,9 +171,9 @@ class TypeConverterTest {
     fun materialize_rejectsUnknownFieldForNoArgObjectConstruction() {
         val ex: ObjectConstructionException = assertFailsWith<ObjectConstructionException> {
             converter.materialize(
-                Value.Object(
+                Value.Record(
                     type = SampleMutablePerson::class.java,
-                    fields = mapOf("missing" to Value.Primitive("x"))
+                    fields = mapOf("missing" to Value.Scalar("x"))
                 ),
                 SampleMutablePerson::class.java
             )
@@ -185,7 +185,7 @@ class TypeConverterTest {
     fun materialize_rejectsObjectWhenDeclaredTypeDoesNotMatchTargetType() {
         assertFailsWith<TypeMismatchException> {
             converter.materialize(
-                Value.Object(type = SampleMutablePerson::class.java, fields = emptyMap()),
+                Value.Record(type = SampleMutablePerson::class.java, fields = emptyMap()),
                 SamplePerson::class.java
             )
         }
@@ -218,7 +218,7 @@ class TypeConverterTest {
     fun materialize_rejectsInvalidBooleanText() {
         assertFailsWith<IllegalArgumentException> {
             converter.materialize(
-                Value.Primitive("yes"),
+                Value.Scalar("yes"),
                 Boolean::class.javaPrimitiveType!!
             )
         }
@@ -228,7 +228,7 @@ class TypeConverterTest {
     fun materialize_rejectsInvalidCharText() {
         assertFailsWith<IllegalArgumentException> {
             converter.materialize(
-                Value.Primitive("AB"),
+                Value.Scalar("AB"),
                 Char::class.javaPrimitiveType!!
             )
         }
@@ -237,7 +237,7 @@ class TypeConverterTest {
     @Test
     fun materialize_marksReferenceFieldAsNullableInConstructedObjectFlow() {
         val result: Any? = converter.materialize(
-            Value.Object(
+            Value.Record(
                 type = SampleOptionalHolder::class.java,
                 fields = mapOf("name" to Value.Null)
             ),

@@ -5,10 +5,7 @@ import au.clef.app.demo.model.Address
 import au.clef.app.demo.model.Person
 import au.clef.app.demo.model.add
 import au.clef.engine.ReflectionEngine
-import au.clef.engine.model.MethodDescriptor
-import au.clef.engine.model.MethodId
-import au.clef.engine.model.ParamDescriptor
-import au.clef.engine.model.Value
+import au.clef.engine.model.*
 import au.clef.engine.registry.MethodRegistry
 import au.clef.metadata.*
 import au.clef.metadata.model.MetadataRoot
@@ -81,32 +78,41 @@ fun runGuiStyleInstance(engine: ReflectionEngine) {
 
 fun runGuiStyleStatic(engine: ReflectionEngine) {
     val methodId: MethodId = MethodId.from(Math::class, "max", Int::class, Int::class)
-    val result: Any? = engine.invoke(methodId, Value.Primitive(10), Value.Primitive(20))
+    val result: Any? = engine.invoke(methodId, Value.Scalar(10), Value.Scalar(20))
     println("-----------> runGuiStyleStatic: $result")
 }
 
 fun runKotlinTopLevel(engine: ReflectionEngine) {
     val methodId: MethodId = MethodId.from(::add.javaMethod!!)
-    val result: Any? = engine.invoke(methodId, Value.Primitive(10), Value.Primitive(20))
+    val result: Any? = engine.invoke(methodId, Value.Scalar(10), Value.Scalar(20))
     println("-----------> runTopLevelFunction: $result")
 }
 
-private fun personValue(name: String = "Alice", age: Int = 25): Value.Object {
-    val address = Value.Object(
-        type = Address::class.java,
-        fields = mapOf(
-            "number" to Value.Primitive(2),
-            "street" to Value.Primitive("Smith st"),
-            "zipCode" to Value.Primitive("2321")
-        )
-    )
-
-    return Value.Object(
-        type = Person::class.java,
-        fields = mapOf(
-            "name" to Value.Primitive(name),
-            "age" to Value.Primitive(age),
-            "address" to address,
+private fun personValue(name: String = "Alice", age: Int = 25): Value.Record {
+//    return Value.Record(
+//        type = Person::class.java,
+//        fields = mapOf(
+//            "name" to Value.Scalar(name),
+//            "age" to Value.Scalar(age),
+//            "address" to Value.Record(
+//                type = Address::class.java,
+//                fields = mapOf(
+//                    "number" to Value.Scalar(2),
+//                    "street" to Value.Scalar("Smith st"),
+//                    "zipCode" to Value.Scalar("2321")
+//                )
+//            )
+//        )
+//    )
+    return Values.record(
+        Person::class.java,
+        "name" to Values.scalar(name),
+        "age" to Values.scalar(age),
+        "address" to Values.record(
+            Address::class.java,
+            "number" to Values.scalar(2),
+            "street" to Values.scalar("Smith st"),
+            "zipCode" to Values.scalar("2321")
         )
     )
 }

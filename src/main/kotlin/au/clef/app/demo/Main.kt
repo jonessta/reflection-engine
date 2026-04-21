@@ -1,6 +1,7 @@
 package au.clef.app.demo
 
 import au.clef.app.demo.model.AcmeService
+import au.clef.app.demo.model.Address
 import au.clef.app.demo.model.Person
 import au.clef.app.demo.model.add
 import au.clef.engine.ReflectionEngine
@@ -17,7 +18,11 @@ import kotlin.reflect.jvm.javaMethod
 
 private const val RESOURCE_PATH: String = "/config/method-metadata.json"
 private val OUTPUT_FILE: File = File("src/main/resources").resolve(RESOURCE_PATH.removePrefix("/"))
-private val DEMO_CLASSES: List<KClass<*>> = listOf(AcmeService::class, Math::class)
+private val DEMO_CLASSES: List<KClass<*>> = listOf(
+    AcmeService::class,
+    Math::class,
+    Class.forName("au.clef.app.demo.model.KotlinFuncsKt").kotlin
+)
 
 fun main() {
     generateMetadata()
@@ -27,14 +32,9 @@ fun main() {
     runGuiStyleInstance(engine)
     runGuiStyleStatic(engine)
     runKotlinTopLevel(engine)
-    checkMethodId()
 }
 
-val methodRegistry = MethodRegistry(
-    AcmeService::class,
-    Math::class,
-    Class.forName("au.clef.app.demo.model.KotlinFuncsKt").kotlin
-)
+val methodRegistry = MethodRegistry(*DEMO_CLASSES.toTypedArray())
 
 private fun createEngine(): ReflectionEngine {
     val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(RESOURCE_PATH)
@@ -74,7 +74,7 @@ fun showAllDescriptors(engine: ReflectionEngine) {
 
 fun runGuiStyleInstance(engine: ReflectionEngine) {
     val instance = AcmeService()
-    val methodId: MethodId = MethodId.from(AcmeService::class, "personName", Person::class)
+    val methodId: MethodId = MethodId.from(AcmeService::class, "personAddress", Person::class)
     val result: Any? = engine.invoke(methodId, instance, personValue())
     println("-----------> runGuiStyleInstance: $result")
 }
@@ -91,12 +91,22 @@ fun runKotlinTopLevel(engine: ReflectionEngine) {
     println("-----------> runTopLevelFunction: $result")
 }
 
-fun checkMethodId() {
-    val methodIdValue: String = "au.blob.Thing#someMethod(int)"
-    MethodId.fromValue(methodIdValue)
-}
+private fun personValue(name: String = "Alice", age: Int = 25): Value.Object {
+    val address = Value.Object(
+        type = Address::class.java,
+        fields = mapOf(
+            "number" to Value.Primitive(2),
+            "street" to Value.Primitive("Smith st"),
+            "zipCode" to Value.Primitive("2321")
+        )
+    )
 
-private fun personValue(name: String = "Alice", age: Int = 25): Value.Object = Value.Object(
-    type = Person::class.java,
-    fields = mapOf("name" to Value.Primitive(name), "age" to Value.Primitive(age))
-)
+    return Value.Object(
+        type = Person::class.java,
+        fields = mapOf(
+            "name" to Value.Primitive(name),
+            "age" to Value.Primitive(age),
+            "address" to address,
+        )
+    )
+}

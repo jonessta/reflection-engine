@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 class MethodRegistry(
-    clazz: KClass<*>, vararg classes: KClass<*>,
+    vararg classes: KClass<*>,
     private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
 ) {
 
@@ -17,15 +17,18 @@ class MethodRegistry(
     private val descriptorsById: MutableMap<MethodId, MethodDescriptor> = ConcurrentHashMap()
 
     init {
-        addClass(clazz)
-        classes.forEach { addClass(it) }
+        require(classes.isNotEmpty()) { "Classes must not be empty" }
     }
 
-    fun addClass(clazz: KClass<*>) {
-        addClass(clazz.java)
+    init {
+        classes.forEach { addKClass(it) }
     }
 
-    fun addClass(clazz: Class<*>) {
+    fun addKClass(clazz: KClass<*>) {
+        addKClass(clazz.java)
+    }
+
+    fun addKClass(clazz: Class<*>) {
         if (descriptorsByClass.containsKey(clazz))
             return
 
@@ -75,7 +78,7 @@ class MethodRegistry(
         } catch (e: ClassNotFoundException) {
             throw IllegalArgumentException("Class not found: $className", e)
         }
-        addClass(clazz)
+        addKClass(clazz)
     }
 
     fun descriptors(clazz: Class<*>): List<MethodDescriptor> =

@@ -170,13 +170,14 @@ class TypeConverterTest {
     @Test
     fun materialize_rejectsUnknownFieldForNoArgObjectConstruction() {
         val ex: ObjectConstructionException = assertFailsWith<ObjectConstructionException> {
-            converter.materialize(
+            val c = converter.materialize(
                 Value.Record(
                     type = SampleMutablePerson::class.java,
                     fields = mapOf("missing" to Value.Scalar("x"))
                 ),
                 SampleMutablePerson::class.java
             )
+            println(c)
         }
         assertTrue(ex.message!!.contains("No field 'missing' found"))
     }
@@ -216,7 +217,7 @@ class TypeConverterTest {
 
     @Test
     fun materialize_rejectsInvalidBooleanText() {
-        assertFailsWith<IllegalArgumentException> {
+        assertFailsWith<TypeMismatchException> {
             converter.materialize(
                 Value.Scalar("yes"),
                 Boolean::class.javaPrimitiveType!!
@@ -226,7 +227,7 @@ class TypeConverterTest {
 
     @Test
     fun materialize_rejectsInvalidCharText() {
-        assertFailsWith<IllegalArgumentException> {
+        assertFailsWith<TypeMismatchException> {
             converter.materialize(
                 Value.Scalar("AB"),
                 Char::class.javaPrimitiveType!!

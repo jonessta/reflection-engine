@@ -191,14 +191,18 @@ class TypeConverter {
         val kClass: KClass<*> = targetType.kotlin
         val primary: KFunction<Any> = kClass.primaryConstructor ?: return null
 
+        val valueParameters = primary.parameters.filter { it.kind == KParameter.Kind.VALUE }
+        val parameterNames = valueParameters.mapNotNull { it.name }.toSet()
+
+        val unknownFields = value.fields.keys - parameterNames
+        if (unknownFields.isNotEmpty()) {
+            return null
+        }
+
         return try {
             val arguments = linkedMapOf<KParameter, Any?>()
 
-            for (parameter in primary.parameters) {
-                if (parameter.kind != KParameter.Kind.VALUE) {
-                    continue
-                }
-
+            for (parameter in valueParameters) {
                 val name = parameter.name
                     ?: throw ObjectConstructionException(
                         "Unnamed Kotlin constructor parameter on ${targetType.name}"

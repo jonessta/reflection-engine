@@ -16,10 +16,11 @@ class ValueMapper(
         is ValueDto.InstanceRef -> Value.Instance(instanceRegistry.get(dto.id))
         is ValueDto.Record -> Value.Record(
             type = classResolver.resolve(dto.type),
-            fields = dto.fields.mapValues { (_, valueDto) -> toEngineValue(valueDto) }
+            fields = dto.fields.mapValues { (_, valueDto: ValueDto) -> toEngineValue(valueDto) }
         )
+
         is ValueDto.ListValue -> Value.ListValue(dto.items.map(::toEngineValue))
-        is ValueDto.MapValue -> Value.MapValue(dto.entries.mapValues { (_, v) -> toEngineValue(v) })
+        is ValueDto.MapValue -> Value.MapValue(dto.entries.mapValues { (_, v: ValueDto) -> toEngineValue(v) })
         ValueDto.Null -> Value.Null
     }
 }

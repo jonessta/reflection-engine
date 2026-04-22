@@ -40,7 +40,7 @@ private fun createEngine(): ReflectionEngine {
 }
 
 fun generateMetadata() {
-    val generator = MetadataGenerator(methodRegistry)
+    val generator = MetadataGenerator(methodRegistry = methodRegistry)
     val metadata: MetadataRoot = generator.generate()
     MetadataWriter.writeToFile(metadata, OUTPUT_FILE)
     println("Metadata written to: ${OUTPUT_FILE.absolutePath}")

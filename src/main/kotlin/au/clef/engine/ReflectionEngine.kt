@@ -13,7 +13,7 @@ class ReflectionEngine(
     private val typeConverter: TypeConverter = TypeConverter(),
     private val methodRegistry: MethodRegistry,
     private val metadataRegistry: DescriptorMetadataRegistry? = null
-): RegisteredClasses {
+) : RegisteredClasses {
 
     fun descriptors(clazz: KClass<*>): List<MethodDescriptor> = descriptors(clazz.java)
 
@@ -69,6 +69,6 @@ class ReflectionEngine(
     }
 
     override fun classes(): List<Class<*>> {
-       return methodRegistry.classes()
+        return methodRegistry.classes()
     }
 }

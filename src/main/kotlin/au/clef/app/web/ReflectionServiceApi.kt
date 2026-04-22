@@ -10,8 +10,10 @@ class ReflectionServiceApi(
     private val engine: ReflectionEngine,
     private val instanceRegistry: InstanceRegistry
 ) {
-    private val classResolver = DefaultClassResolver(engine)
-    private val valueMapper = ValueMapper(instanceRegistry, classResolver)
+    private val valueMapper = ValueMapper(
+        instanceRegistry,
+        DefaultClassResolver(registeredClasses = engine)
+    )
 
     fun invoke(request: InvocationRequest): Any? {
         val methodId = MethodId.fromValue(request.methodId)

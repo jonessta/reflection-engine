@@ -11,16 +11,13 @@ import kotlin.reflect.KClass
 class MethodRegistry(
     vararg classes: KClass<*>,
     private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-): RegisteredClasses {
+) : RegisteredClasses {
 
     private val descriptorsByClass: MutableMap<Class<*>, List<MethodDescriptor>> = ConcurrentHashMap()
     private val descriptorsById: MutableMap<MethodId, MethodDescriptor> = ConcurrentHashMap()
 
     init {
         require(classes.isNotEmpty()) { "Classes must not be empty" }
-    }
-
-    init {
         classes.forEach { addKClass(it) }
     }
 
@@ -57,7 +54,7 @@ class MethodRegistry(
             is InheritanceLevel.Depth -> {
                 val methods: MutableList<Method> = mutableListOf()
                 var current: Class<*>? = clazz
-                var depth: Int = 0
+                var depth = 0
                 while (current != null && depth <= inheritanceLevel.value) {
                     methods += current.declaredMethods
                     current = current.superclass

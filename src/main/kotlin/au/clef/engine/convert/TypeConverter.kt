@@ -20,7 +20,7 @@ class TypeConverter {
     fun materialize(value: Value, targetType: Class<*>): Any? =
         materialize(value, targetType as Type)
 
-    fun materialize(value: Value, targetType: Type): Any? {
+    private fun materialize(value: Value, targetType: Type): Any? {
         if (value is Value.Null) {
             val rawType = rawClassOf(targetType)
             if (rawType.isPrimitive) {

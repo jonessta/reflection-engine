@@ -35,8 +35,8 @@ value class MethodId private constructor(val value: String) {
 
         private val TYPE_NAME_REGEX = Regex("""^[A-Za-z_][A-Za-z0-9_$.]*$""")
 
-        fun fromValue(idString: String): MethodId {
-            val match: MatchResult = METHOD_ID_OUTER_REGEX.matchEntire(idString)
+        fun fromValue(value: String): MethodId {
+            val match: MatchResult = METHOD_ID_OUTER_REGEX.matchEntire(value)
                 ?: throw IllegalMethodIdException("expected <class>#<method>(<paramTypes>)")
 
             val paramsPart: String = match.groupValues[3]
@@ -49,7 +49,7 @@ value class MethodId private constructor(val value: String) {
                     throw IllegalMethodIdException("Invalid MethodId: parameter type names are malformed")
                 }
             }
-            return MethodId(idString)
+            return MethodId(value)
         }
     }
 }

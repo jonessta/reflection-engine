@@ -22,6 +22,9 @@ class ReflectionEngine(
         return metadataRegistry?.applyAll(descriptors) ?: descriptors
     }
 
+    /**
+     * No meta data decoration.
+     */
     fun rawDescriptor(id: MethodId): MethodDescriptor =
         methodRegistry.findDescriptorById(id)
 

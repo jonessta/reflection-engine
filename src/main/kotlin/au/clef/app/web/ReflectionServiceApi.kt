@@ -4,16 +4,24 @@ import au.clef.api.InstanceRegistry
 import au.clef.api.ValueMapper
 import au.clef.api.model.InvocationRequest
 import au.clef.engine.ReflectionEngine
+import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
 
 class ReflectionServiceApi(
     private val engine: ReflectionEngine,
     private val instanceRegistry: InstanceRegistry
 ) {
+    private val classResolver = DefaultClassResolver(registeredClasses = engine)
+
     private val valueMapper = ValueMapper(
         instanceRegistry,
-        DefaultClassResolver(registeredClasses = engine)
+        classResolver
     )
+
+    fun descriptors(typeName: String): List<MethodDescriptor> {
+        val clazz = classResolver.resolve(typeName)
+        return engine.descriptors(clazz)
+    }
 
     fun invoke(request: InvocationRequest): Any? {
         val methodId = MethodId.fromValue(request.methodId)

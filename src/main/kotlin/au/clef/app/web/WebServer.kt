@@ -63,10 +63,10 @@ private fun MethodDescriptor.toResponse(): MethodDescriptorResponse =
 
 class WebServer(
     private val api: ReflectionServiceApi,
-    private val port: Int = 8080
+    private val config: WebServerConfig = WebServerConfig()
 ) {
     fun start() {
-        embeddedServer(Netty, port = port) {
+        embeddedServer(Netty, port = config.port) {
             configureHttp()
             configureRoutes(api)
         }.start(wait = true)
@@ -74,7 +74,7 @@ class WebServer(
 
     private fun Application.configureHttp() {
         install(CORS) {
-            allowHost("localhost:63342", schemes = listOf("http"))
+            allowHost(config.corsHost, schemes = listOf(config.corsScheme))
             allowHeader(HttpHeaders.ContentType)
             allowMethod(HttpMethod.Get)
             allowMethod(HttpMethod.Post)

@@ -8,6 +8,7 @@ import au.clef.engine.ReflectionEngine
 import au.clef.engine.registry.MethodRegistry
 import au.clef.metadata.DescriptorMetadataRegistry
 import au.clef.metadata.MetadataLoader
+import au.clef.metadata.model.MetadataRoot
 
 fun main() {
     val methodRegistry = MethodRegistry(
@@ -17,8 +18,7 @@ fun main() {
         Address::class
     )
 
-    val metadata = MetadataLoader.fromResourceOrEmpty("/config/method-metadata.json")
-
+    val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty("/config/method-metadata.json")
     val engine = ReflectionEngine(
         methodRegistry = methodRegistry,
         metadataRegistry = DescriptorMetadataRegistry(metadata)
@@ -27,11 +27,8 @@ fun main() {
     val instanceRegistry = InstanceRegistry(
         mapOf("acmeService" to AcmeService())
     )
+    val api = ReflectionServiceApi(engine, instanceRegistry = instanceRegistry)
 
-    val api = ReflectionServiceApi(
-        engine = engine,
-        instanceRegistry = instanceRegistry
-    )
-
-    WebServer(api, port = 8080).start()
+    val config = WebServerConfig()
+    WebServer(api, config).start()
 }

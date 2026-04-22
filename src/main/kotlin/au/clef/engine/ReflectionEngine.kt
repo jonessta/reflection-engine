@@ -48,22 +48,19 @@ class ReflectionEngine(
     fun invoke(methodId: MethodId, vararg args: Value): Any? =
         invokeDescriptor(descriptor(methodId), null, args.toList())
 
-    fun invokeDescriptor(descriptor: MethodDescriptor, vararg args: Value): Any? =
-        invokeDescriptor(descriptor, null, args.toList())
-
-    fun invokeDescriptor(descriptor: MethodDescriptor, instance: Any, vararg args: Value): Any? =
-        invokeDescriptor(descriptor, instance, args.toList())
-
-    fun invokeDescriptor(descriptor: MethodDescriptor, args: List<Value>): Any? =
+    fun invokeStatic(descriptor: MethodDescriptor, args: List<Value>): Any? =
         invokeDescriptor(descriptor, null, args)
 
-    fun invokeDescriptor(
-        descriptor: MethodDescriptor,
-        instance: Any?,
-        args: List<Value>
-    ): Any? {
+    fun invokeInstance(descriptor: MethodDescriptor, instance: Any, args: List<Value>): Any? =
+        invokeDescriptor(descriptor, instance, args)
+
+    private fun invokeDescriptor(descriptor: MethodDescriptor, instance: Any?, args: List<Value>): Any? {
         if (!descriptor.isStatic && instance == null) {
             throw MissingInstanceException("${descriptor.id}")
+        }
+        if (descriptor.isStatic && instance != null) {
+            // todo better exception
+            throw IllegalArgumentException("Static method ${descriptor.id} must not be invoked with an instance")
         }
 
         require(args.size == descriptor.method.parameterCount) {

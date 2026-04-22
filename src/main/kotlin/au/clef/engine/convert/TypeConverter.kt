@@ -3,10 +3,8 @@ package au.clef.engine.convert
 import au.clef.engine.ObjectConstructionException
 import au.clef.engine.TypeMismatchException
 import au.clef.engine.model.Value
+import java.lang.reflect.*
 import java.lang.reflect.Array
-import java.lang.reflect.Field
-import java.lang.reflect.ParameterizedType
-import java.lang.reflect.Type
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -43,22 +41,18 @@ class TypeConverter {
 
     private fun convertScalar(rawValue: Any?, targetType: Type): Any? {
         val rawTargetType = rawClassOf(targetType)
-
         if (rawValue == null) {
             if (rawTargetType.isPrimitive) {
                 throw TypeMismatchException(Value.Scalar(null), rawTargetType)
             }
             return null
         }
-
         val wrappedTargetType = wrapPrimitive(rawTargetType)
-
         if (wrappedTargetType.isInstance(rawValue)) {
             return rawValue
         }
 
         val text = rawValue.toString()
-
         try {
             return when (wrappedTargetType) {
                 String::class.java -> text
@@ -101,7 +95,6 @@ class TypeConverter {
 
     private fun convertRecord(value: Value.Record, targetType: Type): Any {
         val rawTargetType = rawClassOf(targetType)
-
         if (value.type != Any::class.java &&
             !rawTargetType.isAssignableFrom(value.type) &&
             !value.type.isAssignableFrom(rawTargetType)
@@ -148,7 +141,6 @@ class TypeConverter {
 
     private fun convertMap(value: Value.MapValue, targetType: Type): Any {
         val rawTargetType = rawClassOf(targetType)
-
         if (!Map::class.java.isAssignableFrom(rawTargetType)) {
             throw TypeMismatchException(value, rawTargetType)
         }
@@ -165,9 +157,7 @@ class TypeConverter {
 
         val rawKeyType = rawClassOf(keyType)
         if (rawKeyType != String::class.java) {
-            throw ObjectConstructionException(
-                "MapValue only supports String keys, but target type requires ${rawKeyType.name}"
-            )
+            throw ObjectConstructionException("MapValue only supports String keys, but target type requires ${rawKeyType.name}")
         }
 
         val result = LinkedHashMap<String, Any?>()
@@ -181,10 +171,7 @@ class TypeConverter {
         buildKotlinObject(value, targetType)?.let { return it }
         buildWithNoArgConstructor(value, targetType)?.let { return it }
         buildWithSingleJavaConstructor(value, targetType)?.let { return it }
-
-        throw ObjectConstructionException(
-            "No supported construction strategy found for ${targetType.name}"
-        )
+        throw ObjectConstructionException("No supported construction strategy found for ${targetType.name}")
     }
 
     private fun buildKotlinObject(value: Value.Record, targetType: Class<*>): Any? {
@@ -201,7 +188,6 @@ class TypeConverter {
 
         return try {
             val arguments = linkedMapOf<KParameter, Any?>()
-
             for (parameter in valueParameters) {
                 val name = parameter.name
                     ?: throw ObjectConstructionException(
@@ -209,7 +195,6 @@ class TypeConverter {
                     )
 
                 val fieldValue = value.fields[name]
-
                 if (fieldValue == null) {
                     if (parameter.isOptional) {
                         continue
@@ -218,9 +203,7 @@ class TypeConverter {
                         arguments[parameter] = null
                         continue
                     }
-                    throw ObjectConstructionException(
-                        "Missing constructor argument '$name' for ${targetType.name}"
-                    )
+                    throw ObjectConstructionException("Missing constructor argument '$name' for ${targetType.name}")
                 }
 
                 arguments[parameter] = materialize(fieldValue, rawJavaTypeOf(parameter))
@@ -230,15 +213,12 @@ class TypeConverter {
         } catch (e: ObjectConstructionException) {
             throw e
         } catch (e: Exception) {
-            throw ObjectConstructionException(
-                "Failed to construct ${targetType.name}: ${e.message}",
-                e
-            )
+            throw ObjectConstructionException("Failed to construct ${targetType.name}: ${e.message}", e)
         }
     }
 
     private fun buildWithNoArgConstructor(value: Value.Record, targetType: Class<*>): Any? {
-        val ctor = targetType.declaredConstructors
+        val ctor: Constructor<*> = targetType.declaredConstructors
             .firstOrNull { it.parameterCount == 0 }
             ?: return null
 
@@ -251,33 +231,26 @@ class TypeConverter {
                     ?: throw ObjectConstructionException(
                         "No field '$fieldName' found on ${targetType.name}"
                     )
-
                 field.isAccessible = true
                 field.set(instance, materialize(fieldValue, field.genericType))
             }
-
             instance
         } catch (e: ObjectConstructionException) {
             throw e
         } catch (e: Exception) {
-            throw ObjectConstructionException(
-                "Failed to construct ${targetType.name}: ${e.message}",
-                e
-            )
+            throw ObjectConstructionException("Failed to construct ${targetType.name}: ${e.message}", e)
         }
     }
 
     private fun buildWithSingleJavaConstructor(value: Value.Record, targetType: Class<*>): Any? {
-        val constructors = targetType.declaredConstructors.toList()
+        val constructors: List<Constructor<*>> = targetType.declaredConstructors.toList()
         if (constructors.size != 1) {
             return null
         }
 
-        val ctor = constructors[0]
-
+        val ctor: Constructor<*> = constructors[0]
         return try {
             val args = ArrayList<Any?>()
-
             ctor.parameters.forEachIndexed { index, parameter ->
                 val fieldName =
                     if (parameter.isNamePresent && parameter.name != null && value.fields.containsKey(parameter.name)) {
@@ -287,9 +260,7 @@ class TypeConverter {
                     }
 
                 val fieldValue = value.fields[fieldName]
-                    ?: throw ObjectConstructionException(
-                        "Missing constructor argument '$fieldName' for ${targetType.name}"
-                    )
+                    ?: throw ObjectConstructionException("Missing constructor argument '$fieldName' for ${targetType.name}")
 
                 args += materialize(fieldValue, parameter.parameterizedType)
             }
@@ -299,15 +270,12 @@ class TypeConverter {
         } catch (e: ObjectConstructionException) {
             throw e
         } catch (e: Exception) {
-            throw ObjectConstructionException(
-                "Failed to construct ${targetType.name}: ${e.message}",
-                e
-            )
+            throw ObjectConstructionException("Failed to construct ${targetType.name}: ${e.message}", e)
         }
     }
 
     private fun convertEnum(text: String, targetType: Class<*>): Any {
-        val constants = targetType.enumConstants
+        val constants: kotlin.Array<out Any?> = targetType.enumConstants
             ?: throw TypeMismatchException(Value.Scalar(text), targetType)
 
         return constants.firstOrNull { constant ->
@@ -348,8 +316,7 @@ class TypeConverter {
         }
 
     private fun rawJavaTypeOf(parameter: KParameter): Type {
-        val classifier = parameter.type.classifier
-        return when (classifier) {
+        return when (val classifier = parameter.type.classifier) {
             is KClass<*> -> classifier.java
             else -> throw ObjectConstructionException(
                 "Unsupported Kotlin parameter type '${parameter.name}'"

@@ -7,11 +7,10 @@ import au.clef.engine.registry.MethodRegistry
 import au.clef.metadata.model.MetadataRoot
 import au.clef.metadata.model.MethodMetadata
 import au.clef.metadata.model.ParamMetadata
-import kotlin.reflect.KClass
 
 class MetadataGenerator(private val methodRegistry: MethodRegistry) {
 
-    fun generate(clazz: Class<*>): MetadataRoot {
+    private fun generate(clazz: Class<*>): MetadataRoot {
         val descriptors: List<MethodDescriptor> = methodRegistry.descriptors(clazz)
         val methods: Map<MethodId, MethodMetadata> =
             descriptors
@@ -26,9 +25,9 @@ class MetadataGenerator(private val methodRegistry: MethodRegistry) {
         return MetadataRoot(methods = methods)
     }
 
-    fun generate(classes: List<Class<*>>): MetadataRoot {
+    fun generate(): MetadataRoot {
         val methods: Map<MethodId, MethodMetadata> =
-            classes
+            methodRegistry.classes()
                 .flatMap { clazz: Class<*> ->
                     generate(clazz).methods.entries
                 }
@@ -38,9 +37,6 @@ class MetadataGenerator(private val methodRegistry: MethodRegistry) {
 
         return MetadataRoot(methods = methods)
     }
-
-    fun generateKClasses(classes: List<KClass<*>>): MetadataRoot =
-        generate(classes = classes.map { kClass: KClass<*> -> kClass.java })
 
     private fun defaultParameterName(param: ParamDescriptor): String =
         if (param.name.startsWith("arg")) {

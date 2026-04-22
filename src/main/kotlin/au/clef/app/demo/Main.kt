@@ -10,16 +10,10 @@ import au.clef.engine.registry.MethodRegistry
 import au.clef.metadata.*
 import au.clef.metadata.model.MetadataRoot
 import java.io.File
-import kotlin.reflect.KClass
 import kotlin.reflect.jvm.javaMethod
 
 private const val RESOURCE_PATH: String = "/config/method-metadata.json"
 private val OUTPUT_FILE: File = File("src/main/resources").resolve(RESOURCE_PATH.removePrefix("/"))
-private val DEMO_CLASSES: List<KClass<*>> = listOf(
-    AcmeService::class,
-    Math::class,
-    Class.forName("au.clef.app.demo.model.KotlinFuncsKt").kotlin
-)
 
 fun main() {
     generateMetadata()
@@ -31,16 +25,23 @@ fun main() {
     runKotlinTopLevel(engine)
 }
 
-val methodRegistry = MethodRegistry(*DEMO_CLASSES.toTypedArray())
+val methodRegistry = MethodRegistry(
+    AcmeService::class,
+    Math::class,
+    Class.forName("au.clef.app.demo.model.KotlinFuncsKt").kotlin
+)
 
 private fun createEngine(): ReflectionEngine {
     val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(RESOURCE_PATH)
-    return ReflectionEngine(methodRegistry = methodRegistry, metadataRegistry = DescriptorMetadataRegistry(metadata))
+    return ReflectionEngine(
+        methodRegistry = methodRegistry,
+        metadataRegistry = DescriptorMetadataRegistry(metadata)
+    )
 }
 
 fun generateMetadata() {
     val generator = MetadataGenerator(methodRegistry)
-    val metadata: MetadataRoot = generator.generateKClasses(classes = DEMO_CLASSES)
+    val metadata: MetadataRoot = generator.generate()
     MetadataWriter.writeToFile(metadata, OUTPUT_FILE)
     println("Metadata written to: ${OUTPUT_FILE.absolutePath}")
     println(MetadataWriter.toJson(metadata))

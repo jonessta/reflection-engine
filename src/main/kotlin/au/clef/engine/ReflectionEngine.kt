@@ -5,6 +5,7 @@ import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
 import au.clef.engine.model.Value
 import au.clef.engine.registry.MethodRegistry
+import au.clef.engine.registry.RegisteredClasses
 import au.clef.metadata.DescriptorMetadataRegistry
 import kotlin.reflect.KClass
 
@@ -12,7 +13,7 @@ class ReflectionEngine(
     private val typeConverter: TypeConverter = TypeConverter(),
     private val methodRegistry: MethodRegistry,
     private val metadataRegistry: DescriptorMetadataRegistry? = null
-) {
+): RegisteredClasses {
 
     fun descriptors(clazz: KClass<*>): List<MethodDescriptor> = descriptors(clazz.java)
 
@@ -65,5 +66,9 @@ class ReflectionEngine(
         val target: Any? = if (descriptor.isStatic) null else instance
 
         return descriptor.method.invoke(target, *convertedArgs.toTypedArray())
+    }
+
+    override fun classes(): List<Class<*>> {
+       return methodRegistry.classes()
     }
 }

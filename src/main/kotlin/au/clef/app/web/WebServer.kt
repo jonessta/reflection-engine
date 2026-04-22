@@ -1,7 +1,6 @@
 package au.clef.app.web
 
 import au.clef.api.InstanceRegistry
-import au.clef.api.ValueMapper
 import au.clef.api.model.InvocationRequest
 import au.clef.app.demo.model.AcmeService
 import au.clef.app.demo.model.Address
@@ -90,19 +89,7 @@ class WebServer {
             mapOf("acmeService" to AcmeService())
         )
 
-
-        val api = ReflectionServiceApi(
-            // todo get the classes from the registry above so you dont duplicate
-            classes = listOf(
-                AcmeService::class.java,
-                Math::class.java,
-                Person::class.java,
-                Address::class.java
-            ),
-            engine = engine,
-            instanceRegistry = instanceRegistry
-        )
-
+        val api = ReflectionServiceApi(engine = engine, instanceRegistry = instanceRegistry)
 
         embeddedServer(Netty, port = 8080) {
             install(CORS) {

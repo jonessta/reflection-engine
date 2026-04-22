@@ -11,7 +11,7 @@ import kotlin.reflect.KClass
 class MethodRegistry(
     vararg classes: KClass<*>,
     private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-) {
+): RegisteredClasses {
 
     private val descriptorsByClass: MutableMap<Class<*>, List<MethodDescriptor>> = ConcurrentHashMap()
     private val descriptorsById: MutableMap<MethodId, MethodDescriptor> = ConcurrentHashMap()
@@ -97,5 +97,9 @@ class MethodRegistry(
     fun clear() {
         descriptorsByClass.clear()
         descriptorsById.clear()
+    }
+
+    override fun classes(): List<Class<*>> {
+        return descriptorsByClass.keys.toList()
     }
 }

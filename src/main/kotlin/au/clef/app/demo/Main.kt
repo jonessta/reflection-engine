@@ -4,44 +4,51 @@ import au.clef.app.demo.model.AcmeService
 import au.clef.app.demo.model.Address
 import au.clef.app.demo.model.Person
 import au.clef.app.demo.model.add
+import au.clef.engine.ReflectionAppDefinition
 import au.clef.engine.ReflectionEngine
+import au.clef.engine.ReflectionRuntime
+import au.clef.engine.createReflectionRuntime
 import au.clef.engine.model.*
 import au.clef.engine.model.Values.scalar
-import au.clef.engine.registry.MethodRegistry
 import au.clef.metadata.*
 import au.clef.metadata.model.MetadataRoot
 import java.io.File
 import kotlin.reflect.jvm.javaMethod
 
-private const val RESOURCE_PATH: String = "/config/method-metadata.json"
-private val OUTPUT_FILE: File = File("src/main/resources").resolve(RESOURCE_PATH.removePrefix("/"))
+val demoDefinition = ReflectionAppDefinition(
+    classes = listOf(
+        AcmeService::class,
+        Math::class,
+        Person::class,
+        Address::class,
+        Class.forName("au.clef.app.demo.model.KotlinFuncsKt").kotlin
+    ),
+    metadataResourcePath = "/config/method-metadata.json",
+    instances = mapOf(
+        "acmeService" to AcmeService()
+    )
+)
+
+private val OUTPUT_FILE: File? = demoDefinition.metadataResourcePath?.removePrefix("/")?.let {
+    File("src/main/resources").resolve(it)
+}
+
+val runtime: ReflectionRuntime = createReflectionRuntime(demoDefinition)
 
 fun main() {
     generateMetadata()
     validate()
-    val engine: ReflectionEngine = createEngine()
+    val engine: ReflectionEngine = runtime.engine
     showAllDescriptors(engine)
     runGuiStyleInstance(engine)
     runGuiStyleStatic(engine)
     runKotlinTopLevel(engine)
 }
 
-val methodRegistry = MethodRegistry(
-    AcmeService::class,
-    Math::class,
-    Class.forName("au.clef.app.demo.model.KotlinFuncsKt").kotlin
-)
-
-private fun createEngine(): ReflectionEngine {
-    val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(RESOURCE_PATH)
-    return ReflectionEngine(
-        methodRegistry = methodRegistry,
-        metadataRegistry = DescriptorMetadataRegistry(metadata)
-    )
-}
-
 fun generateMetadata() {
-    val generator = MetadataGenerator(methodRegistry = methodRegistry)
+    if (OUTPUT_FILE == null)
+        return
+    val generator = MetadataGenerator(methodRegistry = runtime.methodRegistry)
     val metadata: MetadataRoot = generator.generate()
     MetadataWriter.writeToFile(metadata, OUTPUT_FILE)
     println("Metadata written to: ${OUTPUT_FILE.absolutePath}")
@@ -49,8 +56,10 @@ fun generateMetadata() {
 }
 
 fun validate() {
-    val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(RESOURCE_PATH)
-    val validator = MetadataValidator(methodRegistry)
+    if (demoDefinition.metadataResourcePath == null)
+        return
+    val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(demoDefinition.metadataResourcePath)
+    val validator = MetadataValidator(runtime.methodRegistry)
     val issues: List<ValidationIssue> = validator.validate(metadata)
     if (issues.isEmpty()) {
         println("Metadata valid")

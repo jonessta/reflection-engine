@@ -16,14 +16,13 @@ import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-
 @Serializable
-data class InvocationResponse(
+private data class InvocationResponse(
     val result: String?
 )
 
 @Serializable
-data class MethodDescriptorResponse(
+private data class MethodDescriptorResponse(
     val id: String,
     val name: String,
     val displayName: String? = null,
@@ -33,7 +32,7 @@ data class MethodDescriptorResponse(
 )
 
 @Serializable
-data class ParamDescriptorResponse(
+private data class ParamDescriptorResponse(
     val index: Int,
     val type: String,
     val reflectedName: String,
@@ -100,7 +99,7 @@ class WebServer(
                 }
 
                 try {
-                    val descriptors = api.descriptors(className)
+                    val descriptors: List<MethodDescriptor> = api.descriptors(className)
                     call.respond(descriptors.map(MethodDescriptor::toResponse))
                 } catch (e: IllegalArgumentException) {
                     call.respond(HttpStatusCode.NotFound, e.message ?: "Unknown class")

@@ -1,31 +1,41 @@
 package au.clef.app.web
 
+import au.clef.api.ClassResolver
 import au.clef.api.InstanceRegistry
 import au.clef.api.ValueMapper
 import au.clef.api.model.InvocationRequest
 import au.clef.engine.ReflectionEngine
-import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
-import au.clef.engine.model.Value
 
 class ReflectionServiceApi(
+    classes: List<Class<*>>,
     private val engine: ReflectionEngine,
-    private val instanceRegistry: InstanceRegistry,
-    private val valueMapper: ValueMapper
-) {
+    private val instanceRegistry: InstanceRegistry
+) : ClassResolver {
+
+    private val classesByName: Map<String, Class<*>> =
+        classes.flatMap { clazz ->
+            listOf(
+                clazz.name to clazz,
+                clazz.simpleName to clazz
+            )
+        }.toMap()
+
+    private val valueMapper = ValueMapper(instanceRegistry, this)
+
+    override fun resolve(typeName: String): Class<*> =
+        classesByName[typeName]
+            ?: throw IllegalArgumentException("Unknown type: $typeName")
 
     fun invoke(request: InvocationRequest): Any? {
-        val methodId: MethodId = MethodId.fromValue(request.methodId)
-        val descriptor: MethodDescriptor = engine.findDescriptorExact(methodId)
-        val instance: Any? = if (descriptor.isStatic) {
-            null
+        val methodId = MethodId.fromValue(request.methodId)
+        val args = request.args.map(valueMapper::toEngineValue)
+
+        return if (request.targetId != null) {
+            val instance = instanceRegistry.get(request.targetId)
+            engine.invoke(methodId, instance, args)
         } else {
-            val targetId: String = request.targetId ?: throw RuntimeException("Missing targetId for instance method")
-            instanceRegistry.get(targetId)
+            engine.invoke(methodId, args)
         }
-
-        val args: List<Value> = request.args.map { dto -> valueMapper.toEngineValue(dto) }
-
-        return engine.invokeDescriptor(descriptor, instance, args)
     }
 }

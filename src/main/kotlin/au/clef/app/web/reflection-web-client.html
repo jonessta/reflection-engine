@@ -381,8 +381,17 @@
                 kind: 'object',
                 type: 'au.clef.app.demo.model.Person',
                 fields: {
-                    name: {kind: 'primitive', value: 'Alice'},
-                    age: {kind: 'primitive', value: '25'}
+                    name: { kind: 'scalar', value: 'Alice' },
+                    age: { kind: 'scalar', value: 25 },
+                    address: {
+                        kind: 'object',
+                        type: 'au.clef.app.demo.model.Address',
+                        fields: {
+                            number: { kind: 'scalar', value: 2 },
+                            street: { kind: 'scalar', value: 'Smith st' },
+                            zipCode: { kind: 'scalar', value: '2321' }
+                        }
+                    }
                 }
             }, null, 2);
         }

@@ -22,22 +22,28 @@ class ReflectionEngine(
         return metadataRegistry?.applyAll(descriptors) ?: descriptors
     }
 
-    fun findDescriptorExact(id: MethodId): MethodDescriptor {
-        val descriptor: MethodDescriptor = methodRegistry.findDescriptorById(id)
+    fun rawDescriptor(id: MethodId): MethodDescriptor =
+        methodRegistry.findDescriptorById(id)
+
+    /**
+     * Decorates the descriptor with metadata.
+     */
+    fun descriptor(id: MethodId): MethodDescriptor {
+        val descriptor = rawDescriptor(id)
         return metadataRegistry?.apply(descriptor) ?: descriptor
     }
 
     fun invoke(methodId: MethodId, instance: Any, args: List<Value>): Any? =
-        invokeDescriptor(findDescriptorExact(methodId), instance, args)
+        invokeDescriptor(descriptor(methodId), instance, args)
 
     fun invoke(methodId: MethodId, args: List<Value>): Any? =
-        invokeDescriptor(findDescriptorExact(methodId), null, args)
+        invokeDescriptor(descriptor(methodId), null, args)
 
     fun invoke(methodId: MethodId, instance: Any, vararg args: Value): Any? =
-        invokeDescriptor(findDescriptorExact(methodId), instance, args.toList())
+        invokeDescriptor(descriptor(methodId), instance, args.toList())
 
     fun invoke(methodId: MethodId, vararg args: Value): Any? =
-        invokeDescriptor(findDescriptorExact(methodId), null, args.toList())
+        invokeDescriptor(descriptor(methodId), null, args.toList())
 
     fun invokeDescriptor(descriptor: MethodDescriptor, vararg args: Value): Any? =
         invokeDescriptor(descriptor, null, args.toList())
@@ -45,7 +51,7 @@ class ReflectionEngine(
     fun invokeDescriptor(descriptor: MethodDescriptor, instance: Any, vararg args: Value): Any? =
         invokeDescriptor(descriptor, instance, args.toList())
 
-    fun invokeDescriptor(
+    private fun invokeDescriptor(
         descriptor: MethodDescriptor,
         instance: Any?,
         args: List<Value>

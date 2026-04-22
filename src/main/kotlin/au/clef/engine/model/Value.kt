@@ -1,5 +1,7 @@
 package au.clef.engine.model
 
+import kotlin.reflect.KClass
+
 sealed class Value {
 
     data class Scalar(val value: Any?) : Value()
@@ -18,8 +20,11 @@ sealed class Value {
 object Values {
     fun scalar(value: Any?) = Value.Scalar(value)
 
-    fun record(type: Class<*>, vararg fields: Pair<String, Value>) =
+    fun recordJava(type: Class<*>, vararg fields: Pair<String, Value>) =
         Value.Record(type, linkedMapOf(*fields))
+
+    fun record(type: KClass<*>, vararg fields: Pair<String, Value>) =
+        Value.Record(type.java, linkedMapOf(*fields))
 
     fun list(vararg items: Value) =
         Value.ListValue(items.toList())

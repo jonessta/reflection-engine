@@ -1,45 +1,21 @@
 package au.clef.app.web
 
-import au.clef.api.InstanceRegistry
 import au.clef.api.model.InvocationRequest
-import au.clef.app.demo.model.AcmeService
-import au.clef.app.demo.model.Address
-import au.clef.app.demo.model.Person
-import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.ParamDescriptor
-import au.clef.engine.registry.MethodRegistry
-import au.clef.metadata.DescriptorMetadataRegistry
-import au.clef.metadata.MetadataLoader
-import au.clef.metadata.model.MetadataRoot
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.application.Application
-import io.ktor.server.application.call
-import io.ktor.server.application.install
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.server.plugins.cors.routing.CORS
-import io.ktor.server.request.receive
-import io.ktor.server.response.respond
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
-import io.ktor.server.routing.routing
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.application.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-private const val METADATA_PATH = "/config/method-metadata.json"
-private const val DEFAULT_PORT = 8080
-
-private val REGISTERED_CLASSES = listOf(
-    AcmeService::class,
-    Math::class,
-    Person::class,
-    Address::class
-)
 
 @Serializable
 data class InvocationResponse(
@@ -85,85 +61,70 @@ private fun MethodDescriptor.toResponse(): MethodDescriptorResponse =
         isStatic = isStatic
     )
 
-class WebServer {
-
-    fun start(port: Int = DEFAULT_PORT) {
-        val api = createApi()
+class WebServer(
+    private val api: ReflectionServiceApi,
+    private val port: Int = 8080
+) {
+    fun start() {
         embeddedServer(Netty, port = port) {
             configureHttp()
             configureRoutes(api)
         }.start(wait = true)
     }
 
-    private fun createApi(): ReflectionServiceApi {
-        val methodRegistry = MethodRegistry(*REGISTERED_CLASSES.toTypedArray())
-        val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(METADATA_PATH)
-
-        val engine = ReflectionEngine(
-            methodRegistry = methodRegistry,
-            metadataRegistry = DescriptorMetadataRegistry(metadata)
-        )
-
-        val instanceRegistry = InstanceRegistry(
-            mapOf("acmeService" to AcmeService())
-        )
-
-        return ReflectionServiceApi(engine, instanceRegistry)
-    }
-}
-
-private fun Application.configureHttp() {
-    install(CORS) {
-        allowHost("localhost:63342", schemes = listOf("http"))
-        allowHeader(HttpHeaders.ContentType)
-        allowMethod(HttpMethod.Get)
-        allowMethod(HttpMethod.Post)
-    }
-
-    install(ContentNegotiation) {
-        json(
-            Json {
-                ignoreUnknownKeys = true
-                classDiscriminator = "kind"
-            }
-        )
-    }
-}
-
-private fun Application.configureRoutes(api: ReflectionServiceApi) {
-    routing {
-        get("/methods/{className}") {
-            val className = call.parameters["className"]
-            if (className == null) {
-                call.respond(HttpStatusCode.BadRequest, "Missing className")
-                return@get
-            }
-
-            try {
-                val descriptors = api.descriptors(className)
-                call.respond(descriptors.map(MethodDescriptor::toResponse))
-            } catch (e: IllegalArgumentException) {
-                call.respond(HttpStatusCode.NotFound, e.message ?: "Unknown class")
-            }
+    private fun Application.configureHttp() {
+        install(CORS) {
+            allowHost("localhost:63342", schemes = listOf("http"))
+            allowHeader(HttpHeaders.ContentType)
+            allowMethod(HttpMethod.Get)
+            allowMethod(HttpMethod.Post)
         }
 
-        post("/invoke") {
-            try {
-                val request: InvocationRequest = call.receive()
-                println("INVOKE REQUEST = $request")
-                val result = api.invoke(request)
-                call.respond(HttpStatusCode.OK, InvocationResponse(result?.toString()))
-            } catch (e: IllegalArgumentException) {
-                call.respond(
-                    HttpStatusCode.BadRequest,
-                    InvocationResponse("ERROR: ${e.message}")
-                )
-            } catch (e: Exception) {
-                e.printStackTrace()
-                call.respond(
-                    HttpStatusCode.InternalServerError,
-                    InvocationResponse("ERROR: ${e.message}")
-                )
+        install(ContentNegotiation) {
+            json(
+                Json {
+                    ignoreUnknownKeys = true
+                    classDiscriminator = "kind"
+                }
+            )
+        }
+    }
+
+    private fun Application.configureRoutes(api: ReflectionServiceApi) {
+        routing {
+            get("/methods/{className}") {
+                val className = call.parameters["className"]
+                if (className == null) {
+                    call.respond(HttpStatusCode.BadRequest, "Missing className")
+                    return@get
+                }
+
+                try {
+                    val descriptors = api.descriptors(className)
+                    call.respond(descriptors.map(MethodDescriptor::toResponse))
+                } catch (e: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.NotFound, e.message ?: "Unknown class")
+                }
+            }
+
+            post("/invoke") {
+                try {
+                    val request: InvocationRequest = call.receive()
+                    println("INVOKE REQUEST = $request")
+                    val result = api.invoke(request)
+                    call.respond(HttpStatusCode.OK, InvocationResponse(result?.toString()))
+                } catch (e: IllegalArgumentException) {
+                    call.respond(
+                        HttpStatusCode.BadRequest,
+                        InvocationResponse("ERROR: ${e.message}")
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        InvocationResponse("ERROR: ${e.message}")
+                    )
+                }
             }
         }
     }

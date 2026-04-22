@@ -96,7 +96,8 @@ class MethodRegistry(
         descriptorsById.clear()
     }
 
-    override fun classes(): List<Class<*>> {
-        return descriptorsByClass.keys.toList()
-    }
+    override val classes: List<Class<*>>
+        get() {
+            return descriptorsByClass.keys.toList()
+        }
 }

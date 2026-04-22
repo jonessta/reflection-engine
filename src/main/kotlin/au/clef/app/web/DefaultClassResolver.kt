@@ -6,7 +6,7 @@ import au.clef.engine.registry.RegisteredClasses
 class DefaultClassResolver(registeredClasses: RegisteredClasses) : ClassResolver {
 
     private val classesByName: Map<String, Class<*>> =
-        registeredClasses.classes().flatMap { clazz ->
+        registeredClasses.classes.flatMap { clazz ->
             listOf(
                 clazz.name to clazz,
                 clazz.simpleName to clazz

@@ -19,8 +19,6 @@ val demoDefinition = ReflectionAppDefinition(
     classes = listOf(
         AcmeService::class,
         Math::class,
-        Person::class,
-        Address::class,
         Class.forName("au.clef.app.demo.model.KotlinFuncsKt").kotlin
     ),
     metadataResourcePath = "/config/method-metadata.json",

@@ -25,14 +25,25 @@ class ReflectionServiceApi(
     }
 
     fun invoke(request: InvocationRequest): Any? {
-        val methodId: MethodId = MethodId.fromValue(request.methodId)
-        val args: List<Value> = request.args.map(valueMapper::toEngineValue)
+        val methodId = MethodId.fromValue(request.methodId)
+        val descriptor = engine.descriptor(methodId)
+        val args = request.args.map(valueMapper::toEngineValue)
 
-        return if (request.targetId != null) {
-            val instance = instanceRegistry.get(request.targetId)
-            engine.invoke(methodId, instance, args)
+        return if (descriptor.isStatic) {
+            if (request.instanceId != null) {
+                throw IllegalArgumentException(
+                    "Method ${descriptor.id.value} is static and must not specify targetId"
+                )
+            }
+            engine.invokeDescriptor(descriptor, args)
         } else {
-            engine.invoke(methodId, args)
+            val targetId = request.instanceId
+                ?: throw IllegalArgumentException(
+                    "Method ${descriptor.id.value} is an instance method and requires targetId"
+                )
+
+            val instance = instanceRegistry.get(targetId)
+            engine.invokeDescriptor(descriptor, instance, args)
         }
     }
 }

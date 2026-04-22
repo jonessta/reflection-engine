@@ -27,7 +27,7 @@ class MetadataGenerator(private val methodRegistry: MethodRegistry) {
 
     fun generate(): MetadataRoot {
         val methods: Map<MethodId, MethodMetadata> =
-            methodRegistry.classes()
+            methodRegistry.classes
                 .flatMap { clazz: Class<*> ->
                     generate(clazz).methods.entries
                 }

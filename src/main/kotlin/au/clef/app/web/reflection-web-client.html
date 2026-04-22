@@ -217,8 +217,8 @@
 
             <div class="row">
                 <div>
-                    <label for="targetId">Target ID (instance methods)</label>
-                    <input id="targetId" value="acmeService"/>
+                    <label for="instanceId">Target ID (instance methods)</label>
+                    <input id="instanceId" value="acmeService"/>
                 </div>
                 <button id="loadBtn">Load Methods</button>
             </div>
@@ -267,7 +267,7 @@
     const el = {
         baseUrl: document.getElementById('baseUrl'),
         className: document.getElementById('className'),
-        targetId: document.getElementById('targetId'),
+        instanceId: document.getElementById('instanceId'),
         loadBtn: document.getElementById('loadBtn'),
         methodList: document.getElementById('methodList'),
         selectedMeta: document.getElementById('selectedMeta'),
@@ -437,11 +437,11 @@
 
         const request = {
             methodId: method.id,
-            targetId: method.isStatic ? null : (el.targetId.value.trim() || null),
+            instanceId: method.isStatic ? null : (el.instanceId.value.trim() || null),
             args,
         };
 
-        if (method.isStatic) delete request.targetId;
+        if (method.isStatic) delete request.instanceId;
         return request;
     }
 
@@ -496,9 +496,9 @@
             return;
         }
 
-        if (!state.selected.isStatic && !request.targetId) {
-            el.responseBox.textContent = 'targetId is required for instance methods.';
-            setStatus('Missing targetId.', 'err');
+        if (!state.selected.isStatic && !request.instanceId) {
+            el.responseBox.textContent = 'instanceId is required for instance methods.';
+            setStatus('Missing instanceId.', 'err');
             return;
         }
 

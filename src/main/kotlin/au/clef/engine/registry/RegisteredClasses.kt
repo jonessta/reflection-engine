@@ -1,5 +1,5 @@
 package au.clef.engine.registry
 
 interface RegisteredClasses {
-    fun classes(): List<Class<*>>
+    val classes: List<Class<*>>
 }

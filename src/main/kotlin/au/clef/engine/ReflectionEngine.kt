@@ -54,7 +54,10 @@ class ReflectionEngine(
     fun invokeDescriptor(descriptor: MethodDescriptor, instance: Any, vararg args: Value): Any? =
         invokeDescriptor(descriptor, instance, args.toList())
 
-    private fun invokeDescriptor(
+    fun invokeDescriptor(descriptor: MethodDescriptor, args: List<Value>): Any? =
+        invokeDescriptor(descriptor, null, args)
+
+    fun invokeDescriptor(
         descriptor: MethodDescriptor,
         instance: Any?,
         args: List<Value>
@@ -77,7 +80,5 @@ class ReflectionEngine(
         return descriptor.method.invoke(target, *convertedArgs.toTypedArray())
     }
 
-    override fun classes(): List<Class<*>> {
-        return methodRegistry.classes()
-    }
+    override val classes: List<Class<*>> get() = methodRegistry.classes
 }

@@ -1,8 +1,10 @@
-package au.clef.app.web
+package au.clef.app.web.demo
 
 import au.clef.app.demo.model.AcmeService
 import au.clef.app.demo.model.Address
 import au.clef.app.demo.model.Person
+import au.clef.app.web.WebServer
+import au.clef.app.web.WebServerConfig
 import au.clef.engine.ExposedTarget
 import au.clef.engine.ReflectionAppDefinition
 import au.clef.engine.ReflectionRuntime

@@ -4,11 +4,7 @@ import au.clef.app.demo.model.AcmeService
 import au.clef.app.demo.model.Address
 import au.clef.app.demo.model.Person
 import au.clef.app.demo.model.add
-import au.clef.engine.ExposedTarget
-import au.clef.engine.ReflectionAppDefinition
-import au.clef.engine.ReflectionEngine
-import au.clef.engine.ReflectionRuntime
-import au.clef.engine.createReflectionRuntime
+import au.clef.engine.*
 import au.clef.engine.model.*
 import au.clef.engine.model.Values.scalar
 import au.clef.metadata.*
@@ -20,7 +16,12 @@ val demoDefinition = ReflectionAppDefinition(
     targets = listOf(
         ExposedTarget.Instance("acmeService", AcmeService()),
         ExposedTarget.StaticClass(Math::class),
-        ExposedTarget.StaticClass(Class.forName("au.clef.app.demo.model.KotlinFuncsKt").kotlin)
+
+        // if you want to expose all function in the file containing the standalone
+        // add method.
+//        ExposedTarget.StaticClass(::add.javaMethod!!.declaringClass.kotlin),
+
+        ExposedTarget.StaticMethod(MethodId.from(::add.javaMethod!!))
     ),
     supportingTypes = listOf(
         Person::class,
@@ -36,6 +37,7 @@ private val OUTPUT_FILE: File? = demoDefinition.metadataResourcePath?.removePref
 val runtime: ReflectionRuntime = createReflectionRuntime(demoDefinition)
 
 fun main() {
+    runExposeOnlyOneJavaStaticMethod()
     generateMetadata()
     validate()
     val engine: ReflectionEngine = runtime.engine
@@ -78,6 +80,18 @@ fun showAllDescriptors(engine: ReflectionEngine) {
             println(" name=${param.name}, label=${param.label}, type=${param.type}")
         }
     }
+}
+
+fun runExposeOnlyOneJavaStaticMethod() {
+    val methodId: MethodId = MethodId.from(Math::class, "min", Int::class, Int::class)
+    val demoDefinition = ReflectionAppDefinition(
+        targets = listOf(
+            ExposedTarget.StaticMethod(methodId)
+        )
+    )
+    val runtime: ReflectionRuntime = createReflectionRuntime(demoDefinition)
+    val v = runtime.engine.invoke(methodId, Value.Scalar(10), Value.Scalar(20))
+    println(v)
 }
 
 fun runGuiStyleInstance(engine: ReflectionEngine) {

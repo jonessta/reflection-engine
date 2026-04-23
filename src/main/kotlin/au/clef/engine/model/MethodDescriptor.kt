@@ -31,12 +31,6 @@ class MethodDescriptor internal constructor(
 
     val isStatic: Boolean get() = Modifier.isStatic(method.modifiers)
 
-    internal val parameterCount: Int get() = method.parameterCount
-
-    internal val parameterTypes: Array<Class<*>> get() = method.parameterTypes
-
-    internal fun invoke(target: Any?, args: Array<Any?>): Any? = method.invoke(target, *args)
-
     fun withMetadata(
         displayName: String? = this.displayName,
         parameters: List<ParamDescriptor> = this.parameters

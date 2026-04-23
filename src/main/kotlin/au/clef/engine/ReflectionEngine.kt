@@ -25,14 +25,14 @@ class ReflectionEngine(
     /**
      * No meta data decoration.
      */
-    fun rawDescriptor(id: MethodId): MethodDescriptor =
-        reflectionRegistry.findDescriptorById(id)
+    private fun rawDescriptor(id: MethodId): MethodDescriptor =
+        reflectionRegistry.descriptor(id)
 
     /**
      * Decorates the descriptor with metadata.
      */
     fun descriptor(id: MethodId): MethodDescriptor {
-        val descriptor = rawDescriptor(id)
+        val descriptor: MethodDescriptor = rawDescriptor(id)
         return metadataRegistry?.apply(descriptor) ?: descriptor
     }
 
@@ -54,27 +54,27 @@ class ReflectionEngine(
     fun invokeInstance(descriptor: MethodDescriptor, instance: Any, args: List<Value>): Any? =
         invokeDescriptor(descriptor, instance, args)
 
-    private fun invokeDescriptor(descriptor: MethodDescriptor, instance: Any?, args: List<Value>): Any? {
+    private fun invokeDescriptor(
+        descriptor: MethodDescriptor,
+        instance: Any?,
+        args: List<Value>
+    ): Any? {
+        val method = reflectionRegistry.method(descriptor.id)
+
         if (!descriptor.isStatic && instance == null) {
             throw MissingInstanceException("${descriptor.id}")
         }
-        if (descriptor.isStatic && instance != null) {
-            // todo better exception
-            throw IllegalArgumentException("Static method ${descriptor.id} must not be invoked with an instance")
+
+        require(args.size == method.parameterCount) {
+            "Expected ${method.parameterCount} args for ${descriptor.id}, got ${args.size}"
         }
 
-        require(args.size == descriptor.parameterCount) {
-            "Expected ${descriptor.parameterCount} args for ${descriptor.id}, got ${args.size}"
-        }
+        val convertedArgs = args.mapIndexed { index, arg ->
+            typeConverter.materialize(arg, method.parameterTypes[index])
+        }.toTypedArray()
 
-        val convertedArgs: List<Any?> = args.mapIndexed { index: Int, arg: Value ->
-            val paramType: Class<*> = descriptor.parameterTypes[index]
-            typeConverter.materialize(arg, paramType)
-        }
-
-        val target: Any? = if (descriptor.isStatic) null else instance
-
-        return descriptor.invoke(target, convertedArgs.toTypedArray())
+        val target = if (descriptor.isStatic) null else instance
+        return method.invoke(target, *convertedArgs)
     }
 
     override val classes: List<Class<*>> get() = reflectionRegistry.classes

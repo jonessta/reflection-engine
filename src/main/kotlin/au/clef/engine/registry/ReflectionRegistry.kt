@@ -8,15 +8,19 @@ import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
+private data class RegistryEntry(
+    val descriptor: MethodDescriptor,
+    val method: Method
+)
+
 class ReflectionRegistry(
     targetClasses: List<KClass<*>>,
     supportingClasses: List<KClass<*>> = emptyList(),
     private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-) : ReflectionClasses {
+) : ReflectionTypes {
 
     private val descriptorsByClass: MutableMap<Class<*>, List<MethodDescriptor>> = ConcurrentHashMap()
-    private val descriptorsById: MutableMap<MethodId, MethodDescriptor> = ConcurrentHashMap()
-    private val methodsById: MutableMap<MethodId, Method> = ConcurrentHashMap()
+    private val entriesById: MutableMap<MethodId, RegistryEntry> = ConcurrentHashMap()
 
     override val targetClasses: List<Class<*>> = targetClasses.map { it.java }
 
@@ -39,39 +43,29 @@ class ReflectionRegistry(
             val methodId: MethodId = MethodId.from(method)
             val descriptor: MethodDescriptor = MethodDescriptor.from(method, methodId)
             descriptors += descriptor
-            methodsById[methodId] = method
-            descriptorsById[methodId] = descriptor
+            entriesById[methodId] = RegistryEntry(descriptor, method)
         }
         descriptorsByClass[clazz] = descriptors
     }
 
     private fun collectMethods(clazz: Class<*>, inheritanceLevel: InheritanceLevel): List<Method> =
         when (inheritanceLevel) {
-            InheritanceLevel.DeclaredOnly -> clazz.declaredMethods.toList()
-
-            // todo ALL and Depth are very similar
-            InheritanceLevel.All -> {
-                val methods: MutableList<Method> = mutableListOf()
-                var current: Class<*>? = clazz
-                while (current != null) {
-                    methods += current.declaredMethods
-                    current = current.superclass
-                }
-                methods.distinctBy(MethodId::from)
-            }
-
-            is InheritanceLevel.Depth -> {
-                val methods: MutableList<Method> = mutableListOf()
-                var current: Class<*>? = clazz
-                var depth = 0
-                while (current != null && depth <= inheritanceLevel.value) {
-                    methods += current.declaredMethods
-                    current = current.superclass
-                    depth++
-                }
-                methods.distinctBy(MethodId::from)
-            }
+            InheritanceLevel.DeclaredOnly -> collectHierarchyMethods(clazz = clazz, maxDepth = 0)
+            InheritanceLevel.All -> collectHierarchyMethods(clazz = clazz, maxDepth = Int.MAX_VALUE)
+            is InheritanceLevel.Depth -> collectHierarchyMethods(clazz = clazz, maxDepth = inheritanceLevel.value)
         }
+
+    private fun collectHierarchyMethods(clazz: Class<*>, maxDepth: Int): List<Method> {
+        val methods: MutableList<Method> = mutableListOf()
+        var current: Class<*>? = clazz
+        var depth = 0
+        while (current != null && depth <= maxDepth) {
+            methods += current.declaredMethods
+            current = current.superclass
+            depth++
+        }
+        return methods.distinctBy(MethodId::from)
+    }
 
     fun descriptors(clazz: Class<*>): List<MethodDescriptor> =
         descriptorsByClass[clazz]
@@ -80,12 +74,18 @@ class ReflectionRegistry(
     fun descriptors(clazz: KClass<*>): List<MethodDescriptor> = descriptors(clazz.java)
 
     fun descriptor(id: MethodId): MethodDescriptor =
-        descriptorsById[id]
-            ?: throw MethodNotFoundException(methodId = id, available = descriptorsById.keys.map(MethodId::toString))
+        entriesById[id]?.descriptor
+            ?: throw MethodNotFoundException(
+                methodId = id,
+                available = entriesById.keys.map(MethodId::toString)
+            )
 
     fun method(id: MethodId): Method =
-        methodsById[id]
-            ?: throw MethodNotFoundException(methodId = id, available = methodsById.keys.map(MethodId::toString))
+        entriesById[id]?.method
+            ?: throw MethodNotFoundException(
+                methodId = id,
+                available = entriesById.keys.map(MethodId::toString)
+            )
 
-    fun allDescriptors(): List<MethodDescriptor> = descriptorsById.values.toList()
+    fun allDescriptors(): List<MethodDescriptor> = entriesById.values.map(RegistryEntry::descriptor)
 }

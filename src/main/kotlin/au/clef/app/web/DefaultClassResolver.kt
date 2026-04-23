@@ -1,12 +1,12 @@
 package au.clef.app.web
 
 import au.clef.api.ClassResolver
-import au.clef.engine.registry.RegisteredClasses
+import au.clef.engine.registry.ReflectionTypes
 
-class DefaultClassResolver(registeredClasses: RegisteredClasses) : ClassResolver {
+class DefaultClassResolver(reflectionTypes: ReflectionTypes) : ClassResolver {
 
     private val classesByName: Map<String, Class<*>> =
-        registeredClasses.classes.flatMap { clazz ->
+        reflectionTypes.classes.flatMap { clazz ->
             listOf(
                 clazz.name to clazz,
                 clazz.simpleName to clazz

@@ -12,7 +12,7 @@ class ReflectionServiceApi(
     private val engine: ReflectionEngine,
     private val instanceRegistry: InstanceRegistry
 ) {
-    private val classResolver = DefaultClassResolver(registeredClasses = engine)
+    private val classResolver = DefaultClassResolver(reflectionTypes = engine.reflectionTypes)
 
     private val valueMapper = ValueMapper(
         instanceRegistry,

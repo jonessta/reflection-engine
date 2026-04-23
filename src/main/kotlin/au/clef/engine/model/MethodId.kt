@@ -20,6 +20,9 @@ class MethodId private constructor(
     val parameterTypeNames: List<String>
 ) {
 
+    /**
+     * Can be used over the wire as identification.
+     */
     val value: String = buildString {
         append(declaringClass.name)
         append(CLASS_NAME_SEPARATOR)
@@ -31,8 +34,7 @@ class MethodId private constructor(
 
     override fun toString(): String = value
 
-    override fun equals(other: Any?): Boolean =
-        other is MethodId && value == other.value
+    override fun equals(other: Any?): Boolean = other is MethodId && value == other.value
 
     override fun hashCode(): Int = value.hashCode()
 

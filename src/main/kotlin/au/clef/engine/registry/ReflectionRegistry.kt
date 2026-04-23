@@ -22,7 +22,7 @@ class ReflectionRegistry(
     override val classes: List<Class<*>> = (targetClasses + supportingClasses).map { it.java }.distinct()
 
     init {
-        require(targetClasses.isNotEmpty()) { "Classes must not be empty" }
+        require(targetClasses.isNotEmpty()) { "target classes must not be empty" }
         targetClasses.forEach { addKClass(it) }
     }
 
@@ -74,15 +74,6 @@ class ReflectionRegistry(
         return methods.map { method: Method -> MethodDescriptor(method) }
     }
 
-    fun addClassByName(className: String) {
-        val clazz: Class<*> = try {
-            Class.forName(className)
-        } catch (e: ClassNotFoundException) {
-            throw IllegalArgumentException("Class not found: $className", e)
-        }
-        addKClass(clazz)
-    }
-
     fun descriptors(clazz: Class<*>): List<MethodDescriptor> =
         descriptorsByClass[clazz] ?: throw IllegalArgumentException("Class not registered: ${clazz.name}")
 
@@ -96,8 +87,4 @@ class ReflectionRegistry(
 
     fun allDescriptors(): List<MethodDescriptor> = descriptorsById.values.toList()
 
-    fun clear() {
-        descriptorsByClass.clear()
-        descriptorsById.clear()
-    }
 }

@@ -63,18 +63,18 @@ class ReflectionEngine(
             throw IllegalArgumentException("Static method ${descriptor.id} must not be invoked with an instance")
         }
 
-        require(args.size == descriptor.method.parameterCount) {
-            "Expected ${descriptor.method.parameterCount} args for ${descriptor.id}, got ${args.size}"
+        require(args.size == descriptor.parameterCount) {
+            "Expected ${descriptor.parameterCount} args for ${descriptor.id}, got ${args.size}"
         }
 
         val convertedArgs: List<Any?> = args.mapIndexed { index: Int, arg: Value ->
-            val paramType: Class<*> = descriptor.method.parameterTypes[index]
+            val paramType: Class<*> = descriptor.parameterTypes[index]
             typeConverter.materialize(arg, paramType)
         }
 
         val target: Any? = if (descriptor.isStatic) null else instance
 
-        return descriptor.method.invoke(target, *convertedArgs.toTypedArray())
+        return descriptor.invoke(target, convertedArgs.toTypedArray())
     }
 
     override val classes: List<Class<*>> get() = reflectionRegistry.classes

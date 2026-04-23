@@ -26,12 +26,7 @@ class DescriptorMetadataRegistry(private val metadata: MetadataRoot) {
             }
         }
 
-        // todo can we descriptor.with(parametrs=updateParams, displayName=methodMeta.displayName) ??
-        return MethodDescriptor(
-            method = descriptor.method,
-            displayName = methodMeta.displayName ?: descriptor.displayName,
-            parameters = updatedParams
-        )
+        return descriptor.withMetadata(methodMeta.displayName ?: descriptor.displayName, updatedParams)
     }
 
     fun applyAll(descriptors: List<MethodDescriptor>): List<MethodDescriptor> =

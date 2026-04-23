@@ -1,7 +1,6 @@
 package au.clef.engine.registry
 
-// todo does this extend RegisteredClasses
-interface ReflectionClasses: RegisteredClasses {
+interface ReflectionClasses : RegisteredClasses {
 
     /**
      * Classes of static methods or class od an instance that if the facade that will be invoked. Eg Math.min(int,int)

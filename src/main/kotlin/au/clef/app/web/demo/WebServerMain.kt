@@ -15,6 +15,7 @@ fun main() {
         targets = listOf(
             ExposedTarget.Instance("acmeService", AcmeService()),
         ),
+        // these are part of the AcmeService interface
         supportingTypes = listOf(
             Person::class,
             Address::class

@@ -5,8 +5,6 @@ import java.lang.reflect.Modifier
 
 class MethodDescriptor(
     val id: MethodId,
-    // todo is this used
-    val declaringClass: Class<*>,
     val reflectedName: String,
     val displayName: String? = null,
     val parameters: List<ParamDescriptor>,
@@ -23,7 +21,6 @@ class MethodDescriptor(
         internal fun from(method: Method, methodId: MethodId, displayName: String? = null): MethodDescriptor =
             MethodDescriptor(
                 id = methodId,
-                declaringClass = method.declaringClass,
                 reflectedName = method.name,
                 displayName = displayName,
                 parameters = buildParamDescriptors(method),
@@ -38,7 +35,6 @@ class MethodDescriptor(
     ): MethodDescriptor =
         MethodDescriptor(
             id,
-            declaringClass,
             reflectedName,
             displayName = displayName,
             parameters = parameters,

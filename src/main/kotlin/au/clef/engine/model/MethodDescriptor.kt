@@ -5,6 +5,7 @@ import java.lang.reflect.Modifier
 
 class MethodDescriptor(
     val id: MethodId,
+    // todo is this used
     val declaringClass: Class<*>,
     val reflectedName: String,
     val displayName: String? = null,
@@ -14,9 +15,14 @@ class MethodDescriptor(
 ) {
 
     companion object {
+
         fun from(method: Method, displayName: String? = null): MethodDescriptor =
+            from(method, MethodId.from(method), displayName)
+
+        // for internal efficiency
+        internal fun from(method: Method, methodId: MethodId, displayName: String? = null): MethodDescriptor =
             MethodDescriptor(
-                id = MethodId.from(method),
+                id = methodId,
                 declaringClass = method.declaringClass,
                 reflectedName = method.name,
                 displayName = displayName,

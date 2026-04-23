@@ -27,27 +27,29 @@ class ReflectionRegistry(
         targetClasses.forEach { registerClass(it.java) }
     }
 
-    fun registerClass(clazz: KClass<*>) {
-        registerClass(clazz.java)
-    }
+    fun registerClass(clazz: KClass<*>) = registerClass(clazz.java)
 
     fun registerClass(clazz: Class<*>) {
         if (descriptorsByClass.containsKey(clazz))
             return
 
         val methods: List<Method> = collectMethods(clazz, inheritanceLevel)
-        val descriptors: List<MethodDescriptor> = methods.map(MethodDescriptor::from)
-
+        val descriptors: MutableList<MethodDescriptor> = mutableListOf()
+        for (method: Method in methods) {
+            val methodId: MethodId = MethodId.from(method)
+            val descriptor: MethodDescriptor = MethodDescriptor.from(method, methodId)
+            descriptors += descriptor
+            methodsById[methodId] = method
+            descriptorsById[methodId] = descriptor
+        }
         descriptorsByClass[clazz] = descriptors
-        methods.forEach { method -> methodsById[MethodId.from(method)] = method }
-        descriptors.forEach { descriptor -> descriptorsById[descriptor.id] = descriptor }
     }
 
     private fun collectMethods(clazz: Class<*>, inheritanceLevel: InheritanceLevel): List<Method> =
         when (inheritanceLevel) {
-            InheritanceLevel.DeclaredOnly ->
-                clazz.declaredMethods.toList()
+            InheritanceLevel.DeclaredOnly -> clazz.declaredMethods.toList()
 
+            // todo ALL and Depth are very similar
             InheritanceLevel.All -> {
                 val methods: MutableList<Method> = mutableListOf()
                 var current: Class<*>? = clazz

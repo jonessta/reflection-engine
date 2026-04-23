@@ -12,7 +12,7 @@ data class ReflectionAppDefinition(
         get() = targets.map {
             when (it) {
                 is ExposedTarget.StaticClass -> it.clazz
-                is ExposedTarget.StaticMethod -> Class.forName(it.methodId.declaringClassName).kotlin
+                is ExposedTarget.StaticMethod -> it.methodId.declaringClass.kotlin
                 is ExposedTarget.Instance -> it.obj::class
             }
         }.distinct()

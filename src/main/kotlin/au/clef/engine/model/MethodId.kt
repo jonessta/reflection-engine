@@ -15,13 +15,13 @@ class IllegalMethodIdException(msg: String) : EngineException("Invalid MethodId:
 
 @Serializable(with = MethodIdSerializer::class)
 class MethodId private constructor(
-    val declaringClassName: String,
+    val declaringClass: Class<*>,
     val methodName: String,
     val parameterTypeNames: List<String>
 ) {
 
     val value: String = buildString {
-        append(declaringClassName)
+        append(declaringClass.name)
         append(CLASS_NAME_SEPARATOR)
         append(methodName)
         append("(")
@@ -45,11 +45,10 @@ class MethodId private constructor(
 
         private val TYPE_NAME_REGEX = Regex("""^[A-Za-z_][A-Za-z0-9_$.]*$""")
         private val METHOD_NAME_REGEX = Regex("""^[A-Za-z_][A-Za-z0-9_$]*$""")
-        private val CLASS_NAME_REGEX = Regex("""^[A-Za-z_][A-Za-z0-9_$.]*$""")
 
         fun from(method: Method): MethodId =
             MethodId(
-                declaringClassName = method.declaringClass.name,
+                declaringClass = method.declaringClass,
                 methodName = method.name,
                 parameterTypeNames = method.parameterTypes.map { it.name }
             )
@@ -69,10 +68,6 @@ class MethodId private constructor(
             val declaringClassName = match.groupValues[1]
             val methodName = match.groupValues[2]
             val paramsPart = match.groupValues[3]
-
-            if (!CLASS_NAME_REGEX.matches(declaringClassName)) {
-                throw IllegalMethodIdException("declaring class name is malformed: $declaringClassName")
-            }
 
             if (!METHOD_NAME_REGEX.matches(methodName)) {
                 throw IllegalMethodIdException("method name is malformed: $methodName")
@@ -94,7 +89,8 @@ class MethodId private constructor(
                     }
                 }
 
-            return MethodId(declaringClassName, methodName, parameterTypeNames)
+            val declaringClass: Class<*> = Class.forName(declaringClassName)
+            return MethodId(declaringClass, methodName, parameterTypeNames)
         }
     }
 }

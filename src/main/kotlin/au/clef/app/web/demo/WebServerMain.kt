@@ -12,14 +12,9 @@ import au.clef.engine.createReflectionRuntime
 
 fun main() {
     val demoDefinition = ReflectionAppDefinition(
-        targets = listOf(
-            ExposedTarget.Instance("acmeService", AcmeService()),
-        ),
+        target = ExposedTarget.Instance("acmeService", AcmeService()),
         // these are part of the AcmeService interface
-        supportingTypes = listOf(
-            Person::class,
-            Address::class
-        ),
+        targetSupportingTypes = listOf(Person::class, Address::class),
         metadataResourcePath = "/config/method-metadata.json"
     )
 

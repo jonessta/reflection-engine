@@ -28,10 +28,7 @@ private val demoDefinition = ReflectionAppDefinition(
         ExposedTarget.StaticClass(Math::class),
         ExposedTarget.StaticMethod(KOTLIN_ADD_METHOD_ID)
     ),
-    supportingTypes = listOf(
-        Person::class,
-        Address::class
-    ),
+    targetSupportingTypes = listOf(Person::class, Address::class),
     metadataResourcePath = "/config/method-metadata.json"
 )
 
@@ -87,13 +84,11 @@ private fun showAllDescriptors() {
 private fun runExposeOnlyOneJavaStaticMethod() {
     val oneMethodRuntime: ReflectionRuntime = createReflectionRuntime(
         ReflectionAppDefinition(
-            targets = listOf(
-                ExposedTarget.StaticMethod(STATIC_JAVA_MATH_MIN_METHOD_ID)
-            )
+            target = ExposedTarget.StaticMethod(STATIC_JAVA_MATH_MIN_METHOD_ID)
         )
     )
     val engine: ReflectionEngine = oneMethodRuntime.engine
-    val result = engine.invoke(STATIC_JAVA_MATH_MIN_METHOD_ID, Value.Scalar(10), Value.Scalar(20))
+    val result = engine.invoke(STATIC_JAVA_MATH_MIN_METHOD_ID, scalar(10), scalar(20))
     println(result)
 }
 

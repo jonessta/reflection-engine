@@ -6,6 +6,7 @@ import au.clef.api.model.InvocationRequest
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
+import au.clef.engine.model.Value
 
 class ReflectionServiceApi(
     private val engine: ReflectionEngine,
@@ -24,9 +25,9 @@ class ReflectionServiceApi(
     }
 
     fun invoke(request: InvocationRequest): Any? {
-        val methodId = MethodId.fromValue(request.methodId)
-        val descriptor = engine.descriptor(methodId)
-        val args = request.args.map(valueMapper::toEngineValue)
+        val methodId: MethodId = MethodId.fromValue(request.methodId)
+        val descriptor: MethodDescriptor = engine.descriptor(methodId)
+        val args: List<Value> = request.args.map(valueMapper::toEngineValue)
 
         return if (descriptor.isStatic) {
             if (request.instanceId != null) {
@@ -36,7 +37,7 @@ class ReflectionServiceApi(
             }
             engine.invokeStatic(descriptor, args)
         } else {
-            val instanceId = request.instanceId
+            val instanceId: String = request.instanceId
                 ?: throw IllegalArgumentException(
                     "Method ${descriptor.id.value} is an instance method and requires targetId"
                 )

@@ -12,69 +12,71 @@ import au.clef.metadata.model.MetadataRoot
 import java.io.File
 import kotlin.reflect.jvm.javaMethod
 
-val demoDefinition = ReflectionAppDefinition(
+private val PERSON_ADDRESS_METHOD_ID = MethodId.from(AcmeService::class, "personAddress", Person::class)
+
+private val STATIC_JAVA_MATH_MAX_METHOD_ID = MethodId.from(Math::class, "max", Int::class, Int::class)
+
+private val STATIC_JAVA_MATH_MIN_METHOD_ID = MethodId.from(Math::class, "min", Int::class, Int::class)
+
+private val KOTLIN_ADD_METHOD_ID = MethodId.from(::add.javaMethod!!)
+
+private val acmeService = AcmeService()
+
+private val demoDefinition = ReflectionAppDefinition(
     targets = listOf(
-        ExposedTarget.Instance("acmeService", AcmeService()),
+        ExposedTarget.Instance("acmeService", acmeService),
         ExposedTarget.StaticClass(Math::class),
-
-        // if you want to expose all function in the file containing the standalone
-        // add method.
-//        ExposedTarget.StaticClass(::add.javaMethod!!.declaringClass.kotlin),
-
-        ExposedTarget.StaticMethod(MethodId.from(::add.javaMethod!!))
+        ExposedTarget.StaticMethod(KOTLIN_ADD_METHOD_ID)
     ),
     supportingTypes = listOf(
         Person::class,
-        Address::class,
+        Address::class
     ),
     metadataResourcePath = "/config/method-metadata.json"
 )
 
-private val OUTPUT_FILE: File? = demoDefinition.metadataResourcePath?.removePrefix("/")?.let {
-    File("src/main/resources").resolve(it)
-}
+private val outputFile: File? =
+    demoDefinition.metadataResourcePath
+        ?.removePrefix("/")
+        ?.let { File("src/main/resources").resolve(it) }
 
-val runtime: ReflectionRuntime = createReflectionRuntime(demoDefinition)
+private val runtime: ReflectionRuntime = createReflectionRuntime(demoDefinition)
 
 fun main() {
     runExposeOnlyOneJavaStaticMethod()
     generateMetadata()
-    validate()
-    val engine: ReflectionEngine = runtime.engine
-    showAllDescriptors(engine)
-    runGuiStyleInstance(engine)
-    runGuiStyleStatic(engine)
-    runKotlinTopLevel(engine)
+    validateMetadata()
+    showAllDescriptors()
+    runGuiStyleInstance()
+    runGuiStyleStatic()
+    runKotlinTopLevel()
 }
 
-fun generateMetadata() {
-    if (OUTPUT_FILE == null)
-        return
-    val generator = MetadataGenerator(reflectionRegistry = runtime.reflectionRegistry)
-    val metadata: MetadataRoot = generator.generate()
-    MetadataWriter.writeToFile(metadata, OUTPUT_FILE)
-    println("Metadata written to: ${OUTPUT_FILE.absolutePath}")
+private fun generateMetadata() {
+    val file = outputFile ?: return
+    val metadata: MetadataRoot = MetadataGenerator(runtime.reflectionRegistry).generate()
+    MetadataWriter.writeToFile(metadata, file)
+    println("Metadata written to: ${file.absolutePath}")
     println(MetadataWriter.toJson(metadata))
 }
 
-fun validate() {
-    if (demoDefinition.metadataResourcePath == null)
-        return
-    val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(demoDefinition.metadataResourcePath)
-    val validator = MetadataValidator(runtime.reflectionRegistry)
-    val issues: List<ValidationIssue> = validator.validate(metadata)
+private fun validateMetadata() {
+    val path = demoDefinition.metadataResourcePath ?: return
+    val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(path)
+    val issues: List<ValidationIssue> = MetadataValidator(runtime.reflectionRegistry).validate(metadata)
     if (issues.isEmpty()) {
         println("Metadata valid")
         return
     }
-    issues.forEach { issue: ValidationIssue ->
+
+    issues.forEach { issue ->
         println("[${issue.severity}] ${issue.location} - ${issue.message}")
     }
 }
 
-fun showAllDescriptors(engine: ReflectionEngine) {
-    val descriptors: List<MethodDescriptor> = engine.descriptors(AcmeService::class)
-    descriptors.forEach { descriptor: MethodDescriptor ->
+private fun showAllDescriptors() {
+    val descriptors: List<MethodDescriptor> = runtime.engine.descriptors(AcmeService::class)
+    descriptors.forEach { descriptor ->
         println("METHOD: ${descriptor.id}")
         descriptor.parameters.forEach { param: ParamDescriptor ->
             println(" name=${param.name}, label=${param.label}, type=${param.type}")
@@ -82,38 +84,35 @@ fun showAllDescriptors(engine: ReflectionEngine) {
     }
 }
 
-fun runExposeOnlyOneJavaStaticMethod() {
-    val methodId: MethodId = MethodId.from(Math::class, "min", Int::class, Int::class)
-    val demoDefinition = ReflectionAppDefinition(
-        targets = listOf(
-            ExposedTarget.StaticMethod(methodId)
+private fun runExposeOnlyOneJavaStaticMethod() {
+    val oneMethodRuntime: ReflectionRuntime = createReflectionRuntime(
+        ReflectionAppDefinition(
+            targets = listOf(
+                ExposedTarget.StaticMethod(STATIC_JAVA_MATH_MIN_METHOD_ID)
+            )
         )
     )
-    val runtime: ReflectionRuntime = createReflectionRuntime(demoDefinition)
-    val v = runtime.engine.invoke(methodId, Value.Scalar(10), Value.Scalar(20))
-    println(v)
+    val engine: ReflectionEngine = oneMethodRuntime.engine
+    val result = engine.invoke(STATIC_JAVA_MATH_MIN_METHOD_ID, Value.Scalar(10), Value.Scalar(20))
+    println(result)
 }
 
-fun runGuiStyleInstance(engine: ReflectionEngine) {
-    val instance = AcmeService()
-    val methodId: MethodId = MethodId.from(AcmeService::class, "personAddress", Person::class)
-    val result: Any? = engine.invoke(methodId, instance, personValue())
+private fun runGuiStyleInstance() {
+    val result = runtime.engine.invoke(PERSON_ADDRESS_METHOD_ID, acmeService, person())
     println("-----------> runGuiStyleInstance: $result")
 }
 
-fun runGuiStyleStatic(engine: ReflectionEngine) {
-    val methodId: MethodId = MethodId.from(Math::class, "max", Int::class, Int::class)
-    val result: Any? = engine.invoke(methodId, scalar(10), scalar(20))
+private fun runGuiStyleStatic() {
+    val result = runtime.engine.invoke(STATIC_JAVA_MATH_MAX_METHOD_ID, scalar(10), scalar(20))
     println("-----------> runGuiStyleStatic: $result")
 }
 
-fun runKotlinTopLevel(engine: ReflectionEngine) {
-    val methodId: MethodId = MethodId.from(::add.javaMethod!!)
-    val result: Any? = engine.invoke(methodId, scalar(10), scalar(20))
+private fun runKotlinTopLevel() {
+    val result = runtime.engine.invoke(KOTLIN_ADD_METHOD_ID, scalar(10), scalar(20))
     println("-----------> runTopLevelFunction: $result")
 }
 
-private fun personValue(name: String = "Alice", age: Int = 25): Value.Record =
+private fun person(name: String = "Alice", age: Int = 25): Value.Record =
     Values.record(
         Person::class,
         "name" to scalar(name),

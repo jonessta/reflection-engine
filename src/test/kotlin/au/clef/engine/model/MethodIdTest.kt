@@ -82,7 +82,7 @@ class MethodModelTest {
     @Test
     fun methodDescriptor_derivesFieldsFromMethod() {
         val method: Method = SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
-        val descriptor = MethodDescriptor(method)
+        val descriptor = MethodDescriptor.from(method)
         assertEquals("personName", descriptor.reflectedName)
         assertEquals(String::class.java, descriptor.returnType)
         assertFalse(descriptor.isStatic)
@@ -96,7 +96,7 @@ class MethodModelTest {
             Int::class.javaPrimitiveType!!,
             Int::class.javaPrimitiveType!!
         )
-        val descriptor = MethodDescriptor(method)
+        val descriptor = MethodDescriptor.from(method)
         assertTrue(descriptor.isStatic)
         assertEquals<Class<out Any>?>(Int::class.javaPrimitiveType, descriptor.returnType)
     }
@@ -104,7 +104,7 @@ class MethodModelTest {
     @Test
     fun methodDescriptor_buildsParameterDescriptors() {
         val method: Method = SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
-        val descriptor = MethodDescriptor(method)
+        val descriptor = MethodDescriptor.from(method)
         assertEquals(1, descriptor.parameters.size)
         val param: ParamDescriptor = descriptor.parameters[0]
         assertEquals(0, param.index)
@@ -120,7 +120,7 @@ class MethodModelTest {
             Int::class.javaPrimitiveType!!,
             Int::class.javaPrimitiveType!!
         )
-        val descriptor = MethodDescriptor(method)
+        val descriptor = MethodDescriptor.from(method)
         assertEquals(2, descriptor.parameters.size)
         assertFalse(descriptor.parameters[0].nullable)
         assertFalse(descriptor.parameters[1].nullable)
@@ -132,8 +132,8 @@ class MethodModelTest {
             SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
         val method2: Method =
             SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
-        val descriptor1 = MethodDescriptor(method1, displayName = "First")
-        val descriptor2 = MethodDescriptor(method2, displayName = "Second")
+        val descriptor1 = MethodDescriptor.from(method1, displayName = "First")
+        val descriptor2 = MethodDescriptor.from(method2, displayName = "Second")
         assertEquals(descriptor1, descriptor2)
         assertEquals(descriptor1.hashCode(), descriptor2.hashCode())
     }
@@ -146,8 +146,8 @@ class MethodModelTest {
             "echo",
             Int::class.javaPrimitiveType!!
         )
-        val descriptor1 = MethodDescriptor(method1)
-        val descriptor2 = MethodDescriptor(method2)
+        val descriptor1 = MethodDescriptor.from(method1)
+        val descriptor2 = MethodDescriptor.from(method2)
         assertNotEquals(descriptor1, descriptor2)
     }
 

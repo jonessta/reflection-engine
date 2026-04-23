@@ -36,7 +36,7 @@ class ReflectionRegistry(
             return
 
         val methods: List<Method> = collectMethods(clazz, inheritanceLevel)
-        val descriptors: List<MethodDescriptor> = methods.map(::MethodDescriptor)
+        val descriptors: List<MethodDescriptor> = methods.map(MethodDescriptor::from)
 
         descriptorsByClass[clazz] = descriptors
         methods.forEach { method -> methodsById[MethodId.from(method)] = method }
@@ -49,7 +49,7 @@ class ReflectionRegistry(
                 clazz.declaredMethods.toList()
 
             InheritanceLevel.All -> {
-                val methods: MutableList<Method> = mutableListOf<Method>()
+                val methods: MutableList<Method> = mutableListOf()
                 var current: Class<*>? = clazz
                 while (current != null) {
                     methods += current.declaredMethods
@@ -59,7 +59,7 @@ class ReflectionRegistry(
             }
 
             is InheritanceLevel.Depth -> {
-                val methods = mutableListOf<Method>()
+                val methods: MutableList<Method> = mutableListOf()
                 var current: Class<*>? = clazz
                 var depth = 0
                 while (current != null && depth <= inheritanceLevel.value) {
@@ -75,22 +75,15 @@ class ReflectionRegistry(
         descriptorsByClass[clazz]
             ?: throw IllegalArgumentException("Class not registered: ${clazz.name}")
 
-    fun descriptors(clazz: KClass<*>): List<MethodDescriptor> =
-        descriptors(clazz.java)
+    fun descriptors(clazz: KClass<*>): List<MethodDescriptor> = descriptors(clazz.java)
 
     fun descriptor(id: MethodId): MethodDescriptor =
         descriptorsById[id]
-            ?: throw MethodNotFoundException(
-                methodId = id,
-                available = descriptorsById.keys.map(MethodId::toString)
-            )
+            ?: throw MethodNotFoundException(methodId = id, available = descriptorsById.keys.map(MethodId::toString))
 
     fun method(id: MethodId): Method =
         methodsById[id]
-            ?: throw MethodNotFoundException(
-                methodId = id,
-                available = methodsById.keys.map(MethodId::toString)
-            )
+            ?: throw MethodNotFoundException(methodId = id, available = methodsById.keys.map(MethodId::toString))
 
     fun allDescriptors(): List<MethodDescriptor> = descriptorsById.values.toList()
 }

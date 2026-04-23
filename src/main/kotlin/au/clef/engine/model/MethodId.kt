@@ -16,8 +16,8 @@ class IllegalMethodIdException(msg: String) : EngineException("Invalid MethodId:
 @Serializable(with = MethodIdSerializer::class)
 class MethodId private constructor(
     val declaringClass: Class<*>,
-    val methodName: String,
-    val parameterTypeNames: List<String>
+    private val methodName: String,
+    private val parameterTypeNames: List<String>
 ) {
 
     /**

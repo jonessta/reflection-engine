@@ -2,36 +2,33 @@ package au.clef.engine
 
 import au.clef.api.InstanceRegistry
 import au.clef.app.web.ReflectionServiceApi
-import au.clef.engine.registry.MethodRegistry
+import au.clef.engine.registry.ReflectionRegistry
 import au.clef.metadata.DescriptorMetadataRegistry
 import au.clef.metadata.MetadataLoader
 
 data class ReflectionRuntime(
-    val methodRegistry: MethodRegistry,
+    val reflectionRegistry: ReflectionRegistry,
     val engine: ReflectionEngine,
     val instanceRegistry: InstanceRegistry,
     val api: ReflectionServiceApi
 )
 
 fun createReflectionRuntime(definition: ReflectionAppDefinition): ReflectionRuntime {
-    require(definition.classes.isNotEmpty()) { "At least one class must be registered" }
+    require(definition.targetClasses.isNotEmpty()) {
+        "At least one target class must be registered"
+    }
+    val reflectionRegistry = ReflectionRegistry(definition.targetClasses, definition.classes)
 
-    val methodRegistry = MethodRegistry(
-        definition.classes.first(),
-        *definition.classes.drop(1).toTypedArray()
-    )
-
-    val metadataRegistry =
-        definition.metadataResourcePath
-            ?.let { MetadataLoader.fromResourceOrEmpty(it) }
-            ?.let { DescriptorMetadataRegistry(it) }
+    val metadataRegistry: DescriptorMetadataRegistry? = definition.metadataResourcePath
+        ?.let(MetadataLoader::fromResourceOrEmpty)
+        ?.let(::DescriptorMetadataRegistry)
 
     val engine = ReflectionEngine(
-        methodRegistry = methodRegistry,
+        reflectionRegistry = reflectionRegistry,
         metadataRegistry = metadataRegistry
     )
 
-    val instanceRegistry = InstanceRegistry(definition.instances)
+    val instanceRegistry = InstanceRegistry(definition.instancesById)
 
     val api = ReflectionServiceApi(
         engine = engine,
@@ -39,7 +36,7 @@ fun createReflectionRuntime(definition: ReflectionAppDefinition): ReflectionRunt
     )
 
     return ReflectionRuntime(
-        methodRegistry = methodRegistry,
+        reflectionRegistry = reflectionRegistry,
         engine = engine,
         instanceRegistry = instanceRegistry,
         api = api

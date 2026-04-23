@@ -8,17 +8,22 @@ import java.lang.reflect.Method
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
-class MethodRegistry(
-    vararg classes: KClass<*>,
+class ReflectionRegistry(
+    targetClasses: List<KClass<*>>,
+    supportingClasses: List<KClass<*>> = emptyList(),
     private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-) : RegisteredClasses {
+) : ReflectionClasses {
 
     private val descriptorsByClass: MutableMap<Class<*>, List<MethodDescriptor>> = ConcurrentHashMap()
     private val descriptorsById: MutableMap<MethodId, MethodDescriptor> = ConcurrentHashMap()
 
+    override val targetClasses: List<Class<*>> = targetClasses.map { it.java }
+
+    override val classes: List<Class<*>> = (targetClasses + supportingClasses).map { it.java }.distinct()
+
     init {
-        require(classes.isNotEmpty()) { "Classes must not be empty" }
-        classes.forEach { addKClass(it) }
+        require(targetClasses.isNotEmpty()) { "Classes must not be empty" }
+        targetClasses.forEach { addKClass(it) }
     }
 
     fun addKClass(clazz: KClass<*>) {
@@ -95,9 +100,4 @@ class MethodRegistry(
         descriptorsByClass.clear()
         descriptorsById.clear()
     }
-
-    override val classes: List<Class<*>>
-        get() {
-            return descriptorsByClass.keys.toList()
-        }
 }

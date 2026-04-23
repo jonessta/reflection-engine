@@ -4,21 +4,21 @@ import au.clef.engine.convert.TypeConverter
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
 import au.clef.engine.model.Value
-import au.clef.engine.registry.MethodRegistry
+import au.clef.engine.registry.ReflectionRegistry
 import au.clef.engine.registry.RegisteredClasses
 import au.clef.metadata.DescriptorMetadataRegistry
 import kotlin.reflect.KClass
 
 class ReflectionEngine(
     private val typeConverter: TypeConverter = TypeConverter(),
-    private val methodRegistry: MethodRegistry,
+    private val reflectionRegistry: ReflectionRegistry,
     private val metadataRegistry: DescriptorMetadataRegistry? = null
 ) : RegisteredClasses {
 
     fun descriptors(clazz: KClass<*>): List<MethodDescriptor> = descriptors(clazz.java)
 
     fun descriptors(clazz: Class<*>): List<MethodDescriptor> {
-        val descriptors: List<MethodDescriptor> = methodRegistry.descriptors(clazz)
+        val descriptors: List<MethodDescriptor> = reflectionRegistry.descriptors(clazz)
         return metadataRegistry?.applyAll(descriptors) ?: descriptors
     }
 
@@ -26,7 +26,7 @@ class ReflectionEngine(
      * No meta data decoration.
      */
     fun rawDescriptor(id: MethodId): MethodDescriptor =
-        methodRegistry.findDescriptorById(id)
+        reflectionRegistry.findDescriptorById(id)
 
     /**
      * Decorates the descriptor with metadata.
@@ -77,5 +77,5 @@ class ReflectionEngine(
         return descriptor.method.invoke(target, *convertedArgs.toTypedArray())
     }
 
-    override val classes: List<Class<*>> get() = methodRegistry.classes
+    override val classes: List<Class<*>> get() = reflectionRegistry.classes
 }

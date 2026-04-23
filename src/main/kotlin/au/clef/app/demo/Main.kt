@@ -4,6 +4,7 @@ import au.clef.app.demo.model.AcmeService
 import au.clef.app.demo.model.Address
 import au.clef.app.demo.model.Person
 import au.clef.app.demo.model.add
+import au.clef.engine.ExposedTarget
 import au.clef.engine.ReflectionAppDefinition
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.ReflectionRuntime
@@ -16,15 +17,16 @@ import java.io.File
 import kotlin.reflect.jvm.javaMethod
 
 val demoDefinition = ReflectionAppDefinition(
-    classes = listOf(
-        AcmeService::class,
-        Math::class,
-        Class.forName("au.clef.app.demo.model.KotlinFuncsKt").kotlin
+    targets = listOf(
+        ExposedTarget.Instance("acmeService", AcmeService()),
+        ExposedTarget.StaticClass(Math::class),
+        ExposedTarget.StaticClass(Class.forName("au.clef.app.demo.model.KotlinFuncsKt").kotlin)
     ),
-    metadataResourcePath = "/config/method-metadata.json",
-    instances = mapOf(
-        "acmeService" to AcmeService()
-    )
+    supportingTypes = listOf(
+        Person::class,
+        Address::class,
+    ),
+    metadataResourcePath = "/config/method-metadata.json"
 )
 
 private val OUTPUT_FILE: File? = demoDefinition.metadataResourcePath?.removePrefix("/")?.let {
@@ -46,7 +48,7 @@ fun main() {
 fun generateMetadata() {
     if (OUTPUT_FILE == null)
         return
-    val generator = MetadataGenerator(methodRegistry = runtime.methodRegistry)
+    val generator = MetadataGenerator(reflectionRegistry = runtime.reflectionRegistry)
     val metadata: MetadataRoot = generator.generate()
     MetadataWriter.writeToFile(metadata, OUTPUT_FILE)
     println("Metadata written to: ${OUTPUT_FILE.absolutePath}")
@@ -57,7 +59,7 @@ fun validate() {
     if (demoDefinition.metadataResourcePath == null)
         return
     val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(demoDefinition.metadataResourcePath)
-    val validator = MetadataValidator(runtime.methodRegistry)
+    val validator = MetadataValidator(runtime.reflectionRegistry)
     val issues: List<ValidationIssue> = validator.validate(metadata)
     if (issues.isEmpty()) {
         println("Metadata valid")

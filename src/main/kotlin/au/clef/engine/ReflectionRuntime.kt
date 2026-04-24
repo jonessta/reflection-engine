@@ -6,7 +6,7 @@ import au.clef.engine.registry.ReflectionRegistry
 import au.clef.metadata.DescriptorMetadataRegistry
 import au.clef.metadata.MetadataLoader
 import kotlin.reflect.KClass
-
+// todo remove this file and refactor Main.kt
 data class ReflectionAppDefinition(
     val targets: List<ExposedTarget>,
     val targetSupportingTypes: List<KClass<*>> = emptyList(),

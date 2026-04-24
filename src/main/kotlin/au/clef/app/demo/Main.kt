@@ -16,8 +16,6 @@ private val PERSON_ADDRESS_METHOD_ID = MethodId.from(AcmeService::class, "person
 
 private val STATIC_JAVA_MATH_MAX_METHOD_ID = MethodId.from(Math::class, "max", Int::class, Int::class)
 
-private val STATIC_JAVA_MATH_MIN_METHOD_ID = MethodId.from(Math::class, "min", Int::class, Int::class)
-
 private val KOTLIN_ADD_METHOD_ID = MethodId.from(::add.javaMethod!!)
 
 private val acmeService = AcmeService()
@@ -40,13 +38,12 @@ private val outputFile: File? =
 private val runtime: ReflectionRuntime = createReflectionRuntime(demoDefinition)
 
 fun main() {
-    runExposeOnlyOneJavaStaticMethod()
     generateMetadata()
     validateMetadata()
     showAllDescriptors()
-    runGuiStyleInstance()
-    runGuiStyleStatic()
-    runKotlinTopLevel()
+    runInstanceMethodOnServiceInstance()
+    runJavaStaticMethod()
+    runKotlinTopLevelMethod()
 }
 
 private fun generateMetadata() {
@@ -81,28 +78,17 @@ private fun showAllDescriptors() {
     }
 }
 
-private fun runExposeOnlyOneJavaStaticMethod() {
-    val oneMethodRuntime: ReflectionRuntime = createReflectionRuntime(
-        ReflectionAppDefinition(
-            target = ExposedTarget.StaticMethod(STATIC_JAVA_MATH_MIN_METHOD_ID)
-        )
-    )
-    val engine: ReflectionEngine = oneMethodRuntime.engine
-    val result = engine.invoke(STATIC_JAVA_MATH_MIN_METHOD_ID, scalar(10), scalar(20))
-    println(result)
-}
-
-private fun runGuiStyleInstance() {
+private fun runInstanceMethodOnServiceInstance() {
     val result = runtime.engine.invoke(PERSON_ADDRESS_METHOD_ID, acmeService, person())
     println("-----------> runGuiStyleInstance: $result")
 }
 
-private fun runGuiStyleStatic() {
+private fun runJavaStaticMethod() {
     val result = runtime.engine.invoke(STATIC_JAVA_MATH_MAX_METHOD_ID, scalar(10), scalar(20))
     println("-----------> runGuiStyleStatic: $result")
 }
 
-private fun runKotlinTopLevel() {
+private fun runKotlinTopLevelMethod() {
     val result = runtime.engine.invoke(KOTLIN_ADD_METHOD_ID, scalar(10), scalar(20))
     println("-----------> runTopLevelFunction: $result")
 }

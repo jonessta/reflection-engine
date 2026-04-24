@@ -22,12 +22,9 @@ class ReflectionRegistry(
 
     private val descriptorsByClass: MutableMap<Class<*>, List<MethodDescriptor>> = ConcurrentHashMap()
     private val entriesById: MutableMap<MethodId, RegistryEntry> = ConcurrentHashMap()
+    override val targetClasses: List<Class<*>> = targets.map { it.targetClass.java }.distinct()
 
-    private val targets: List<ExposedTarget> = targets.distinct()
-
-    override val targetClasses: List<Class<*>> = this.targets.map { it.targetClass.java }.distinct()
-
-    override val classes: List<Class<*>> = (this.targets.map { it.targetClass } + supportingClasses)
+    override val classes: List<Class<*>> = (targets.map { it.targetClass } + supportingClasses)
         .distinct()
         .map { it.java }
 

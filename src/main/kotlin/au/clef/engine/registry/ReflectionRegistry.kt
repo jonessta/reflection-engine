@@ -14,17 +14,17 @@ private data class RegistryEntry(
 )
 
 class ReflectionRegistry(
-    targetClasses: List<KClass<*>>,
-    supportingClasses: List<KClass<*>> = emptyList(),
+    targetClasses: Collection<KClass<*>>,
+    supportingClasses: Collection<KClass<*>> = emptyList(),
     private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
 ) : ReflectionTypes {
 
     private val descriptorsByClass: MutableMap<Class<*>, List<MethodDescriptor>> = ConcurrentHashMap()
     private val entriesById: MutableMap<MethodId, RegistryEntry> = ConcurrentHashMap()
 
-    override val targetClasses: List<Class<*>> = targetClasses.map { it.java }
+    override val targetClasses: List<Class<*>> = targetClasses.distinct().map { it.java }
 
-    override val classes: List<Class<*>> = (targetClasses + supportingClasses).map { it.java }.distinct()
+    override val classes: List<Class<*>> = (targetClasses + supportingClasses).distinct().map { it.java }
 
     init {
         require(targetClasses.isNotEmpty()) { "target classes must not be empty" }

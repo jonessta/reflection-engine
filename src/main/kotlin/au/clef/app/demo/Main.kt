@@ -31,16 +31,14 @@ private val targets: List<ExposedTarget> = listOf(
 
 private val targetSupportingTypes: List<KClass<*>> = listOf(Person::class, Address::class)
 
-private const val metadataResourcePath = "/config/method-metadata.json"
+private const val METADATA_RESOURCE_PATH = "/config/method-metadata.json"
 
-private val outputFile: File = metadataResourcePath.removePrefix("/").let { File("src/main/resources").resolve(it) }
+private val outputFile: File = File("src/main/resources").resolve(METADATA_RESOURCE_PATH.removePrefix("/"))
 
 private val reflectionRegistry: ReflectionRegistry =
     ReflectionRegistry(targets.map { it.targetClass }, targetSupportingTypes)
 
-private val metadataRegistry: DescriptorMetadataRegistry? = metadataResourcePath
-    .let(MetadataLoader::fromResourceOrEmpty)
-    .let(::DescriptorMetadataRegistry)
+private val metadataRegistry = DescriptorMetadataRegistry(MetadataLoader.fromResourceOrEmpty(METADATA_RESOURCE_PATH))
 
 private val engine: ReflectionEngine =
     ReflectionEngine(reflectionRegistry = reflectionRegistry, metadataRegistry = metadataRegistry)
@@ -62,7 +60,7 @@ private fun generateMetadata() {
 }
 
 private fun validateMetadata() {
-    val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(metadataResourcePath)
+    val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(METADATA_RESOURCE_PATH)
     val issues: List<ValidationIssue> = MetadataValidator(reflectionRegistry).validate(metadata)
     if (issues.isEmpty()) {
         println("Metadata valid")
@@ -85,21 +83,21 @@ private fun showAllDescriptors() {
 }
 
 private fun runInstanceMethodOnServiceInstance() {
-    val result = engine.invoke(PERSON_ADDRESS_METHOD_ID, acmeService, person())
-    println("-----------> runGuiStyleInstance: $result")
+    val result = engine.invoke(PERSON_ADDRESS_METHOD_ID, acmeService, personValue())
+    println("-----------> runInstanceMethodOnServiceInstance: $result")
 }
 
 private fun runJavaStaticMethod() {
     val result = engine.invoke(STATIC_JAVA_MATH_MAX_METHOD_ID, scalar(10), scalar(20))
-    println("-----------> runGuiStyleStatic: $result")
+    println("-----------> runJavaStaticMethod: $result")
 }
 
 private fun runKotlinTopLevelMethod() {
     val result = engine.invoke(KOTLIN_ADD_METHOD_ID, scalar(10), scalar(20))
-    println("-----------> runTopLevelFunction: $result")
+    println("-----------> runKotlinTopLevelMethod: $result")
 }
 
-private fun person(name: String = "Alice", age: Int = 25): Value.Record =
+private fun personValue(name: String = "Alice", age: Int = 25): Value.Record =
     Values.record(
         Person::class,
         "name" to scalar(name),

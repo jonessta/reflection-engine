@@ -8,19 +8,19 @@ interface ClassResolver {
 }
 
 class ValueMapper(
-    private val instanceRegistry: au.clef.api.InstanceRegistry,
-    private val classResolver: au.clef.api.ClassResolver
+    private val instanceRegistry: InstanceRegistry,
+    private val classResolver: ClassResolver
 ) {
-    fun toEngineValue(dto: au.clef.api.model.ValueDto): au.clef.engine.model.Value = when (dto) {
-        is au.clef.api.model.ValueDto.Scalar -> _root_ide_package_.au.clef.engine.model.Value.Scalar(dto.value)
-        is au.clef.api.model.ValueDto.InstanceRef -> _root_ide_package_.au.clef.engine.model.Value.Instance(instanceRegistry.get(dto.id))
-        is au.clef.api.model.ValueDto.Record -> _root_ide_package_.au.clef.engine.model.Value.Record(
+    fun toEngineValue(dto: ValueDto): Value = when (dto) {
+        is ValueDto.Scalar -> Value.Scalar(dto.value)
+        is ValueDto.InstanceRef -> Value.Instance(instanceRegistry.get(dto.id))
+        is ValueDto.Record -> Value.Record(
             type = classResolver.resolve(dto.type),
-            fields = dto.fields.mapValues { (_, valueDto: au.clef.api.model.ValueDto) -> toEngineValue(valueDto) }
+            fields = dto.fields.mapValues { (_, valueDto: ValueDto) -> toEngineValue(valueDto) }
         )
 
-        is au.clef.api.model.ValueDto.ListValue -> _root_ide_package_.au.clef.engine.model.Value.ListValue(dto.items.map(::toEngineValue))
-        is au.clef.api.model.ValueDto.MapValue -> _root_ide_package_.au.clef.engine.model.Value.MapValue(dto.entries.mapValues { (_, v: au.clef.api.model.ValueDto) -> toEngineValue(v) })
-        _root_ide_package_.au.clef.api.model.ValueDto.Null -> _root_ide_package_.au.clef.engine.model.Value.Null
+        is ValueDto.ListValue -> Value.ListValue(dto.items.map(::toEngineValue))
+        is ValueDto.MapValue -> Value.MapValue(dto.entries.mapValues { (_, v: ValueDto) -> toEngineValue(v) })
+        ValueDto.Null -> Value.Null
     }
 }

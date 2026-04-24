@@ -14,14 +14,14 @@ import au.clef.metadata.MetadataLoader
 import kotlin.reflect.KClass
 
 class ReflectionServiceApi(
-    targets: List<ExposedTarget>,
-    targetSupportingTypes: List<KClass<*>> = emptyList(),
+    targets: Collection<ExposedTarget>,
+    targetSupportingTypes: Collection<KClass<*>> = emptyList(),
     metadataResourcePath: String? = null
 ) {
 
     constructor(
         target: ExposedTarget,
-        targetSupportingTypes: List<KClass<*>> = emptyList(),
+        targetSupportingTypes: Collection<KClass<*>> = emptyList(),
         metadataResourcePath: String? = null
     ) : this(listOf(target), targetSupportingTypes, metadataResourcePath)
 

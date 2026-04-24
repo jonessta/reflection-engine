@@ -39,7 +39,7 @@ class ReflectionRegistry(
         if (descriptorsByClass.containsKey(clazz))
             return
 
-        val methods: List<Method> = collectMethods(clazz, inheritanceLevel)
+        val methods: List<Method> = collectHierarchyMethods(clazz, inheritanceLevel)
         val descriptors: MutableList<MethodDescriptor> = mutableListOf()
         for (method: Method in methods) {
             val methodId: MethodId = MethodId.from(method)
@@ -50,18 +50,11 @@ class ReflectionRegistry(
         descriptorsByClass[clazz] = descriptors
     }
 
-    private fun collectMethods(clazz: Class<*>, inheritanceLevel: InheritanceLevel): List<Method> =
-        when (inheritanceLevel) {
-            InheritanceLevel.DeclaredOnly -> collectHierarchyMethods(clazz = clazz, maxDepth = 0)
-            InheritanceLevel.All -> collectHierarchyMethods(clazz = clazz, maxDepth = Int.MAX_VALUE)
-            is InheritanceLevel.Depth -> collectHierarchyMethods(clazz = clazz, maxDepth = inheritanceLevel.value)
-        }
-
-    private fun collectHierarchyMethods(clazz: Class<*>, maxDepth: Int): List<Method> {
+    private fun collectHierarchyMethods(clazz: Class<*>, inheritanceLevel: InheritanceLevel): List<Method> {
         val methods: MutableList<Method> = mutableListOf()
         var current: Class<*>? = clazz
         var depth = 0
-        while (current != null && depth <= maxDepth) {
+        while (current != null && depth <= inheritanceLevel.depth) {
             methods += current.declaredMethods
             current = current.superclass
             depth++

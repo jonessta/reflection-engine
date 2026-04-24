@@ -26,7 +26,7 @@ class ReflectionServiceApi(
     ) : this(listOf(target), targetSupportingTypes, metadataResourcePath)
 
     private val reflectionRegistry = ReflectionRegistry(
-        targetClasses = targets.map { it.targetClass }.distinct(),
+        targets = targets,
         supportingClasses = targetSupportingTypes
     )
 

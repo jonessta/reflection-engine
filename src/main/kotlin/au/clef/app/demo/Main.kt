@@ -35,8 +35,7 @@ private const val METADATA_RESOURCE_PATH = "/config/method-metadata.json"
 
 private val outputFile: File = File("src/main/resources").resolve(METADATA_RESOURCE_PATH.removePrefix("/"))
 
-private val reflectionRegistry: ReflectionRegistry =
-    ReflectionRegistry(targets.map { it.targetClass }, targetSupportingTypes)
+private val reflectionRegistry: ReflectionRegistry = ReflectionRegistry(targets, targetSupportingTypes)
 
 private val metadataRegistry = DescriptorMetadataRegistry(MetadataLoader.fromResourceOrEmpty(METADATA_RESOURCE_PATH))
 

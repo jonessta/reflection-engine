@@ -1,5 +1,6 @@
 package au.clef.engine.registry
 
+import au.clef.engine.ExposedTarget
 import au.clef.engine.MethodNotFoundException
 import au.clef.engine.model.InheritanceLevel
 import au.clef.engine.model.MethodDescriptor
@@ -14,7 +15,7 @@ private data class RegistryEntry(
 )
 
 class ReflectionRegistry(
-    targetClasses: Collection<KClass<*>>,
+    targets: Collection<ExposedTarget>,
     supportingClasses: Collection<KClass<*>> = emptyList(),
     private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
 ) : ReflectionTypes {
@@ -22,13 +23,17 @@ class ReflectionRegistry(
     private val descriptorsByClass: MutableMap<Class<*>, List<MethodDescriptor>> = ConcurrentHashMap()
     private val entriesById: MutableMap<MethodId, RegistryEntry> = ConcurrentHashMap()
 
-    override val targetClasses: List<Class<*>> = targetClasses.distinct().map { it.java }
+    private val targets: List<ExposedTarget> = targets.distinct()
 
-    override val classes: List<Class<*>> = (targetClasses + supportingClasses).distinct().map { it.java }
+    override val targetClasses: List<Class<*>> = this.targets.map { it.targetClass.java }.distinct()
+
+    override val classes: List<Class<*>> = (this.targets.map { it.targetClass } + supportingClasses)
+        .distinct()
+        .map { it.java }
 
     init {
-        require(targetClasses.isNotEmpty()) { "target classes must not be empty" }
-        targetClasses.forEach { registerClass(it.java) }
+        require(targetClasses.isNotEmpty()) { "targets must not be empty" }
+        targetClasses.forEach { registerClass(it) }
     }
 
     fun registerClass(clazz: KClass<*>) = registerClass(clazz.java)

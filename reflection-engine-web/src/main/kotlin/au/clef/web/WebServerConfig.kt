@@ -1,4 +1,4 @@
-package au.clef.app.web
+package au.clef.web
 
 data class WebServerConfig(
     val port: Int = 8080,

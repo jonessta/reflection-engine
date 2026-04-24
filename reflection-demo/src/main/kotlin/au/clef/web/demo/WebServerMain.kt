@@ -1,11 +1,11 @@
-package au.clef.app.web.demo
+package au.clef.web.demo
 
 import au.clef.app.demo.model.AcmeService
 import au.clef.app.demo.model.Address
 import au.clef.app.demo.model.Person
-import au.clef.app.web.ReflectionServiceApi
-import au.clef.app.web.WebServer
-import au.clef.app.web.WebServerConfig
+import au.clef.web.ReflectionServiceApi
+import au.clef.web.WebServer
+import au.clef.web.WebServerConfig
 import au.clef.engine.ExposedTarget
 
 fun main() {

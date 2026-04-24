@@ -1,4 +1,4 @@
-package au.clef.app.web
+package au.clef.web
 
 import au.clef.api.model.InvocationRequest
 import au.clef.engine.model.MethodDescriptor

@@ -1,4 +1,4 @@
-package au.clef.app.web
+package au.clef.web
 
 import au.clef.api.ClassResolver
 import au.clef.engine.registry.ReflectionTypes

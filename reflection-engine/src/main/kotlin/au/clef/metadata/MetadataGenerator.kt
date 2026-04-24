@@ -1,5 +1,6 @@
 package au.clef.metadata
 
+import au.clef.engine.ExposedTarget
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
 import au.clef.engine.model.ParamDescriptor
@@ -7,6 +8,24 @@ import au.clef.engine.registry.ReflectionRegistry
 import au.clef.metadata.model.MetadataRoot
 import au.clef.metadata.model.MethodMetadata
 import au.clef.metadata.model.ParamMetadata
+import java.io.File
+import kotlin.reflect.KClass
+
+data class MetadataGenerationConfig(
+    val targets: Collection<ExposedTarget>,
+    val targetSupportingTypes: Collection<KClass<*>> = emptyList(),
+    val outputFile: File
+)
+
+fun generateMetadata(config: MetadataGenerationConfig) {
+    val reflectionRegistry = ReflectionRegistry(
+        targets = config.targets,
+        supportingClasses = config.targetSupportingTypes
+    )
+
+    val metadata = MetadataGenerator(reflectionRegistry).generate()
+    MetadataWriter.writeToFile(metadata, config.outputFile)
+}
 
 class MetadataGenerator(private val reflectionRegistry: ReflectionRegistry) {
 

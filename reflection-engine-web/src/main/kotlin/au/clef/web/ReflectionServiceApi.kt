@@ -30,7 +30,7 @@ class ReflectionServiceApi(
         supportingClasses = targetSupportingTypes
     )
 
-    private val metadataRegistry = metadataResourcePath
+    private val metadataRegistry: DescriptorMetadataRegistry? = metadataResourcePath
         ?.let(MetadataLoader::fromResourceOrEmpty)
         ?.let(::DescriptorMetadataRegistry)
 
@@ -39,10 +39,14 @@ class ReflectionServiceApi(
         metadataRegistry = metadataRegistry
     )
 
-    private val instanceRegistry =
-        InstanceRegistry(targets.filterIsInstance<ExposedTarget.Instance>().associate { it.id to it.obj })
+    private val instanceRegistry: InstanceRegistry = InstanceRegistry(
+        targets
+            .filterIsInstance<ExposedTarget.Instance>()
+            .associate { it.id to it.obj }
+    )
 
     private val classResolver = DefaultClassResolver(engine.reflectionTypes)
+
     private val valueMapper = ValueMapper(instanceRegistry, classResolver)
 
     fun invoke(request: InvocationRequest): Any? {

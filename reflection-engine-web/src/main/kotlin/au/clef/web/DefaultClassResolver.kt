@@ -14,6 +14,5 @@ class DefaultClassResolver(reflectionTypes: ReflectionTypes) : ClassResolver {
         }.toMap()
 
     override fun resolve(typeName: String): Class<*> =
-        classesByName[typeName]
-            ?: throw IllegalArgumentException("Unknown type: $typeName")
+        classesByName[typeName] ?: throw IllegalArgumentException("Unknown type: $typeName")
 }

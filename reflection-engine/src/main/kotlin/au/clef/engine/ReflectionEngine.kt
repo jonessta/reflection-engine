@@ -7,6 +7,7 @@ import au.clef.engine.model.Value
 import au.clef.engine.registry.ReflectionRegistry
 import au.clef.engine.registry.ReflectionTypes
 import au.clef.metadata.DescriptorMetadataRegistry
+import java.lang.reflect.Method
 import kotlin.reflect.KClass
 
 class ReflectionEngine(
@@ -19,7 +20,7 @@ class ReflectionEngine(
     fun descriptors(clazz: KClass<*>): List<MethodDescriptor> = descriptors(clazz.java)
 
     fun descriptors(clazz: Class<*>): List<MethodDescriptor> {
-        val descriptors = reflectionRegistry.descriptors(clazz)
+        val descriptors: List<MethodDescriptor> = reflectionRegistry.descriptors(clazz)
         return metadataRegistry?.applyAll(descriptors) ?: descriptors
     }
 
@@ -32,7 +33,7 @@ class ReflectionEngine(
      * Returns the descriptor with metadata decoration applied when available.
      */
     fun descriptor(id: MethodId): MethodDescriptor {
-        val descriptor = rawDescriptor(id)
+        val descriptor: MethodDescriptor = rawDescriptor(id)
         return metadataRegistry?.apply(descriptor) ?: descriptor
     }
 
@@ -59,7 +60,7 @@ class ReflectionEngine(
         instance: Any?,
         args: List<Value>
     ): Any? {
-        val method = reflectionRegistry.method(descriptor.id)
+        val method: Method = reflectionRegistry.method(descriptor.id)
 
         if (!descriptor.isStatic && instance == null) {
             throw MissingInstanceException("${descriptor.id}")
@@ -75,7 +76,7 @@ class ReflectionEngine(
             "Expected ${method.parameterCount} args for ${descriptor.id}, got ${args.size}"
         }
 
-        val convertedArgs = args.mapIndexed { index, arg ->
+        val convertedArgs: Array<Any?> = args.mapIndexed { index, arg ->
             typeConverter.materialize(arg, method.parameterTypes[index])
         }.toTypedArray()
 

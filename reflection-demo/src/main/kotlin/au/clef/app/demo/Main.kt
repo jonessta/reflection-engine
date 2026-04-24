@@ -82,17 +82,17 @@ private fun showAllDescriptors() {
 }
 
 private fun runInstanceMethodOnServiceInstance() {
-    val result = engine.invoke(PERSON_ADDRESS_METHOD_ID, acmeService, personValue())
+    val result = engine.invokeInstance(PERSON_ADDRESS_METHOD_ID, acmeService, personValue())
     println("-----------> runInstanceMethodOnServiceInstance: $result")
 }
 
 private fun runJavaStaticMethod() {
-    val result = engine.invoke(STATIC_JAVA_MATH_MAX_METHOD_ID, scalar(10), scalar(20))
+    val result = engine.invokeStatic(STATIC_JAVA_MATH_MAX_METHOD_ID, scalar(10), scalar(20))
     println("-----------> runJavaStaticMethod: $result")
 }
 
 private fun runKotlinTopLevelMethod() {
-    val result = engine.invoke(KOTLIN_ADD_METHOD_ID, scalar(10), scalar(20))
+    val result = engine.invokeStatic(KOTLIN_ADD_METHOD_ID, scalar(10), scalar(20))
     println("-----------> runKotlinTopLevelMethod: $result")
 }
 

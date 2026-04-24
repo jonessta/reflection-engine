@@ -14,40 +14,38 @@ class ReflectionEngine(
     private val reflectionRegistry: ReflectionRegistry,
     private val metadataRegistry: DescriptorMetadataRegistry? = null
 ) {
-
     val reflectionTypes: ReflectionTypes get() = reflectionRegistry
 
     fun descriptors(clazz: KClass<*>): List<MethodDescriptor> = descriptors(clazz.java)
 
     fun descriptors(clazz: Class<*>): List<MethodDescriptor> {
-        val descriptors: List<MethodDescriptor> = reflectionRegistry.descriptors(clazz)
+        val descriptors = reflectionRegistry.descriptors(clazz)
         return metadataRegistry?.applyAll(descriptors) ?: descriptors
     }
 
     /**
-     * No meta data decoration.
+     * Returns the descriptor without metadata decoration.
      */
-    private fun rawDescriptor(id: MethodId): MethodDescriptor =
-        reflectionRegistry.descriptor(id)
+    private fun rawDescriptor(id: MethodId): MethodDescriptor = reflectionRegistry.descriptor(id)
 
     /**
-     * Decorates the descriptor with metadata.
+     * Returns the descriptor with metadata decoration applied when available.
      */
     fun descriptor(id: MethodId): MethodDescriptor {
-        val descriptor: MethodDescriptor = rawDescriptor(id)
+        val descriptor = rawDescriptor(id)
         return metadataRegistry?.apply(descriptor) ?: descriptor
     }
 
-    fun invoke(methodId: MethodId, instance: Any, args: List<Value>): Any? =
+    fun invokeInstance(methodId: MethodId, instance: Any, args: List<Value>): Any? =
         invokeDescriptor(descriptor(methodId), instance, args)
 
-    fun invoke(methodId: MethodId, args: List<Value>): Any? =
+    fun invokeStatic(methodId: MethodId, args: List<Value>): Any? =
         invokeDescriptor(descriptor(methodId), null, args)
 
-    fun invoke(methodId: MethodId, instance: Any, vararg args: Value): Any? =
+    fun invokeInstance(methodId: MethodId, instance: Any, vararg args: Value): Any? =
         invokeDescriptor(descriptor(methodId), instance, args.toList())
 
-    fun invoke(methodId: MethodId, vararg args: Value): Any? =
+    fun invokeStatic(methodId: MethodId, vararg args: Value): Any? =
         invokeDescriptor(descriptor(methodId), null, args.toList())
 
     fun invokeStatic(descriptor: MethodDescriptor, args: List<Value>): Any? =
@@ -65,6 +63,12 @@ class ReflectionEngine(
 
         if (!descriptor.isStatic && instance == null) {
             throw MissingInstanceException("${descriptor.id}")
+        }
+
+        if (descriptor.isStatic && instance != null) {
+            throw IllegalArgumentException(
+                "Static method ${descriptor.id} must not be invoked with an instance"
+            )
         }
 
         require(args.size == method.parameterCount) {

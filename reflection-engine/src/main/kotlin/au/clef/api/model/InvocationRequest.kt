@@ -4,7 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class InvocationRequest(
-    val methodId: String,
-    val instanceId: String? = null,
+    val executionId: String,
     val args: List<ValueDto> = emptyList()
 )

@@ -11,7 +11,7 @@ object AcmeDemoConfig {
     const val METADATA_RESOURCE_PATH = "/config/acme-metadata.json"
 
     val targets = listOf(
-        ExposedTarget.Instance("acmeService", AcmeService())
+        ExposedTarget.Instance(AcmeService())
     )
 
     val targetSupportingTypes: List<KClass<*>> = listOf(

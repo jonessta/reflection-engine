@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reflection Engine UI</title>
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: #121a2f;
+            --panel-2: #18223d;
+            --text: #e8ecf5;
+            --muted: #9aa6c1;
+            --accent: #76a9ff;
+            --accent-2: #9bffcf;
+            --danger: #ff8a8a;
+            --border: #2a3658;
+            --code: #0f1530;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: linear-gradient(180deg, #0a0f1d 0%, #0d1326 100%);
+            color: var(--text);
+        }
+
+        .container {
+            width: min(1200px, calc(100vw - 32px));
+            margin: 24px auto 40px;
+        }
+
+        .header {
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0 0 6px;
+            font-size: 28px;
+        }
+
+        .sub {
+            color: var(--muted);
+            margin: 0;
+            line-height: 1.45;
+        }
+
+        .toolbar, .panel {
+            background: rgba(18, 26, 47, 0.94);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            backdrop-filter: blur(8px);
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr auto auto;
+            gap: 12px;
+            padding: 14px;
+            align-items: end;
+            margin-bottom: 16px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field label {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        input, textarea, select, button {
+            font: inherit;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--panel-2);
+            color: var(--text);
+            padding: 10px 12px;
+            outline: none;
+        }
+
+        textarea {
+            min-height: 110px;
+            resize: vertical;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(118, 169, 255, 0.15);
+        }
+
+        button {
+            border: 0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            cursor: pointer;
+            background: var(--accent);
+            color: #081120;
+            font-weight: 700;
+            transition: transform 0.05s ease, opacity 0.2s ease;
+        }
+
+        button.secondary {
+            background: #2c3d69;
+            color: var(--text);
+        }
+
+        button:hover { opacity: 0.95; }
+        button:active { transform: translateY(1px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 16px;
+        }
+
+        .panel {
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .panel-header h2 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .panel-body {
+            padding: 14px;
+        }
+
+        .method-list {
+            display: grid;
+            gap: 12px;
+            max-height: 70vh;
+            overflow: auto;
+            padding-right: 4px;
+        }
+
+        .method-card {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            background: rgba(24, 34, 61, 0.7);
+            cursor: pointer;
+        }
+
+        .method-card.active {
+            border-color: var(--accent);
+            box-shadow: inset 0 0 0 1px rgba(118, 169, 255, 0.35);
+        }
+
+        .method-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 8px 0 10px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 4px 8px;
+            font-size: 12px;
+            color: var(--muted);
+            background: rgba(11, 16, 32, 0.6);
+        }
+
+        .pill.static { color: var(--accent-2); }
+        .pill.instance { color: #ffd48a; }
+
+        .method-name {
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .method-id {
+            color: var(--muted);
+            font-size: 12px;
+            word-break: break-all;
+            margin: 0;
+        }
+
+        .param-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .param-card {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: rgba(24, 34, 61, 0.55);
+        }
+
+        .param-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .param-name {
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .param-type {
+            color: var(--muted);
+            font-size: 12px;
+            margin: 0;
+        }
+
+        .muted {
+            color: var(--muted);
+        }
+
+        .empty {
+            padding: 20px;
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .result-box, .error-box {
+            border-radius: 12px;
+            padding: 12px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .result-box {
+            background: var(--code);
+            border: 1px solid var(--border);
+        }
+
+        .error-box {
+            background: rgba(90, 20, 20, 0.45);
+            border: 1px solid rgba(255, 138, 138, 0.45);
+            color: #ffd7d7;
+        }
+
+        .footer-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .inline-hint {
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 980px) {
+            .layout { grid-template-columns: 1fr; }
+            .toolbar { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Reflection Engine UI</h1>
+        <p class="sub">Browse exposed executions, edit argument payloads, and invoke both instance and static methods through your reflection API.</p>
+    </div>
+
+    <div class="toolbar">
+        <div class="field">
+            <label for="baseUrl">API Base URL</label>
+            <input id="baseUrl" value="http://localhost:8080" />
+        </div>
+        <div class="field">
+            <label for="filterText">Filter</label>
+            <input id="filterText" placeholder="method name, class, execution id" />
+        </div>
+        <button id="loadBtn">Load Executions</button>
+        <button id="clearBtn" class="secondary">Clear Result</button>
+    </div>
+
+    <div class="layout">
+        <section class="panel">
+            <div class="panel-header">
+                <h2>Available Executions</h2>
+                <span class="muted" id="executionCount">0</span>
+            </div>
+            <div class="panel-body">
+                <div class="method-list" id="executionList"></div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <h2>Invocation</h2>
+                <span class="muted" id="selectedHint">Nothing selected</span>
+            </div>
+            <div class="panel-body" id="detailPanel">
+                <div class="empty">Choose an execution on the left to build an invocation payload.</div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+    const state = {
+        executions: [],
+        selected: null,
+        result: null,
+        error: null,
+    };
+
+    const els = {
+        baseUrl: document.getElementById('baseUrl'),
+        filterText: document.getElementById('filterText'),
+        loadBtn: document.getElementById('loadBtn'),
+        clearBtn: document.getElementById('clearBtn'),
+        executionList: document.getElementById('executionList'),
+        executionCount: document.getElementById('executionCount'),
+        detailPanel: document.getElementById('detailPanel'),
+        selectedHint: document.getElementById('selectedHint'),
+    };
+
+    function normalizeBaseUrl(url) {
+        return (url || '').trim().replace(/\/$/, '');
+    }
+
+    function classShortName(typeName) {
+        if (!typeName) return '';
+        const bits = typeName.split('.');
+        return bits[bits.length - 1];
+    }
+
+    function methodTitle(execution) {
+        return execution.displayName || execution.reflectedName || execution.methodId;
+    }
+
+    function sampleValueDtoForType(typeName) {
+        switch (typeName) {
+            case 'int':
+            case 'java.lang.Integer':
+            case 'long':
+            case 'java.lang.Long':
+            case 'double':
+            case 'java.lang.Double':
+            case 'float':
+            case 'java.lang.Float':
+            case 'short':
+            case 'java.lang.Short':
+            case 'byte':
+            case 'java.lang.Byte':
+                return { kind: 'scalar', value: 0 };
+            case 'boolean':
+            case 'java.lang.Boolean':
+                return { kind: 'scalar', value: false };
+            case 'char':
+            case 'java.lang.Character':
+                return { kind: 'scalar', value: 'a' };
+            case 'java.lang.String':
+            case 'String':
+                return { kind: 'scalar', value: '' };
+            case 'au.clef.app.demo.model.Address':
+                return {
+                    kind: 'object',
+                    type: 'au.clef.app.demo.model.Address',
+                    fields: {
+                        number: { kind: 'scalar', value: 2 },
+                        street: { kind: 'scalar', value: 'Smith st' },
+                        zipCode: { kind: 'scalar', value: '2321' }
+                    }
+                };
+            case 'au.clef.app.demo.model.Person':
+                return {
+                    kind: 'object',
+                    type: 'au.clef.app.demo.model.Person',
+                    fields: {
+                        name: { kind: 'scalar', value: 'Alice' },
+                        age: { kind: 'scalar', value: 25 },
+                        address: sampleValueDtoForType('au.clef.app.demo.model.Address')
+                    }
+                };
+            default:
+                return {
+                    kind: 'object',
+                    type: typeName,
+                    fields: {}
+                };
+        }
+    }
+
+    function prettyJson(value) {
+        return JSON.stringify(value, null, 2);
+    }
+
+    function createInvocationPayload(execution) {
+        return {
+            executionId: execution.executionId,
+            args: execution.parameters.map(param => sampleValueDtoForType(param.type))
+        };
+    }
+
+    async function fetchJson(url, options) {
+        const response = await fetch(url, options);
+        const text = await response.text();
+        const payload = text ? JSON.parse(text) : null;
+        if (!response.ok) {
+            const message = payload?.error || payload?.message || text || `HTTP ${response.status}`;
+            throw new Error(message);
+        }
+        return payload;
+    }
+
+    async function loadExecutions() {
+        const baseUrl = normalizeBaseUrl(els.baseUrl.value);
+        if (!baseUrl) return;
+
+        els.loadBtn.disabled = true;
+        state.error = null;
+
+        try {
+            const executions = await fetchJson(`${baseUrl}/executions`);
+            state.executions = Array.isArray(executions) ? executions : [];
+
+            if (state.selected) {
+                state.selected = state.executions.find(x => x.executionId === state.selected.executionId) || null;
+            }
+
+            if (!state.selected && state.executions.length > 0) {
+                state.selected = state.executions[0];
+            }
+
+            render();
+        } catch (error) {
+            state.error = error.message || String(error);
+            render();
+        } finally {
+            els.loadBtn.disabled = false;
+        }
+    }
+
+    function filteredExecutions() {
+        const filter = els.filterText.value.trim().toLowerCase();
+        if (!filter) return state.executions;
+
+        return state.executions.filter(execution => {
+            const haystack = [
+                execution.executionId,
+                execution.methodId,
+                execution.instanceId,
+                execution.reflectedName,
+                execution.displayName,
+                execution.returnType,
+                ...execution.parameters.map(p => `${p.name} ${p.label || ''} ${p.type}`)
+            ].filter(Boolean).join(' ').toLowerCase();
+
+            return haystack.includes(filter);
+        });
+    }
+
+    function selectExecution(executionId) {
+        state.selected = state.executions.find(x => x.executionId === executionId) || null;
+        state.result = null;
+        state.error = null;
+        render();
+    }
+
+    async function invokeSelected(payloadText) {
+        if (!state.selected) return;
+
+        const baseUrl = normalizeBaseUrl(els.baseUrl.value);
+        try {
+            const payload = JSON.parse(payloadText);
+            const result = await fetchJson(`${baseUrl}/invoke`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            state.result = result;
+            state.error = null;
+        } catch (error) {
+            state.error = error.message || String(error);
+            state.result = null;
+        }
+        render();
+    }
+
+    function renderExecutionList() {
+        const executions = filteredExecutions();
+        els.executionCount.textContent = `${executions.length}`;
+
+        if (state.error && state.executions.length === 0) {
+            els.executionList.innerHTML = `<div class="error-box">${escapeHtml(state.error)}</div>`;
+            return;
+        }
+
+        if (executions.length === 0) {
+            els.executionList.innerHTML = '<div class="empty">No executions found. Load the API or adjust the filter.</div>';
+            return;
+        }
+
+        els.executionList.innerHTML = executions.map(execution => {
+            const selected = state.selected?.executionId === execution.executionId;
+            const kindClass = execution.isStatic ? 'static' : 'instance';
+            const kindLabel = execution.isStatic ? 'Static' : `Instance${execution.instanceId ? `: ${execution.instanceId}` : ''}`;
+            const params = execution.parameters.map(p => p.label || p.name).join(', ');
+            return `
+          <article class="method-card ${selected ? 'active' : ''}" data-execution-id="${escapeAttr(execution.executionId)}">
+            <div class="method-top">
+              <p class="method-name">${escapeHtml(methodTitle(execution))}</p>
+              <span class="pill ${kindClass}">${escapeHtml(kindLabel)}</span>
+            </div>
+            <p class="method-id">${escapeHtml(execution.methodId)}</p>
+            <div class="pill-row">
+              <span class="pill">returns ${escapeHtml(classShortName(execution.returnType) || execution.returnType)}</span>
+              <span class="pill">${execution.parameters.length} arg${execution.parameters.length === 1 ? '' : 's'}</span>
+            </div>
+            <p class="muted">${escapeHtml(params || 'No arguments')}</p>
+          </article>
+        `;
+        }).join('');
+
+        els.executionList.querySelectorAll('[data-execution-id]').forEach(node => {
+            node.addEventListener('click', () => selectExecution(node.getAttribute('data-execution-id')));
+        });
+    }
+
+    function renderDetailPanel() {
+        const execution = state.selected;
+        if (!execution) {
+            els.selectedHint.textContent = 'Nothing selected';
+            els.detailPanel.innerHTML = '<div class="empty">Choose an execution on the left to build an invocation payload.</div>';
+            return;
+        }
+
+        els.selectedHint.textContent = execution.executionId;
+        const defaultPayload = prettyJson(createInvocationPayload(execution));
+
+        els.detailPanel.innerHTML = `
+        <div>
+          <h3 style="margin:0 0 6px;">${escapeHtml(methodTitle(execution))}</h3>
+          <p class="method-id">${escapeHtml(execution.methodId)}</p>
+          <div class="pill-row">
+            <span class="pill ${execution.isStatic ? 'static' : 'instance'}">${escapeHtml(execution.isStatic ? 'Static' : 'Instance')}</span>
+            ${execution.instanceId ? `<span class="pill">instanceId ${escapeHtml(execution.instanceId)}</span>` : ''}
+            <span class="pill">returns ${escapeHtml(execution.returnType)}</span>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <h3 style="margin:0 0 10px; font-size:15px;">Parameters</h3>
+          ${execution.parameters.length === 0 ? '<div class="empty">This execution takes no arguments.</div>' : `
+            <div class="param-list">
+              ${execution.parameters.map(param => `
+                <div class="param-card">
+                  <div class="param-head">
+                    <div>
+                      <p class="param-name">${escapeHtml(param.label || param.name)}</p>
+                      <p class="param-type">${escapeHtml(param.type)}</p>
+                    </div>
+                    <span class="pill">${param.nullable ? 'nullable' : 'required'}</span>
+                  </div>
+                  <div class="inline-hint">Reflected name: ${escapeHtml(param.reflectedName)}</div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+
+        <div style="margin-top:14px;">
+          <div class="field">
+            <label for="payloadEditor">Invocation payload</label>
+            <textarea id="payloadEditor">${escapeHtml(defaultPayload)}</textarea>
+          </div>
+          <div class="footer-actions">
+            <button id="invokeBtn">Invoke</button>
+            <button id="resetPayloadBtn" class="secondary">Reset Payload</button>
+          </div>
+        </div>
+
+        <div style="margin-top:14px; display:grid; gap:10px;">
+          <div>
+            <h3 style="margin:0 0 8px; font-size:15px;">Result</h3>
+            ${state.result ? `<div class="result-box">${escapeHtml(prettyJson(state.result))}</div>` : '<div class="empty">No result yet.</div>'}
+          </div>
+          <div>
+            <h3 style="margin:0 0 8px; font-size:15px;">Error</h3>
+            ${state.error ? `<div class="error-box">${escapeHtml(state.error)}</div>` : '<div class="empty">No error.</div>'}
+          </div>
+        </div>
+      `;
+
+        document.getElementById('invokeBtn').addEventListener('click', () => {
+            invokeSelected(document.getElementById('payloadEditor').value);
+        });
+
+        document.getElementById('resetPayloadBtn').addEventListener('click', () => {
+            document.getElementById('payloadEditor').value = defaultPayload;
+        });
+    }
+
+    function render() {
+        renderExecutionList();
+        renderDetailPanel();
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function escapeAttr(value) {
+        return escapeHtml(value);
+    }
+
+    els.loadBtn.addEventListener('click', loadExecutions);
+    els.filterText.addEventListener('input', renderExecutionList);
+    els.clearBtn.addEventListener('click', () => {
+        state.result = null;
+        state.error = null;
+        render();
+    });
+
+    loadExecutions();
+</script>
+</body>
+</html>

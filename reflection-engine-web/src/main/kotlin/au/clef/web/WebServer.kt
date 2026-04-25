@@ -1,130 +1,97 @@
 package au.clef.web
 
 import au.clef.api.model.InvocationRequest
-import au.clef.engine.model.MethodDescriptor
-import au.clef.engine.model.ParamDescriptor
-import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
-import io.ktor.server.application.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.plugins.cors.routing.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
-import kotlinx.serialization.Serializable
+import au.clef.api.model.InvocationResponse
+import io.ktor.http.HttpStatusCode
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.application.call
+import io.ktor.server.application.install
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.plugins.cors.routing.CORS
+import io.ktor.server.request.receive
+import io.ktor.server.request.receiveText
+import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.get
+import io.ktor.server.routing.post
+import io.ktor.server.routing.routing
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.encodeToJsonElement
 
-@Serializable
-private data class InvocationResponse(
-    val result: String?
+data class WebServerConfig(
+    val port: Int = 8080,
+    val host: String = "0.0.0.0"
 )
-
-@Serializable
-private data class MethodDescriptorResponse(
-    val id: String,
-    val name: String,
-    val displayName: String? = null,
-    val parameters: List<ParamDescriptorResponse>,
-    val returnType: String,
-    val isStatic: Boolean
-)
-
-@Serializable
-private data class ParamDescriptorResponse(
-    val index: Int,
-    val type: String,
-    val reflectedName: String,
-    val name: String,
-    val label: String? = null,
-    val nullable: Boolean
-)
-
-private fun MethodDescriptor.toResponse(): MethodDescriptorResponse =
-    MethodDescriptorResponse(
-        id = id.value,
-        name = reflectedName,
-        displayName = displayName,
-        parameters = parameters.map { param: ParamDescriptor ->
-            ParamDescriptorResponse(
-                index = param.index,
-                type = param.type.name,
-                reflectedName = param.reflectedName,
-                name = param.name,
-                label = param.label,
-                nullable = param.nullable
-            )
-        },
-        returnType = returnType.name,
-        isStatic = isStatic
-    )
 
 class WebServer(
-    private val api: ReflectionServiceApi,
+    private val reflectionService: ReflectionServiceApi,
     private val config: WebServerConfig = WebServerConfig()
 ) {
     fun start() {
-        embeddedServer(Netty, port = config.port) {
-            configureHttp()
-            configureRoutes(api)
+        embeddedServer(Netty, host = config.host, port = config.port) {
+            install(ContentNegotiation) {
+                json(
+                    Json {
+                        prettyPrint = true
+                        ignoreUnknownKeys = true
+                        classDiscriminator = "kind"
+                    }
+                )
+            }
+
+            install(CORS) {
+                anyHost()
+                allowHeader(io.ktor.http.HttpHeaders.ContentType)
+                allowMethod(io.ktor.http.HttpMethod.Get)
+                allowMethod(io.ktor.http.HttpMethod.Post)
+                allowNonSimpleContentTypes = true
+            }
+
+            routing {
+                get("health") {
+                    call.respond(mapOf("ok" to true))
+                }
+                reflectionRoutes(reflectionService)
+            }
         }.start(wait = true)
     }
+}
 
-    private fun Application.configureHttp() {
-        install(CORS) {
-            allowHost(config.corsHost, schemes = listOf(config.corsScheme))
-            allowHeader(HttpHeaders.ContentType)
-            allowMethod(HttpMethod.Get)
-            allowMethod(HttpMethod.Post)
-        }
+@kotlinx.serialization.Serializable
+private data class ErrorResponse(val error: String)
 
-        install(ContentNegotiation) {
-            json(
-                Json {
-                    ignoreUnknownKeys = true
-                    classDiscriminator = "kind"
-                }
-            )
-        }
+fun Route.reflectionRoutes(reflectionService: ReflectionServiceApi) {
+    get("executions") {
+        val body = call.receiveText()
+        println("INVOKE BODY = $body")
+        call.respond(reflectionService.executionDescriptors())
     }
 
-    private fun Application.configureRoutes(api: ReflectionServiceApi) {
-        routing {
-            get("/methods/{className}") {
-                val className = call.parameters["className"]
-                if (className == null) {
-                    call.respond(HttpStatusCode.BadRequest, "Missing className")
-                    return@get
-                }
-
+            post("invoke") {
                 try {
-                    val descriptors: List<MethodDescriptor> = api.descriptors(className)
-                    call.respond(descriptors.map(MethodDescriptor::toResponse))
-                } catch (e: IllegalArgumentException) {
-                    call.respond(HttpStatusCode.NotFound, e.message ?: "Unknown class")
-                }
-            }
+                    val request = call.receive<InvocationRequest>()
+                    val result = reflectionService.invoke(request)
 
-            post("/invoke") {
-                try {
-                    val request: InvocationRequest = call.receive()
-                    println("INVOKE REQUEST = $request")
-                    val result = api.invoke(request)
-                    call.respond(HttpStatusCode.OK, InvocationResponse(result?.toString()))
+                    val resultJson = when (result) {
+                        null -> JsonNull
+                        is String -> JsonPrimitive(result)
+                        is Number -> JsonPrimitive(result)
+                        is Boolean -> JsonPrimitive(result)
+                        else -> Json.encodeToJsonElement(result)
+                    }
+
+                    call.respond(InvocationResponse(resultJson))
                 } catch (e: IllegalArgumentException) {
-                    call.respond(
-                        HttpStatusCode.BadRequest,
-                        InvocationResponse("ERROR: ${e.message}")
-                    )
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse(e.message ?: "Bad request"))
                 } catch (e: Exception) {
-                    e.printStackTrace()
                     call.respond(
                         HttpStatusCode.InternalServerError,
-                        InvocationResponse("ERROR: ${e.message}")
+                        ErrorResponse(e.message ?: e::class.simpleName ?: "Invocation failed")
                     )
                 }
             }
-        }
-    }
 }

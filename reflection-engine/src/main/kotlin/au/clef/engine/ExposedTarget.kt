@@ -1,9 +1,15 @@
 package au.clef.engine
 
 import au.clef.engine.model.MethodId
+import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
+
+@JvmInline
+value class ExecutionId(val value: String) {
+    override fun toString(): String = value
+}
 
 sealed class ExposedTarget {
     abstract val targetClass: KClass<*>
@@ -47,10 +53,12 @@ sealed class ExposedTarget {
 
     /**
      * Expose all instance methods on this object.
+     *
+     * If no id is supplied, a UUID is assigned.
      */
     data class Instance(
-        val id: String,
-        val obj: Any
+        val obj: Any,
+        val id: String = UUID.randomUUID().toString()
     ) : ExposedTarget() {
         override val targetClass: KClass<*>
             get() = obj::class
@@ -58,26 +66,28 @@ sealed class ExposedTarget {
 
     /**
      * Expose exactly one instance method on this object.
+     *
+     * If no id is supplied, a UUID is assigned.
      */
     data class InstanceMethod(
-        val id: String,
         val obj: Any,
-        val methodId: MethodId
+        val methodId: MethodId,
+        val id: String = UUID.randomUUID().toString()
     ) : ExposedTarget() {
         override val targetClass: KClass<*>
             get() = obj::class
 
         companion object {
             fun from(
-                id: String,
                 obj: Any,
                 methodName: String,
-                vararg parameterTypes: KClass<*>
+                vararg parameterTypes: KClass<*>,
+                id: String = UUID.randomUUID().toString()
             ): InstanceMethod =
                 InstanceMethod(
-                    id = id,
                     obj = obj,
-                    methodId = MethodId.from(obj::class, methodName, *parameterTypes)
+                    methodId = MethodId.from(obj::class, methodName, *parameterTypes),
+                    id = id
                 )
         }
     }

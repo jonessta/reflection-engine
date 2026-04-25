@@ -4,9 +4,7 @@ import au.clef.api.model.ValueDto
 import kotlinx.serialization.json.JsonPrimitive
 import java.lang.reflect.Modifier
 
-class ResponseValueMapper(
-    private val classResolver: ClassResolver? = null
-) {
+class ResponseValueMapper {
 
     fun toDtoValue(value: Any?): ValueDto =
         when (value) {

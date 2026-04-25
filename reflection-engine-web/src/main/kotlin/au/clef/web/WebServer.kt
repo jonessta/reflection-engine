@@ -1,7 +1,6 @@
 package au.clef.web
 
 import au.clef.api.model.InvocationRequest
-import au.clef.api.model.InvocationResponse
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.call
@@ -18,9 +17,6 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.encodeToJsonElement
 
 data class WebServerConfig(
     val port: Int = 8080,

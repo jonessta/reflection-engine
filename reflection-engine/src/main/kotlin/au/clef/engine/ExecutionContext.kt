@@ -6,27 +6,11 @@ sealed class ExecutionContext {
     abstract val executionId: ExecutionId
     abstract val methodId: MethodId
 
-    data class Static(
-        override val methodId: MethodId
-    ) : ExecutionContext() {
-        override val executionId: ExecutionId =
-            ExecutionId("static:${methodId.value}")
+    data class Static(override val methodId: MethodId) : ExecutionContext() {
+        override val executionId: ExecutionId = ExecutionId("static:${methodId.value}")
     }
 
-    data class Instance(
-        val instanceId: String,
-        override val methodId: MethodId
-    ) : ExecutionContext() {
-        override val executionId: ExecutionId =
-            ExecutionId("instance:$instanceId:${methodId.value}")
+    data class Instance(val instanceId: String, override val methodId: MethodId) : ExecutionContext() {
+        override val executionId: ExecutionId = ExecutionId("instance:$instanceId:${methodId.value}")
     }
-}
-
-
-object ExecutionIds {
-    fun static(methodId: MethodId): ExecutionId =
-        ExecutionId("static:${methodId.value}")
-
-    fun instance(instanceId: String, methodId: MethodId): ExecutionId =
-        ExecutionId("instance:$instanceId:${methodId.value}")
 }

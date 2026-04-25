@@ -27,15 +27,11 @@ class ReflectionServiceApi(
         supportingTypes = targetSupportingTypes
     )
 
-    private val metadataRegistry: DescriptorMetadataRegistry? =
-        metadataResourcePath
-            ?.let(MetadataLoader::fromResourceOrEmpty)
-            ?.let(::DescriptorMetadataRegistry)
+    private val metadataRegistry: DescriptorMetadataRegistry? = metadataResourcePath
+        ?.let(MetadataLoader::fromResourceOrEmpty)
+        ?.let(::DescriptorMetadataRegistry)
 
-    private val engine = ReflectionEngine(
-        reflectionRegistry = reflectionRegistry,
-        metadataRegistry = metadataRegistry
-    )
+    private val engine = ReflectionEngine(reflectionRegistry = reflectionRegistry, metadataRegistry = metadataRegistry)
 
     private val instanceRegistry = InstanceRegistry(
         targets.mapNotNull { target ->
@@ -47,10 +43,9 @@ class ReflectionServiceApi(
         }.toMap()
     )
 
-    private val classResolver: ClassResolver =
-        DefaultClassResolver(reflectionTypes = engine.reflectionTypes)
+    private val classResolver: ClassResolver = DefaultClassResolver(reflectionTypes = engine.reflectionTypes)
 
-    private val responseValueMapper = ResponseValueMapper(classResolver)
+    private val responseValueMapper = ResponseValueMapper()
 
     private val valueMapper = ValueMapper(instanceRegistry, classResolver)
 
@@ -83,9 +78,7 @@ class ReflectionServiceApi(
             }
         }
 
-        return InvocationResponse(
-            result = responseValueMapper.toDtoValue(result)
-        )
+        return InvocationResponse(result = responseValueMapper.toDtoValue(result))
     }
 
     fun executionDescriptors(): List<ExecutionDescriptorDto> =

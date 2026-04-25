@@ -24,7 +24,16 @@ private val KOTLIN_ADD_METHOD_ID = MethodId.from(::add.javaMethod!!)
 private val acmeService = AcmeService()
 
 private val targets: List<ExposedTarget> = listOf(
-    ExposedTarget.Instance("acmeService", acmeService),
+    ExposedTarget.InstanceMethod.from(
+        id = "acmeService",
+        obj = acmeService,
+        methodName = "personAddress",
+        Person::class
+    ),
+//    ExposedTarget.Instance(
+//        id = "acmeService",
+//        obj = acmeService,
+//    ),
 //    ExposedTarget.StaticClass(Math::class),
     ExposedTarget.StaticMethod.from(::add),
     ExposedTarget.StaticMethod.from(Math::class, "max", Int::class, Int::class)

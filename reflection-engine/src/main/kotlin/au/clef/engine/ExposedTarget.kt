@@ -8,10 +8,16 @@ import kotlin.reflect.jvm.javaMethod
 sealed class ExposedTarget {
     abstract val targetClass: KClass<*>
 
+    /**
+     * Expose all supported static methods on this class.
+     */
     data class StaticClass(
         override val targetClass: KClass<*>
     ) : ExposedTarget()
 
+    /**
+     * Expose exactly one static method.
+     */
     data class StaticMethod(
         override val targetClass: KClass<*>,
         val methodId: MethodId
@@ -39,11 +45,40 @@ sealed class ExposedTarget {
         }
     }
 
+    /**
+     * Expose all instance methods on this object.
+     */
     data class Instance(
         val id: String,
         val obj: Any
     ) : ExposedTarget() {
         override val targetClass: KClass<*>
             get() = obj::class
+    }
+
+    /**
+     * Expose exactly one instance method on this object.
+     */
+    data class InstanceMethod(
+        val id: String,
+        val obj: Any,
+        val methodId: MethodId
+    ) : ExposedTarget() {
+        override val targetClass: KClass<*>
+            get() = obj::class
+
+        companion object {
+            fun from(
+                id: String,
+                obj: Any,
+                methodName: String,
+                vararg parameterTypes: KClass<*>
+            ): InstanceMethod =
+                InstanceMethod(
+                    id = id,
+                    obj = obj,
+                    methodId = MethodId.from(obj::class, methodName, *parameterTypes)
+                )
+        }
     }
 }

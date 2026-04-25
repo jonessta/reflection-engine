@@ -69,6 +69,13 @@ class ReflectionRegistry(
                     predicate = { method -> !Modifier.isStatic(method.modifiers) }
                 )
 
+            is ExposedTarget.InstanceMethod ->
+                registerSingleMethod(
+                    clazz = target.targetClass.java,
+                    methodId = target.methodId,
+                    requireStatic = false
+                )
+
             is ExposedTarget.StaticClass ->
                 registerMethods(
                     clazz = target.targetClass.java,
@@ -76,7 +83,11 @@ class ReflectionRegistry(
                 )
 
             is ExposedTarget.StaticMethod ->
-                registerSingleMethod(target.targetClass.java, target.methodId)
+                registerSingleMethod(
+                    clazz = target.targetClass.java,
+                    methodId = target.methodId,
+                    requireStatic = true
+                )
         }
     }
 
@@ -101,10 +112,21 @@ class ReflectionRegistry(
             }
     }
 
-    private fun registerSingleMethod(clazz: Class<*>, methodId: MethodId) {
+    private fun registerSingleMethod(
+        clazz: Class<*>,
+        methodId: MethodId,
+        requireStatic: Boolean
+    ) {
         val method = resolveMethod(clazz, methodId)
-        require(Modifier.isStatic(method.modifiers)) {
-            "Method ${methodId.value} must be static"
+
+        if (requireStatic) {
+            require(Modifier.isStatic(method.modifiers)) {
+                "Method ${methodId.value} must be static"
+            }
+        } else {
+            require(!Modifier.isStatic(method.modifiers)) {
+                "Method ${methodId.value} must be an instance method"
+            }
         }
 
         val descriptors = descriptorsByClass.getOrPut(clazz) { mutableListOf() }

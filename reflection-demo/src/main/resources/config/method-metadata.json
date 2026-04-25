@@ -11,28 +11,6 @@
                 }
             ]
         },
-        "au.clef.app.demo.model.AcmeService#personDescription(au.clef.app.demo.model.Person)": {
-            "displayName": null,
-            "hidden": false,
-            "order": null,
-            "parameters": [
-                {
-                    "name": "param0",
-                    "label": null
-                }
-            ]
-        },
-        "au.clef.app.demo.model.AcmeService#personName(au.clef.app.demo.model.Person)": {
-            "displayName": null,
-            "hidden": false,
-            "order": null,
-            "parameters": [
-                {
-                    "name": "param0",
-                    "label": null
-                }
-            ]
-        },
         "au.clef.app.demo.model.KotlinFuncsKt#add(int,int)": {
             "displayName": null,
             "hidden": false,

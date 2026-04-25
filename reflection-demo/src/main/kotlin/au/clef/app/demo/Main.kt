@@ -25,8 +25,9 @@ private val acmeService = AcmeService()
 
 private val targets: List<ExposedTarget> = listOf(
     ExposedTarget.Instance("acmeService", acmeService),
-    ExposedTarget.StaticClass(Math::class),
-    ExposedTarget.StaticMethod(KOTLIN_ADD_METHOD_ID)
+//    ExposedTarget.StaticClass(Math::class),
+    ExposedTarget.StaticMethod.from(::add),
+    ExposedTarget.StaticMethod.from(Math::class, "max", Int::class, Int::class)
 )
 
 private val targetSupportingTypes: List<KClass<*>> = listOf(Person::class, Address::class)
@@ -44,8 +45,8 @@ private val engine: ReflectionEngine =
     ReflectionEngine(reflectionRegistry = reflectionRegistry, metadataRegistry = metadataRegistry)
 
 fun main() {
-    generateMetadata()
-    validateMetadata()
+//    generateMetadata()
+//    validateMetadata()
     showAllDescriptors()
     runInstanceMethodOnServiceInstance()
     runJavaStaticMethod()

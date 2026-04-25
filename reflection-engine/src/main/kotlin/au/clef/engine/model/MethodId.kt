@@ -15,11 +15,10 @@ class IllegalMethodIdException(msg: String) : EngineException("Invalid MethodId:
 
 @Serializable(with = MethodIdSerializer::class)
 class MethodId private constructor(
-    val declaringClass: Class<*>,
-    private val methodName: String,
-    private val parameterTypeNames: List<String>
+    declaringClass: Class<*>,
+    methodName: String,
+    parameterTypeNames: List<String>
 ) {
-
     /**
      * Can be used over the wire as identification.
      */
@@ -39,14 +38,13 @@ class MethodId private constructor(
     override fun hashCode(): Int = value.hashCode()
 
     companion object {
-        private const val CLASS_NAME_SEPARATOR: String = "#"
+        private const val CLASS_NAME_SEPARATOR = "#"
 
         private val METHOD_ID_OUTER_REGEX = Regex(
             """^([A-Za-z_][A-Za-z0-9_$.]*)$CLASS_NAME_SEPARATOR([A-Za-z_][A-Za-z0-9_$]*)\((.*)\)$"""
         )
 
         private val TYPE_NAME_REGEX = Regex("""^[A-Za-z_][A-Za-z0-9_$.]*$""")
-        private val METHOD_NAME_REGEX = Regex("""^[A-Za-z_][A-Za-z0-9_$]*$""")
 
         fun from(method: Method): MethodId =
             MethodId(
@@ -55,44 +53,41 @@ class MethodId private constructor(
                 parameterTypeNames = method.parameterTypes.map { it.name }
             )
 
-        fun from(declaringClass: KClass<*>, methodName: String, vararg parameterTypes: KClass<*>): MethodId {
-            val method: Method = declaringClass.java.getDeclaredMethod(
-                methodName,
-                *parameterTypes.map { it.java }.toTypedArray()
+        fun from(declaringClass: KClass<*>, methodName: String, vararg parameterTypes: KClass<*>): MethodId =
+            from(
+                declaringClass.java.getDeclaredMethod(
+                    methodName,
+                    *parameterTypes.map { it.java }.toTypedArray()
+                )
             )
-            return from(method)
-        }
 
         fun fromValue(value: String): MethodId {
-            val match: MatchResult = METHOD_ID_OUTER_REGEX.matchEntire(value)
+            val match = METHOD_ID_OUTER_REGEX.matchEntire(value)
                 ?: throw IllegalMethodIdException("expected <class>#<method>(<paramTypes>)")
-
             val declaringClassName = match.groupValues[1]
             val methodName = match.groupValues[2]
             val paramsPart = match.groupValues[3]
-
-            if (!METHOD_NAME_REGEX.matches(methodName)) {
-                throw IllegalMethodIdException("method name is malformed: $methodName")
-            }
-
             val parameterTypeNames =
                 if (paramsPart.isBlank()) {
                     emptyList()
                 } else {
                     paramsPart.split(",").also { paramTypes ->
-                        if (paramTypes.any { it.isBlank() }) {
+                        if (paramTypes.any(String::isBlank)) {
                             throw IllegalMethodIdException(
                                 "parameter types must be comma-separated with no empty entries"
                             )
                         }
-                        if (!paramTypes.all { TYPE_NAME_REGEX.matches(it) }) {
+                        if (!paramTypes.all(TYPE_NAME_REGEX::matches)) {
                             throw IllegalMethodIdException("parameter type names are malformed")
                         }
                     }
                 }
 
-            val declaringClass: Class<*> = Class.forName(declaringClassName)
-            return MethodId(declaringClass, methodName, parameterTypeNames)
+            return MethodId(
+                Class.forName(declaringClassName),
+                methodName,
+                parameterTypeNames
+            )
         }
     }
 }

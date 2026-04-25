@@ -2,28 +2,47 @@ package au.clef.engine
 
 import au.clef.engine.model.MethodId
 import kotlin.reflect.KClass
+import kotlin.reflect.KFunction
+import kotlin.reflect.jvm.javaMethod
 
 sealed class ExposedTarget {
-
     abstract val targetClass: KClass<*>
 
-    /**
-     * Expose all supported static methods on this class.
-     */
-    data class StaticClass(override val targetClass: KClass<*>) : ExposedTarget()
-
-    /**
-     * Expose exactly one static method.
-     */
-    data class StaticMethod(private val methodId: MethodId) : ExposedTarget() {
+    data class StaticClass(
         override val targetClass: KClass<*>
-            get() = methodId.declaringClass.kotlin
+    ) : ExposedTarget()
+
+    data class StaticMethod(
+        override val targetClass: KClass<*>,
+        val methodId: MethodId
+    ) : ExposedTarget() {
+        companion object {
+            fun from(
+                declaringClass: KClass<*>,
+                methodName: String,
+                vararg parameterTypes: KClass<*>
+            ): StaticMethod =
+                StaticMethod(
+                    targetClass = declaringClass,
+                    methodId = MethodId.from(declaringClass, methodName, *parameterTypes)
+                )
+
+            fun from(function: KFunction<*>): StaticMethod {
+                val method = requireNotNull(function.javaMethod) {
+                    "Function ${function.name} does not have a Java method"
+                }
+                return StaticMethod(
+                    targetClass = method.declaringClass.kotlin,
+                    methodId = MethodId.from(method)
+                )
+            }
+        }
     }
 
-    /**
-     * Expose instance methods on this object via its id.
-     */
-    data class Instance(val id: String, val obj: Any) : ExposedTarget() {
+    data class Instance(
+        val id: String,
+        val obj: Any
+    ) : ExposedTarget() {
         override val targetClass: KClass<*>
             get() = obj::class
     }

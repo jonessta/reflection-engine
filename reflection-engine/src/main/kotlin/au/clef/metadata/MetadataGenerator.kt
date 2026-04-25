@@ -20,7 +20,7 @@ data class MetadataGenerationConfig(
 fun generateMetadata(config: MetadataGenerationConfig) {
     val reflectionRegistry = ReflectionRegistry(
         targets = config.targets,
-        supportingClasses = config.targetSupportingTypes
+        supportingTypes = config.targetSupportingTypes
     )
 
     val metadata = MetadataGenerator(reflectionRegistry).generate()

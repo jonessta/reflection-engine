@@ -27,7 +27,7 @@ class ReflectionServiceApi(
 
     private val reflectionRegistry = ReflectionRegistry(
         targets = targets,
-        supportingClasses = targetSupportingTypes
+        supportingTypes = targetSupportingTypes
     )
 
     private val metadataRegistry: DescriptorMetadataRegistry? = metadataResourcePath

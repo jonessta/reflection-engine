@@ -33,6 +33,21 @@
                 }
             ]
         },
+        "au.clef.app.demo.model.KotlinFuncsKt#add(int,int)": {
+            "displayName": null,
+            "hidden": false,
+            "order": null,
+            "parameters": [
+                {
+                    "name": "param0",
+                    "label": null
+                },
+                {
+                    "name": "param1",
+                    "label": null
+                }
+            ]
+        },
         "java.lang.Math#IEEEremainder(double,double)": {
             "displayName": null,
             "hidden": false,
@@ -1357,21 +1372,6 @@
             ]
         },
         "java.lang.Math#unsignedMultiplyHigh(long,long)": {
-            "displayName": null,
-            "hidden": false,
-            "order": null,
-            "parameters": [
-                {
-                    "name": "param0",
-                    "label": null
-                },
-                {
-                    "name": "param1",
-                    "label": null
-                }
-            ]
-        },
-        "au.clef.app.demo.model.KotlinFuncsKt#add(int,int)": {
             "displayName": null,
             "hidden": false,
             "order": null,

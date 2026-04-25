@@ -70,28 +70,17 @@ fun Route.reflectionRoutes(reflectionService: ReflectionServiceApi) {
         println("INVOKE BODY = $body")
         call.respond(reflectionService.executionDescriptors())
     }
-
-            post("invoke") {
-                try {
-                    val request = call.receive<InvocationRequest>()
-                    val result = reflectionService.invoke(request)
-
-                    val resultJson = when (result) {
-                        null -> JsonNull
-                        is String -> JsonPrimitive(result)
-                        is Number -> JsonPrimitive(result)
-                        is Boolean -> JsonPrimitive(result)
-                        else -> Json.encodeToJsonElement(result)
-                    }
-
-                    call.respond(InvocationResponse(resultJson))
-                } catch (e: IllegalArgumentException) {
-                    call.respond(HttpStatusCode.BadRequest, ErrorResponse(e.message ?: "Bad request"))
-                } catch (e: Exception) {
-                    call.respond(
-                        HttpStatusCode.InternalServerError,
-                        ErrorResponse(e.message ?: e::class.simpleName ?: "Invocation failed")
-                    )
-                }
-            }
+    post("invoke") {
+        try {
+            val request = call.receive<InvocationRequest>()
+            call.respond(reflectionService.invoke(request))
+        } catch (e: IllegalArgumentException) {
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse(e.message ?: "Bad request"))
+        } catch (e: Exception) {
+            call.respond(
+                HttpStatusCode.InternalServerError,
+                ErrorResponse(e.message ?: e::class.simpleName ?: "Invocation failed")
+            )
+        }
+    }
 }

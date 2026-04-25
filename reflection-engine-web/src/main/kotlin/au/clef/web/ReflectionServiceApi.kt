@@ -2,15 +2,16 @@ package au.clef.web
 
 import au.clef.api.ClassResolver
 import au.clef.api.InstanceRegistry
+import au.clef.api.ResponseValueMapper
 import au.clef.api.ValueMapper
 import au.clef.api.model.ExecutionDescriptorDto
 import au.clef.api.model.InvocationRequest
+import au.clef.api.model.InvocationResponse
 import au.clef.api.model.ParamDescriptorDto
 import au.clef.engine.ExecutionContext
 import au.clef.engine.ExecutionId
 import au.clef.engine.ExposedTarget
 import au.clef.engine.ReflectionEngine
-import au.clef.engine.model.Value
 import au.clef.engine.registry.ReflectionRegistry
 import au.clef.metadata.DescriptorMetadataRegistry
 import au.clef.metadata.MetadataLoader
@@ -49,6 +50,8 @@ class ReflectionServiceApi(
     private val classResolver: ClassResolver =
         DefaultClassResolver(reflectionTypes = engine.reflectionTypes)
 
+    private val responseValueMapper = ResponseValueMapper(classResolver)
+
     private val valueMapper = ValueMapper(instanceRegistry, classResolver)
 
     constructor(
@@ -61,17 +64,13 @@ class ReflectionServiceApi(
         metadataResourcePath = metadataResourcePath
     )
 
-    fun executionDescriptors(): List<ExecutionDescriptorDto> =
-        reflectionRegistry.allExecutionContexts()
-            .map(::toExecutionDescriptorDto)
-
-    fun invoke(request: InvocationRequest): Any? {
+    fun invoke(request: InvocationRequest): InvocationResponse {
         val executionContext = reflectionRegistry.executionContext(
             ExecutionId(request.executionId)
         )
-        val args: List<Value> = request.args.map(valueMapper::toEngineValue)
+        val args = request.args.map(valueMapper::toEngineValue)
 
-        return when (executionContext) {
+        val result = when (executionContext) {
             is ExecutionContext.Static -> {
                 val descriptor = engine.descriptor(executionContext.methodId)
                 engine.invokeStatic(descriptor, args)
@@ -83,7 +82,14 @@ class ReflectionServiceApi(
                 engine.invokeInstance(descriptor, instance, args)
             }
         }
+
+        return InvocationResponse(
+            result = responseValueMapper.toDtoValue(result)
+        )
     }
+
+    fun executionDescriptors(): List<ExecutionDescriptorDto> =
+        reflectionRegistry.allExecutionContexts().map(::toExecutionDescriptorDto)
 
     private fun toExecutionDescriptorDto(
         executionContext: ExecutionContext

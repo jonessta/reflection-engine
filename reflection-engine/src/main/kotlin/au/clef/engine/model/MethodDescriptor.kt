@@ -15,12 +15,8 @@ class MethodDescriptor(
     companion object {
 
         fun from(method: Method, displayName: String? = null): MethodDescriptor =
-            from(method, MethodId.from(method), displayName)
-
-        // for internal efficiency
-        internal fun from(method: Method, methodId: MethodId, displayName: String? = null): MethodDescriptor =
             MethodDescriptor(
-                id = methodId,
+                id = MethodId.from(method),
                 reflectedName = method.name,
                 displayName = displayName,
                 parameters = buildParamDescriptors(method),
@@ -34,12 +30,12 @@ class MethodDescriptor(
         parameters: List<ParamDescriptor> = this.parameters
     ): MethodDescriptor =
         MethodDescriptor(
-            id,
-            reflectedName,
+            id = id,
+            reflectedName = reflectedName,
             displayName = displayName,
             parameters = parameters,
-            returnType,
-            isStatic
+            returnType = returnType,
+            isStatic = isStatic
         )
 
     override fun equals(other: Any?): Boolean = other is MethodDescriptor && id == other.id

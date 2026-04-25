@@ -45,7 +45,7 @@ private val engine: ReflectionEngine =
     ReflectionEngine(reflectionRegistry = reflectionRegistry, metadataRegistry = metadataRegistry)
 
 fun main() {
-//    generateMetadata()
+    generateMetadata()
 //    validateMetadata()
     showAllDescriptors()
     runInstanceMethodOnServiceInstance()
@@ -60,6 +60,7 @@ private fun generateMetadata() {
     println(MetadataWriter.toJson(metadata))
 }
 
+// todo fix it should cgeck per method not whole class
 private fun validateMetadata() {
     val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(METADATA_RESOURCE_PATH)
     val issues: List<ValidationIssue> = MetadataValidator(reflectionRegistry).validate(metadata)

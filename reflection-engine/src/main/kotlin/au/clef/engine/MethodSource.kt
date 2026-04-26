@@ -2,7 +2,7 @@ package au.clef.engine
 
 import au.clef.engine.model.MethodId
 import java.lang.reflect.Method
-import java.util.*
+import java.util.UUID
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
@@ -19,16 +19,24 @@ sealed class MethodSource {
     /**
      * Expose all supported static methods on this class.
      */
-    data class StaticClass(override val declaringClass: KClass<*>) : MethodSource()
+    data class StaticClass(
+        override val declaringClass: KClass<*>
+    ) : MethodSource()
 
     /**
      * Expose exactly one static method.
      */
-    data class StaticMethod(override val declaringClass: KClass<*>, val methodId: MethodId) : MethodSource() {
+    data class StaticMethod(
+        override val declaringClass: KClass<*>,
+        val methodId: MethodId
+    ) : MethodSource() {
 
         companion object {
-
-            fun from(declaringClass: KClass<*>, methodName: String, vararg parameterTypes: KClass<*>): StaticMethod =
+            fun from(
+                declaringClass: KClass<*>,
+                methodName: String,
+                vararg parameterTypes: KClass<*>
+            ): StaticMethod =
                 StaticMethod(
                     declaringClass = declaringClass,
                     methodId = MethodId.from(declaringClass, methodName, *parameterTypes)
@@ -49,25 +57,30 @@ sealed class MethodSource {
     /**
      * Expose all instance methods on this object.
      *
-     * If no id is supplied, a UUID is assigned. A user supplied id can be meaningful for the UI layer and
-     * more human-readable ie accountingService rather than a UUID string.
+     * If no id is supplied, a UUID is assigned. A user-supplied id can be more
+     * meaningful for the UI layer, for example accountingService rather than a UUID.
      */
     data class Instance(
         override val instance: Any,
         override val instanceId: String = UUID.randomUUID().toString()
     ) : MethodSource(), ExposableInstance {
-
-        override val declaringClass: KClass<*> get() = instance::class
+        override val declaringClass: KClass<*>
+            get() = instance::class
     }
 
     /**
      * Expose exactly one instance method on this object.
      *
-     * @param instanceId The instance identifier of the service, user supplied or generated if not. Eg
+     * @param instanceId The instance identifier of the service, user-supplied or generated if not.
+     * Example:
      * val acmeService = AcmeService()
-     * val methodSource = ExposedTarget.from(acmeService, "numberOdWidgets", WidgetItem::class)
-     * OR
-     * val methodSource = ExposedTarget.from(acmeService, "numberOdWidgets", WidgetItem::class, id="myWidgetService")
+     * val methodSource = MethodSource.InstanceMethod.from(acmeService, "numberOfWidgets", WidgetItem::class)
+     * val namedMethodSource = MethodSource.InstanceMethod.from(
+     *     instance = acmeService,
+     *     methodName = "numberOfWidgets",
+     *     WidgetItem::class,
+     *     instanceId = "myWidgetService"
+     * )
      */
     data class InstanceMethod(
         override val instance: Any,
@@ -75,26 +88,21 @@ sealed class MethodSource {
         override val instanceId: String = UUID.randomUUID().toString()
     ) : MethodSource(), ExposableInstance {
 
-        override val declaringClass: KClass<*> get() = instance::class
+        override val declaringClass: KClass<*>
+            get() = instance::class
 
         companion object {
-
             fun from(
                 instance: Any,
                 methodName: String,
                 vararg parameterTypes: KClass<*>,
                 instanceId: String = UUID.randomUUID().toString()
-            ): InstanceMethod {
-                val klass: KClass<out Any> = instance::class
-                require(klass.java.methods.any { it.name == methodName }) {
-                    "Method $methodName not found on ${klass.simpleName}"
-                }
-                return InstanceMethod(
+            ): InstanceMethod =
+                InstanceMethod(
                     instance = instance,
                     methodId = MethodId.from(instance::class, methodName, *parameterTypes),
                     instanceId = instanceId
                 )
-            }
         }
     }
 }

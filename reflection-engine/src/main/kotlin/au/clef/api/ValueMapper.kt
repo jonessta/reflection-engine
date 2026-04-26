@@ -8,12 +8,12 @@ interface ClassResolver {
 }
 
 class ValueMapper(
-    private val instanceRegistry: InstanceRegistry,
+    private val instanceResolver: InstanceResolver,
     private val classResolver: ClassResolver
 ) {
     fun toEngineValue(dto: ValueDto): Value = when (dto) {
         is ValueDto.Scalar -> Value.Scalar(dto.value)
-        is ValueDto.InstanceRef -> Value.Instance(instanceRegistry.get(dto.id))
+        is ValueDto.InstanceRef -> Value.Instance(instanceResolver.get(dto.id))
         is ValueDto.Record -> Value.Record(
             type = classResolver.resolve(dto.type),
             fields = dto.fields.mapValues { (_, valueDto: ValueDto) -> toEngineValue(valueDto) }

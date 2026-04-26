@@ -1,21 +1,17 @@
 package au.clef.web
 
 import au.clef.api.model.InvocationRequest
-import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.application.call
-import io.ktor.server.application.install
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.server.plugins.cors.routing.CORS
-import io.ktor.server.request.receive
-import io.ktor.server.request.receiveText
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
-import io.ktor.server.routing.routing
+import au.clef.api.model.InvocationResponse
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.application.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
 
 data class WebServerConfig(
@@ -68,8 +64,9 @@ fun Route.reflectionRoutes(reflectionService: ReflectionServiceApi) {
     }
     post("invoke") {
         try {
-            val request = call.receive<InvocationRequest>()
-            call.respond(reflectionService.invoke(request))
+            val request: InvocationRequest = call.receive()
+            val response: InvocationResponse = reflectionService.invoke(request)
+            call.respond(response)
         } catch (e: IllegalArgumentException) {
             call.respond(HttpStatusCode.BadRequest, ErrorResponse(e.message ?: "Bad request"))
         } catch (e: Exception) {

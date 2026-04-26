@@ -35,7 +35,7 @@ val exposeAllMethodsOnStaticClass = ReflectionServiceApi(
 
 val exposeAllMethodsService = ReflectionServiceApi(
     methodSource = MethodSource.Instance(acmeServiceInstance, instanceId = "myService"),
-//    methodSource = ExposedTarget.Instance(acmeService),
+//    methodSource = MethodSource.Instance(acmeService),
     methodSupportingTypes = AcmeDemoConfig.methodSupportingTypes,
     metadataResourcePath = AcmeDemoConfig.METADATA_RESOURCE_PATH
 )

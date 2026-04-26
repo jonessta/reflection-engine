@@ -65,7 +65,7 @@ class ReflectionRegistry(
                     clazz = methodSource.declaringClass.java,
                     predicate = { method -> !Modifier.isStatic(method.modifiers) },
                     executionContextFor = { methodId ->
-                        ExecutionContext.Instance(methodSource.instanceId, methodId)
+                        ExecutionContext.Instance(methodSource.instanceId, methodSource.instance, methodId)
                     }
                 )
 
@@ -74,7 +74,7 @@ class ReflectionRegistry(
                     clazz = methodSource.declaringClass.java,
                     methodId = methodSource.methodId,
                     requireStatic = false,
-                    executionContext = ExecutionContext.Instance(methodSource.instanceId, methodSource.methodId)
+                    executionContext = ExecutionContext.Instance(methodSource.instanceId, methodSource.instance, methodSource.methodId)
                 )
 
             is MethodSource.StaticClass ->

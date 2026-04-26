@@ -20,9 +20,6 @@ sealed class Value {
 object Values {
     fun scalar(value: Any?) = Value.Scalar(value)
 
-    fun recordJava(type: Class<*>, vararg fields: Pair<String, Value>) =
-        Value.Record(type, linkedMapOf(*fields))
-
     fun record(type: KClass<*>, vararg fields: Pair<String, Value>) =
         Value.Record(type.java, linkedMapOf(*fields))
 

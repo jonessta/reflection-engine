@@ -8,14 +8,15 @@ value class ExecutionId(val value: String) {
 }
 
 sealed class ExecutionContext {
+
     abstract val executionId: ExecutionId
     abstract val methodId: MethodId
 
     data class Static(
         override val methodId: MethodId
     ) : ExecutionContext() {
-        override val executionId: ExecutionId =
-            ExecutionId("static:${methodId.value}")
+
+        override val executionId: ExecutionId = ExecutionId("static:${methodId.value}")
     }
 
     data class Instance(
@@ -27,7 +28,7 @@ sealed class ExecutionContext {
         val instance: Any,
         override val methodId: MethodId
     ) : ExecutionContext() {
-        override val executionId: ExecutionId =
-            ExecutionId("instance:$instanceId:${methodId.value}")
+
+        override val executionId: ExecutionId = ExecutionId("instance:$instanceId:${methodId.value}")
     }
 }

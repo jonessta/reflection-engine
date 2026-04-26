@@ -2,7 +2,7 @@ package au.clef.engine
 
 import au.clef.engine.model.MethodId
 import java.lang.reflect.Method
-import java.util.UUID
+import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
@@ -64,8 +64,8 @@ sealed class MethodSource {
         override val instance: Any,
         override val instanceId: String = UUID.randomUUID().toString()
     ) : MethodSource(), ExposableInstance {
-        override val declaringClass: KClass<*>
-            get() = instance::class
+
+        override val declaringClass: KClass<*> get() = instance::class
     }
 
     /**
@@ -88,21 +88,20 @@ sealed class MethodSource {
         override val instanceId: String = UUID.randomUUID().toString()
     ) : MethodSource(), ExposableInstance {
 
-        override val declaringClass: KClass<*>
-            get() = instance::class
+        override val declaringClass: KClass<*> get() = instance::class
 
         companion object {
+
             fun from(
                 instance: Any,
                 methodName: String,
                 vararg parameterTypes: KClass<*>,
                 instanceId: String = UUID.randomUUID().toString()
-            ): InstanceMethod =
-                InstanceMethod(
-                    instance = instance,
-                    methodId = MethodId.from(instance::class, methodName, *parameterTypes),
-                    instanceId = instanceId
-                )
+            ): InstanceMethod = InstanceMethod(
+                instance = instance,
+                methodId = MethodId.from(instance::class, methodName, *parameterTypes),
+                instanceId = instanceId
+            )
         }
     }
 }

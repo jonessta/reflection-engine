@@ -14,11 +14,11 @@ import kotlin.reflect.KClass
 
 private data class RegistryEntry(val descriptor: MethodDescriptor, val method: Method)
 
-class ReflectionRegistry(
+class MethodSourceRegistry(
     methodSources: Collection<MethodSource>,
     methodSupportingTypes: Collection<KClass<*>> = emptyList(),
     private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-) : ReflectionTypes {
+) : MethodSourceTypes {
 
     private val descriptorsByClass: MutableMap<Class<*>, MutableList<MethodDescriptor>> = ConcurrentHashMap()
     private val entriesById: MutableMap<MethodId, RegistryEntry> = ConcurrentHashMap()
@@ -26,7 +26,7 @@ class ReflectionRegistry(
 
     override val declaringClasses: List<Class<*>> = methodSources.map { it.declaringClass.java }.distinct()
 
-    override val classes: List<Class<*>> =
+    override val knownClasses: List<Class<*>> =
         (methodSources.map { methodSource: MethodSource -> methodSource.declaringClass } + methodSupportingTypes)
             .distinct()
             .map { it.java }

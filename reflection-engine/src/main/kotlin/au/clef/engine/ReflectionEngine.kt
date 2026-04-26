@@ -4,18 +4,19 @@ import au.clef.engine.convert.TypeConverter
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
 import au.clef.engine.model.Value
-import au.clef.engine.registry.ReflectionRegistry
-import au.clef.engine.registry.ReflectionTypes
+import au.clef.engine.registry.MethodSourceRegistry
+import au.clef.engine.registry.MethodSourceTypes
 import au.clef.metadata.DescriptorMetadataRegistry
 import java.lang.reflect.Method
 import kotlin.reflect.KClass
 
 class ReflectionEngine(
     private val typeConverter: TypeConverter = TypeConverter(),
-    private val reflectionRegistry: ReflectionRegistry,
+    private val reflectionRegistry: MethodSourceRegistry,
     private val metadataRegistry: DescriptorMetadataRegistry? = null
 ) {
-    val reflectionTypes: ReflectionTypes get() = reflectionRegistry
+
+    val methodSourceTypes: MethodSourceTypes get() = reflectionRegistry
 
     fun descriptors(clazz: KClass<*>): List<MethodDescriptor> = descriptors(clazz.java)
 

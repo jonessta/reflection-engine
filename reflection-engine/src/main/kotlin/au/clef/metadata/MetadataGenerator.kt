@@ -4,7 +4,7 @@ import au.clef.engine.MethodSource
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
 import au.clef.engine.model.ParamDescriptor
-import au.clef.engine.registry.ReflectionRegistry
+import au.clef.engine.registry.MethodSourceRegistry
 import au.clef.metadata.model.MetadataRoot
 import au.clef.metadata.model.MethodMetadata
 import au.clef.metadata.model.ParamMetadata
@@ -18,19 +18,19 @@ data class MetadataGenerationConfig(
 )
 
 fun generateMetadata(config: MetadataGenerationConfig) {
-    val reflectionRegistry = ReflectionRegistry(
+    val methodSourceRegistry = MethodSourceRegistry(
         methodSources = config.methodSources,
         methodSupportingTypes = config.methodSupportingTypes
     )
 
-    val metadata = MetadataGenerator(reflectionRegistry).generate()
+    val metadata = MetadataGenerator(methodSourceRegistry).generate()
     MetadataWriter.writeToFile(metadata, config.outputFile)
 }
 
-class MetadataGenerator(private val reflectionRegistry: ReflectionRegistry) {
+class MetadataGenerator(private val methodSourceRegistry: MethodSourceRegistry) {
 
     private fun generate(clazz: Class<*>): MetadataRoot {
-        val descriptors: List<MethodDescriptor> = reflectionRegistry.descriptors(clazz)
+        val descriptors: List<MethodDescriptor> = methodSourceRegistry.descriptors(clazz)
         val methods: Map<MethodId, MethodMetadata> =
             descriptors
                 .sortedBy { descriptor: MethodDescriptor -> descriptor.reflectedName }
@@ -45,7 +45,7 @@ class MetadataGenerator(private val reflectionRegistry: ReflectionRegistry) {
     }
 
     fun generate(): MetadataRoot {
-        val methods: Map<MethodId, MethodMetadata> = reflectionRegistry.declaringClasses
+        val methods: Map<MethodId, MethodMetadata> = methodSourceRegistry.declaringClasses
             .flatMap { clazz: Class<*> ->
                 generate(clazz).methods.entries
             }

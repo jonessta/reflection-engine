@@ -8,7 +8,7 @@ import au.clef.engine.MethodSource
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.*
 import au.clef.engine.model.Values.scalar
-import au.clef.engine.registry.ReflectionRegistry
+import au.clef.engine.registry.MethodSourceRegistry
 import au.clef.metadata.*
 import au.clef.metadata.model.MetadataRoot
 import java.io.File
@@ -42,7 +42,7 @@ private const val METADATA_RESOURCE_PATH = "/config/method-metadata.json"
 private val outputFile = File("reflection-demo/src/main/resources")
     .resolve(METADATA_RESOURCE_PATH.removePrefix("/"))
 
-private val reflectionRegistry: ReflectionRegistry = ReflectionRegistry(methodSources, methodSupportingTypes)
+private val reflectionRegistry = MethodSourceRegistry(methodSources, methodSupportingTypes)
 
 private val metadataRegistry = DescriptorMetadataRegistry(MetadataLoader.fromResourceOrEmpty(METADATA_RESOURCE_PATH))
 

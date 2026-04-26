@@ -1,6 +1,6 @@
 package au.clef.engine.registry
 
-interface ReflectionTypes {
+interface MethodSourceTypes {
 
     /**
      * Classes whose methods are directly exposed for invocation.
@@ -10,5 +10,5 @@ interface ReflectionTypes {
     /**
      * All classes known to the reflection runtime, including declaringClasses.
      */
-    val classes: List<Class<*>>
+    val knownClasses: List<Class<*>>
 }

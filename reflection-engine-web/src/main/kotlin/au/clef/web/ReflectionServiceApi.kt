@@ -11,7 +11,7 @@ import au.clef.engine.ExecutionContext
 import au.clef.engine.ExecutionId
 import au.clef.engine.MethodSource
 import au.clef.engine.ReflectionEngine
-import au.clef.engine.registry.ReflectionRegistry
+import au.clef.engine.registry.MethodSourceRegistry
 import au.clef.metadata.DescriptorMetadataRegistry
 import au.clef.metadata.MetadataLoader
 import kotlin.reflect.KClass
@@ -21,7 +21,7 @@ class ReflectionServiceApi(
     methodSupportingTypes: Collection<KClass<*>> = emptyList(),
     metadataResourcePath: String? = null
 ) {
-    private val reflectionRegistry = ReflectionRegistry(
+    private val methodSourceRegistry = MethodSourceRegistry(
         methodSources = methodSources,
         methodSupportingTypes = methodSupportingTypes
     )
@@ -30,9 +30,9 @@ class ReflectionServiceApi(
         ?.let(MetadataLoader::fromResourceOrEmpty)
         ?.let(::DescriptorMetadataRegistry)
 
-    private val engine = ReflectionEngine(reflectionRegistry = reflectionRegistry, metadataRegistry = metadataRegistry)
+    private val engine = ReflectionEngine(reflectionRegistry = methodSourceRegistry, metadataRegistry = metadataRegistry)
 
-    private val classResolver: ClassResolver = DefaultClassResolver(reflectionTypes = engine.reflectionTypes)
+    private val classResolver: ClassResolver = DefaultClassResolver(methodSourceTypes = engine.methodSourceTypes)
 
     private val responseValueMapper = ResponseValueMapper()
 
@@ -49,7 +49,7 @@ class ReflectionServiceApi(
     )
 
     fun invoke(request: InvocationRequest): InvocationResponse {
-        val executionContext = reflectionRegistry.executionContext(
+        val executionContext = methodSourceRegistry.executionContext(
             ExecutionId(request.executionId)
         )
         val args = request.args.map(valueMapper::toEngineValue)
@@ -72,7 +72,7 @@ class ReflectionServiceApi(
     }
 
     fun executionDescriptors(): List<ExecutionDescriptorDto> =
-        reflectionRegistry.allExecutionContexts().map(::toExecutionDescriptorDto)
+        methodSourceRegistry.allExecutionContexts().map(::toExecutionDescriptorDto)
 
     private fun toExecutionDescriptorDto(
         executionContext: ExecutionContext

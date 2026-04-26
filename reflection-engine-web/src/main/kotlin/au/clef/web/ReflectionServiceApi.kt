@@ -1,7 +1,6 @@
 package au.clef.web
 
 import au.clef.api.ClassResolver
-import au.clef.api.InstanceResolver
 import au.clef.api.ResponseValueMapper
 import au.clef.api.ValueMapper
 import au.clef.api.model.ExecutionDescriptorDto
@@ -33,17 +32,11 @@ class ReflectionServiceApi(
 
     private val engine = ReflectionEngine(reflectionRegistry = reflectionRegistry, metadataRegistry = metadataRegistry)
 
-    private val instanceResolver = InstanceResolver(
-        methodSources
-            .filterIsInstance<MethodSource.ExposableInstance>()
-            .associate { it.instanceId to it.instance }
-    )
-
     private val classResolver: ClassResolver = DefaultClassResolver(reflectionTypes = engine.reflectionTypes)
 
     private val responseValueMapper = ResponseValueMapper()
 
-    private val valueMapper = ValueMapper(instanceResolver, classResolver)
+    private val valueMapper = ValueMapper(classResolver)
 
     constructor(
         methodSource: MethodSource,

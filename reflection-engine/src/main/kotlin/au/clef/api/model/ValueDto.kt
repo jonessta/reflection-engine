@@ -12,10 +12,6 @@ sealed class ValueDto {
     data class Scalar(val value: JsonElement) : ValueDto()
 
     @Serializable
-    @SerialName("instance")
-    data class InstanceRef(val id: String) : ValueDto()
-
-    @Serializable
     @SerialName("object")
     data class Record(
         val type: String,

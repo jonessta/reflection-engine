@@ -36,7 +36,7 @@ class ReflectionServiceApi(
 
     private val instanceRegistry = InstanceRegistry(
         methodSources
-            .filterIsInstance<MethodSource.InstanceLike>()
+            .filterIsInstance<MethodSource.ExposableInstance>()
             .associate { it.id to it.obj }
     )
 

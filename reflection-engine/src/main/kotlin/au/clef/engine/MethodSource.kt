@@ -11,8 +11,7 @@ sealed class MethodSource {
 
     abstract val declaringClass: KClass<*>
 
-    // todo move out and call InstanceMethodSource
-    interface InstanceLike {
+    interface ExposableInstance {
         val id: String
         val obj: Any
     }
@@ -56,27 +55,26 @@ sealed class MethodSource {
     data class Instance(
         override val obj: Any,
         override val id: String = UUID.randomUUID().toString()
-    ) : MethodSource(), InstanceLike {
+    ) : MethodSource(), ExposableInstance {
+
         override val declaringClass: KClass<*> get() = obj::class
     }
 
     /**
      * Expose exactly one instance method on this object.
      *
-     * If no id is supplied, a UUID is assigned.
+     * @param id The instance identifier of the service, user supplied or generated if not. Eg
+     * val acmeService = AcmeService()
+     * val methodSource = ExposedTarget.from(acmeService, "numberOdWidgets", WidgetItem::class)
+     * OR
+     * val methodSource = ExposedTarget.from(acmeService, "numberOdWidgets", WidgetItem::class, id="myWidgetService")
      */
     data class InstanceMethod(
         override val obj: Any,
         val methodId: MethodId,
-        /**
-         * @param id The instance identifier of the service, user supplied or generated if not. Eg
-         * val acmeService = AcmeService()
-         * val methodSource = ExposedTarget.from(acmeService, "numberOdWidgets", WidgetItem::class)
-         * OR
-         * val methodSource = ExposedTarget.from(acmeService, "numberOdWidgets", WidgetItem::class, id="myWidgetService")
-         */
         override val id: String = UUID.randomUUID().toString()
-    ) : MethodSource(), InstanceLike {
+    ) : MethodSource(), ExposableInstance {
+
         override val declaringClass: KClass<*> get() = obj::class
 
         companion object {
@@ -86,11 +84,17 @@ sealed class MethodSource {
                 methodName: String,
                 vararg parameterTypes: KClass<*>,
                 id: String = UUID.randomUUID().toString()
-            ): InstanceMethod = InstanceMethod(
-                obj = obj,
-                methodId = MethodId.from(obj::class, methodName, *parameterTypes),
-                id = id
-            )
+            ): InstanceMethod {
+                val klass: KClass<out Any> = obj::class
+                require(klass.java.methods.any { it.name == methodName }) {
+                    "Method $methodName not found on ${klass.simpleName}"
+                }
+                return InstanceMethod(
+                    obj = obj,
+                    methodId = MethodId.from(obj::class, methodName, *parameterTypes),
+                    id = id
+                )
+            }
         }
     }
 }

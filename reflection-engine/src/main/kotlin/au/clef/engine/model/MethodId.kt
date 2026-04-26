@@ -13,23 +13,20 @@ import kotlin.reflect.KClass
 
 class IllegalMethodIdException(msg: String) : EngineException("Invalid MethodId: $msg")
 
-@Serializable(with = MethodIdSerializer::class)
-class MethodId private constructor(
-    declaringClass: Class<*>,
-    methodName: String,
-    parameterTypeNames: List<String>
-) {
-    /**
-     * Can be used over the wire as identification.
-     */
-    val value: String = buildString {
-        append(declaringClass.name)
+private const val CLASS_NAME_SEPARATOR = "#"
+
+private fun formatMethodId(declaringClassName: String, methodName: String, parameterTypeNames: List<String>): String =
+    buildString {
+        append(declaringClassName)
         append(CLASS_NAME_SEPARATOR)
         append(methodName)
         append("(")
         append(parameterTypeNames.joinToString(","))
         append(")")
     }
+
+@Serializable(with = MethodIdSerializer::class)
+class MethodId private constructor(val value: String) {
 
     override fun toString(): String = value
 
@@ -38,7 +35,6 @@ class MethodId private constructor(
     override fun hashCode(): Int = value.hashCode()
 
     companion object {
-        private const val CLASS_NAME_SEPARATOR = "#"
 
         private val METHOD_ID_OUTER_REGEX = Regex(
             """^([A-Za-z_][A-Za-z0-9_$.]*)$CLASS_NAME_SEPARATOR([A-Za-z_][A-Za-z0-9_$]*)\((.*)\)$"""
@@ -48,18 +44,26 @@ class MethodId private constructor(
 
         fun from(method: Method): MethodId =
             MethodId(
-                declaringClass = method.declaringClass,
-                methodName = method.name,
-                parameterTypeNames = method.parameterTypes.map { it.name }
+                formatMethodId(
+                    method.declaringClass.name,
+                    method.name,
+                    method.parameterTypes.map { it.name }
+                )
             )
 
-        fun from(declaringClass: KClass<*>, methodName: String, vararg parameterTypes: KClass<*>): MethodId =
-            from(
-                declaringClass.java.getDeclaredMethod(
+        fun from(declaringClass: KClass<*>, methodName: String, vararg parameterTypes: KClass<*>): MethodId {
+            try {
+                val method: Method = declaringClass.java.getMethod(
                     methodName,
                     *parameterTypes.map { it.java }.toTypedArray()
                 )
-            )
+                return from(method)
+            } catch (_: NoSuchMethodException) {
+                throw IllegalMethodIdException(
+                    "No public method '$methodName' in ${declaringClass.java.name} with parameters ${parameterTypes.joinToString { it.java.name }}"
+                )
+            }
+        }
 
         fun fromValue(value: String): MethodId {
             val match = METHOD_ID_OUTER_REGEX.matchEntire(value)
@@ -84,11 +88,10 @@ class MethodId private constructor(
                 }
 
             return MethodId(
-                Class.forName(declaringClassName),
-                methodName,
-                parameterTypeNames
+                formatMethodId(declaringClassName, methodName, parameterTypeNames)
             )
         }
+
     }
 }
 

@@ -157,6 +157,12 @@ class ReflectionRegistry(
             current = current.superclass
             depth++
         }
-        return methods.distinctBy(MethodId::from)
+
+        return methods
+            .filter { Modifier.isPublic(it.modifiers) }
+            .filterNot { it.declaringClass == Any::class.java }
+            .filterNot(Method::isSynthetic)
+            .filterNot(Method::isBridge)
+            .distinctBy(MethodId::from)
     }
 }

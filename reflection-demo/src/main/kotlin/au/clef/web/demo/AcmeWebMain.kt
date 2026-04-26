@@ -10,12 +10,12 @@ import au.clef.web.ReflectionServiceApi
 import au.clef.web.WebServer
 import au.clef.web.WebServerConfig
 
-val acmeService = AcmeService()
+val acmeServiceInstance = AcmeService()
 
 val exposeMethodsOnInstanceAndStatic = ReflectionServiceApi(
     methodSources = listOf(
         // personName method on acmeService instance
-        MethodSource.InstanceMethod(acmeService, id="acmeService", methodId = MethodId.from(AcmeService::class, "personName", Person::class)),
+        MethodSource.InstanceMethod(acmeServiceInstance, instanceId="acmeService", methodId = MethodId.from(AcmeService::class, "personName", Person::class)),
 //        MethodSource.InstanceMethod(acmeService, MethodId.from(AcmeService::class, "personName", Person::class)),
 
         // Kotlin file add function
@@ -34,7 +34,7 @@ val exposeAllMethodsOnStaticClass = ReflectionServiceApi(
 )
 
 val exposeAllMethodsService = ReflectionServiceApi(
-    methodSource = MethodSource.Instance(acmeService, id = "myService"),
+    methodSource = MethodSource.Instance(acmeServiceInstance, instanceId = "myService"),
 //    methodSource = ExposedTarget.Instance(acmeService),
     methodSupportingTypes = AcmeDemoConfig.methodSupportingTypes,
     metadataResourcePath = AcmeDemoConfig.METADATA_RESOURCE_PATH

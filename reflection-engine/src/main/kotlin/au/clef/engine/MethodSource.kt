@@ -12,7 +12,7 @@ sealed class MethodSource {
     abstract val declaringClass: KClass<*>
 
     interface ExposableInstance {
-        val id: String
+        val instanceId: String
         val instance: Any
     }
 
@@ -54,7 +54,7 @@ sealed class MethodSource {
      */
     data class Instance(
         override val instance: Any,
-        override val id: String = UUID.randomUUID().toString()
+        override val instanceId: String = UUID.randomUUID().toString()
     ) : MethodSource(), ExposableInstance {
 
         override val declaringClass: KClass<*> get() = instance::class
@@ -63,7 +63,7 @@ sealed class MethodSource {
     /**
      * Expose exactly one instance method on this object.
      *
-     * @param id The instance identifier of the service, user supplied or generated if not. Eg
+     * @param instanceId The instance identifier of the service, user supplied or generated if not. Eg
      * val acmeService = AcmeService()
      * val methodSource = ExposedTarget.from(acmeService, "numberOdWidgets", WidgetItem::class)
      * OR
@@ -72,7 +72,7 @@ sealed class MethodSource {
     data class InstanceMethod(
         override val instance: Any,
         val methodId: MethodId,
-        override val id: String = UUID.randomUUID().toString()
+        override val instanceId: String = UUID.randomUUID().toString()
     ) : MethodSource(), ExposableInstance {
 
         override val declaringClass: KClass<*> get() = instance::class
@@ -83,7 +83,7 @@ sealed class MethodSource {
                 instance: Any,
                 methodName: String,
                 vararg parameterTypes: KClass<*>,
-                id: String = UUID.randomUUID().toString()
+                instanceId: String = UUID.randomUUID().toString()
             ): InstanceMethod {
                 val klass: KClass<out Any> = instance::class
                 require(klass.java.methods.any { it.name == methodName }) {
@@ -92,7 +92,7 @@ sealed class MethodSource {
                 return InstanceMethod(
                     instance = instance,
                     methodId = MethodId.from(instance::class, methodName, *parameterTypes),
-                    id = id
+                    instanceId = instanceId
                 )
             }
         }

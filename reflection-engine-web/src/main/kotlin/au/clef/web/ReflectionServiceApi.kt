@@ -37,7 +37,7 @@ class ReflectionServiceApi(
     private val instanceRegistry = InstanceRegistry(
         methodSources
             .filterIsInstance<MethodSource.ExposableInstance>()
-            .associate { it.id to it.instance }
+            .associate { it.instanceId to it.instance }
     )
 
     private val classResolver: ClassResolver = DefaultClassResolver(reflectionTypes = engine.reflectionTypes)

@@ -4,7 +4,7 @@ import au.clef.app.demo.model.AcmeService
 import au.clef.app.demo.model.Address
 import au.clef.app.demo.model.Person
 import au.clef.app.demo.model.add
-import au.clef.engine.ExposedTarget
+import au.clef.engine.MethodSource
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.*
 import au.clef.engine.model.Values.scalar
@@ -24,15 +24,15 @@ private val KOTLIN_ADD_METHOD_ID = MethodId.from(::add.javaMethod!!)
 private val acmeService = AcmeService()
 
 
-private val targets: List<ExposedTarget> = listOf(
-    ExposedTarget.InstanceMethod.from(
+private val targets: List<MethodSource> = listOf(
+    MethodSource.InstanceMethod.from(
         obj = acmeService,
         methodName = "personAddress",
         Person::class
     ),
 //    ExposedTarget.Instance(obj = acmeService),
-    ExposedTarget.StaticMethod.from(::add),
-    ExposedTarget.StaticMethod.from(Math::class, "max", Int::class, Int::class)
+    MethodSource.StaticMethod.from(::add),
+    MethodSource.StaticMethod.from(Math::class, "max", Int::class, Int::class)
 )
 
 private val targetSupportingTypes: List<KClass<*>> = listOf(Person::class, Address::class)

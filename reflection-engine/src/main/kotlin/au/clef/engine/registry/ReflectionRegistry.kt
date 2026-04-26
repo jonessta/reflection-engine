@@ -2,7 +2,7 @@ package au.clef.engine.registry
 
 import au.clef.engine.ExecutionContext
 import au.clef.engine.ExecutionId
-import au.clef.engine.ExposedTarget
+import au.clef.engine.MethodSource
 import au.clef.engine.MethodNotFoundException
 import au.clef.engine.model.InheritanceLevel
 import au.clef.engine.model.MethodDescriptor
@@ -15,7 +15,7 @@ import kotlin.reflect.KClass
 private data class RegistryEntry(val descriptor: MethodDescriptor, val method: Method)
 
 class ReflectionRegistry(
-    targets: Collection<ExposedTarget>,
+    targets: Collection<MethodSource>,
     supportingTypes: Collection<KClass<*>> = emptyList(),
     private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
 ) : ReflectionTypes {
@@ -58,9 +58,9 @@ class ReflectionRegistry(
 
     fun allExecutionContexts(): List<ExecutionContext> = executionContextsById.values.toList()
 
-    private fun registerTarget(target: ExposedTarget) {
+    private fun registerTarget(target: MethodSource) {
         when (target) {
-            is ExposedTarget.Instance ->
+            is MethodSource.Instance ->
                 registerMethods(
                     clazz = target.targetClass.java,
                     predicate = { method -> !Modifier.isStatic(method.modifiers) },
@@ -69,7 +69,7 @@ class ReflectionRegistry(
                     }
                 )
 
-            is ExposedTarget.InstanceMethod ->
+            is MethodSource.InstanceMethod ->
                 registerSingleMethod(
                     clazz = target.targetClass.java,
                     methodId = target.methodId,
@@ -77,7 +77,7 @@ class ReflectionRegistry(
                     executionContext = ExecutionContext.Instance(target.id, target.methodId)
                 )
 
-            is ExposedTarget.StaticClass ->
+            is MethodSource.StaticClass ->
                 registerMethods(
                     clazz = target.targetClass.java,
                     predicate = { method -> Modifier.isStatic(method.modifiers) },
@@ -86,7 +86,7 @@ class ReflectionRegistry(
                     }
                 )
 
-            is ExposedTarget.StaticMethod ->
+            is MethodSource.StaticMethod ->
                 registerSingleMethod(
                     clazz = target.targetClass.java,
                     methodId = target.methodId,

@@ -1,6 +1,6 @@
 package au.clef.metadata
 
-import au.clef.engine.ExposedTarget
+import au.clef.engine.MethodSource
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
 import au.clef.engine.model.ParamDescriptor
@@ -12,7 +12,7 @@ import java.io.File
 import kotlin.reflect.KClass
 
 data class MetadataGenerationConfig(
-    val targets: Collection<ExposedTarget>,
+    val targets: Collection<MethodSource>,
     val targetSupportingTypes: Collection<KClass<*>> = emptyList(),
     val outputFile: File
 )

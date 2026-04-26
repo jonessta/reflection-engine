@@ -7,7 +7,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
 
-sealed class ExposedTarget {
+sealed class MethodSource {
 
     abstract val targetClass: KClass<*>
 
@@ -19,12 +19,12 @@ sealed class ExposedTarget {
     /**
      * Expose all supported static methods on this class.
      */
-    data class StaticClass(override val targetClass: KClass<*>) : ExposedTarget()
+    data class StaticClass(override val targetClass: KClass<*>) : MethodSource()
 
     /**
      * Expose exactly one static method.
      */
-    data class StaticMethod(override val targetClass: KClass<*>, val methodId: MethodId) : ExposedTarget() {
+    data class StaticMethod(override val targetClass: KClass<*>, val methodId: MethodId) : MethodSource() {
 
         companion object {
 
@@ -55,7 +55,7 @@ sealed class ExposedTarget {
     data class Instance(
         override val obj: Any,
         override val id: String = UUID.randomUUID().toString()
-    ) : ExposedTarget(), InstanceLike {
+    ) : MethodSource(), InstanceLike {
         override val targetClass: KClass<*> get() = obj::class
     }
 
@@ -75,7 +75,7 @@ sealed class ExposedTarget {
          * val target = ExposedTarget.from(acmeService, "numberOdWidgets", WidgetItem::class, id="myWidgetService")
          */
         override val id: String = UUID.randomUUID().toString()
-    ) : ExposedTarget(), InstanceLike {
+    ) : MethodSource(), InstanceLike {
         override val targetClass: KClass<*> get() = obj::class
 
         companion object {

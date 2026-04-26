@@ -10,7 +10,7 @@ import au.clef.api.model.InvocationResponse
 import au.clef.api.model.ParamDescriptorDto
 import au.clef.engine.ExecutionContext
 import au.clef.engine.ExecutionId
-import au.clef.engine.ExposedTarget
+import au.clef.engine.MethodSource
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.Value
 import au.clef.engine.registry.ReflectionRegistry
@@ -19,7 +19,7 @@ import au.clef.metadata.MetadataLoader
 import kotlin.reflect.KClass
 
 class ReflectionServiceApi(
-    targets: Collection<ExposedTarget>,
+    targets: Collection<MethodSource>,
     targetSupportingTypes: Collection<KClass<*>> = emptyList(),
     metadataResourcePath: String? = null
 ) {
@@ -36,7 +36,7 @@ class ReflectionServiceApi(
 
     private val instanceRegistry = InstanceRegistry(
         targets
-            .filterIsInstance<ExposedTarget.InstanceLike>()
+            .filterIsInstance<MethodSource.InstanceLike>()
             .associate { it.id to it.obj }
     )
 
@@ -47,7 +47,7 @@ class ReflectionServiceApi(
     private val valueMapper = ValueMapper(instanceRegistry, classResolver)
 
     constructor(
-        target: ExposedTarget,
+        target: MethodSource,
         targetSupportingTypes: Collection<KClass<*>> = emptyList(),
         metadataResourcePath: String? = null
     ) : this(

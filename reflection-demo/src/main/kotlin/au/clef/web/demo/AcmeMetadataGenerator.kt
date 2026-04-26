@@ -7,8 +7,8 @@ import au.clef.metadata.generateMetadata
 fun main() {
     generateMetadata(
         MetadataGenerationConfig(
-            targets = AcmeDemoConfig.targets,
-            targetSupportingTypes = AcmeDemoConfig.targetSupportingTypes,
+            methodSources = AcmeDemoConfig.methodSources,
+            methodSupportingTypes = AcmeDemoConfig.methodSupportingTypes,
             outputFile = AcmeDemoConfig.metadataOutputFile
         )
     )

@@ -19,13 +19,13 @@ import au.clef.metadata.MetadataLoader
 import kotlin.reflect.KClass
 
 class ReflectionServiceApi(
-    targets: Collection<MethodSource>,
-    targetSupportingTypes: Collection<KClass<*>> = emptyList(),
+    methodSources: Collection<MethodSource>,
+    methodSupportingTypes: Collection<KClass<*>> = emptyList(),
     metadataResourcePath: String? = null
 ) {
     private val reflectionRegistry = ReflectionRegistry(
-        targets = targets,
-        supportingTypes = targetSupportingTypes
+        methodSources = methodSources,
+        methodSupportingTypes = methodSupportingTypes
     )
 
     private val metadataRegistry: DescriptorMetadataRegistry? = metadataResourcePath
@@ -35,7 +35,7 @@ class ReflectionServiceApi(
     private val engine = ReflectionEngine(reflectionRegistry = reflectionRegistry, metadataRegistry = metadataRegistry)
 
     private val instanceRegistry = InstanceRegistry(
-        targets
+        methodSources
             .filterIsInstance<MethodSource.InstanceLike>()
             .associate { it.id to it.obj }
     )
@@ -47,12 +47,12 @@ class ReflectionServiceApi(
     private val valueMapper = ValueMapper(instanceRegistry, classResolver)
 
     constructor(
-        target: MethodSource,
-        targetSupportingTypes: Collection<KClass<*>> = emptyList(),
+        methodSource: MethodSource,
+        methodSupportingTypes: Collection<KClass<*>> = emptyList(),
         metadataResourcePath: String? = null
     ) : this(
-        targets = listOf(target),
-        targetSupportingTypes = targetSupportingTypes,
+        methodSources = listOf(methodSource),
+        methodSupportingTypes = methodSupportingTypes,
         metadataResourcePath = metadataResourcePath
     )
 

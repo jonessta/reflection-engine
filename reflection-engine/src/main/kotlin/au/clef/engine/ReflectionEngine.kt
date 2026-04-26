@@ -80,7 +80,7 @@ class ReflectionEngine(
             typeConverter.materialize(arg, method.parameterTypes[index])
         }.toTypedArray()
 
-        val target = if (descriptor.isStatic) null else instance
-        return method.invoke(target, *convertedArgs)
+        val targetObject = if (descriptor.isStatic) null else instance
+        return method.invoke(targetObject, *convertedArgs)
     }
 }

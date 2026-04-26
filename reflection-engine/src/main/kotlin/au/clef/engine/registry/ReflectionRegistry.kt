@@ -15,8 +15,8 @@ import kotlin.reflect.KClass
 private data class RegistryEntry(val descriptor: MethodDescriptor, val method: Method)
 
 class ReflectionRegistry(
-    targets: Collection<MethodSource>,
-    supportingTypes: Collection<KClass<*>> = emptyList(),
+    methodSources: Collection<MethodSource>,
+    methodSupportingTypes: Collection<KClass<*>> = emptyList(),
     private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
 ) : ReflectionTypes {
 
@@ -24,16 +24,16 @@ class ReflectionRegistry(
     private val entriesById: MutableMap<MethodId, RegistryEntry> = ConcurrentHashMap()
     private val executionContextsById: MutableMap<ExecutionId, ExecutionContext> = ConcurrentHashMap()
 
-    override val targetClasses: List<Class<*>> = targets.map { it.targetClass.java }.distinct()
+    override val declaringClasses: List<Class<*>> = methodSources.map { it.declaringClass.java }.distinct()
 
     override val classes: List<Class<*>> =
-        (targets.map { it.targetClass } + supportingTypes)
+        (methodSources.map { methodSource: MethodSource -> methodSource.declaringClass } + methodSupportingTypes)
             .distinct()
             .map { it.java }
 
     init {
-        require(targets.isNotEmpty()) { "targets must not be empty" }
-        targets.forEach(::registerTarget)
+        require(methodSources.isNotEmpty()) { "methodSources must not be empty" }
+        methodSources.forEach(::registerMethodSource)
     }
 
     fun descriptors(clazz: Class<*>): List<MethodDescriptor> =
@@ -58,28 +58,28 @@ class ReflectionRegistry(
 
     fun allExecutionContexts(): List<ExecutionContext> = executionContextsById.values.toList()
 
-    private fun registerTarget(target: MethodSource) {
-        when (target) {
+    private fun registerMethodSource(methodSource: MethodSource) {
+        when (methodSource) {
             is MethodSource.Instance ->
                 registerMethods(
-                    clazz = target.targetClass.java,
+                    clazz = methodSource.declaringClass.java,
                     predicate = { method -> !Modifier.isStatic(method.modifiers) },
                     executionContextFor = { methodId ->
-                        ExecutionContext.Instance(target.id, methodId)
+                        ExecutionContext.Instance(methodSource.id, methodId)
                     }
                 )
 
             is MethodSource.InstanceMethod ->
                 registerSingleMethod(
-                    clazz = target.targetClass.java,
-                    methodId = target.methodId,
+                    clazz = methodSource.declaringClass.java,
+                    methodId = methodSource.methodId,
                     requireStatic = false,
-                    executionContext = ExecutionContext.Instance(target.id, target.methodId)
+                    executionContext = ExecutionContext.Instance(methodSource.id, methodSource.methodId)
                 )
 
             is MethodSource.StaticClass ->
                 registerMethods(
-                    clazz = target.targetClass.java,
+                    clazz = methodSource.declaringClass.java,
                     predicate = { method -> Modifier.isStatic(method.modifiers) },
                     executionContextFor = { methodId ->
                         ExecutionContext.Static(methodId)
@@ -88,10 +88,10 @@ class ReflectionRegistry(
 
             is MethodSource.StaticMethod ->
                 registerSingleMethod(
-                    clazz = target.targetClass.java,
-                    methodId = target.methodId,
+                    clazz = methodSource.declaringClass.java,
+                    methodId = methodSource.methodId,
                     requireStatic = true,
-                    executionContext = ExecutionContext.Static(target.methodId)
+                    executionContext = ExecutionContext.Static(methodSource.methodId)
                 )
         }
     }

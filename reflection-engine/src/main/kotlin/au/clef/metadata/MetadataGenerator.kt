@@ -12,15 +12,15 @@ import java.io.File
 import kotlin.reflect.KClass
 
 data class MetadataGenerationConfig(
-    val targets: Collection<MethodSource>,
-    val targetSupportingTypes: Collection<KClass<*>> = emptyList(),
+    val methodSources: Collection<MethodSource>,
+    val methodSupportingTypes: Collection<KClass<*>> = emptyList(),
     val outputFile: File
 )
 
 fun generateMetadata(config: MetadataGenerationConfig) {
     val reflectionRegistry = ReflectionRegistry(
-        targets = config.targets,
-        supportingTypes = config.targetSupportingTypes
+        methodSources = config.methodSources,
+        methodSupportingTypes = config.methodSupportingTypes
     )
 
     val metadata = MetadataGenerator(reflectionRegistry).generate()
@@ -45,14 +45,13 @@ class MetadataGenerator(private val reflectionRegistry: ReflectionRegistry) {
     }
 
     fun generate(): MetadataRoot {
-        val methods: Map<MethodId, MethodMetadata> =
-            reflectionRegistry.targetClasses
-                .flatMap { clazz: Class<*> ->
-                    generate(clazz).methods.entries
-                }
-                .associate { entry: Map.Entry<MethodId, MethodMetadata> ->
-                    entry.key to entry.value
-                }
+        val methods: Map<MethodId, MethodMetadata> = reflectionRegistry.declaringClasses
+            .flatMap { clazz: Class<*> ->
+                generate(clazz).methods.entries
+            }
+            .associate { entry: Map.Entry<MethodId, MethodMetadata> ->
+                entry.key to entry.value
+            }
 
         return MetadataRoot(methods = methods)
     }

@@ -24,25 +24,25 @@ private val KOTLIN_ADD_METHOD_ID = MethodId.from(::add.javaMethod!!)
 private val acmeService = AcmeService()
 
 
-private val targets: List<MethodSource> = listOf(
+private val methodSources: List<MethodSource> = listOf(
     MethodSource.InstanceMethod.from(
         obj = acmeService,
         methodName = "personAddress",
         Person::class
     ),
-//    ExposedTarget.Instance(obj = acmeService),
+//    MethodSource.Instance(obj = acmeService),
     MethodSource.StaticMethod.from(::add),
     MethodSource.StaticMethod.from(Math::class, "max", Int::class, Int::class)
 )
 
-private val targetSupportingTypes: List<KClass<*>> = listOf(Person::class, Address::class)
+private val methodSupportingTypes: List<KClass<*>> = listOf(Person::class, Address::class)
 
 private const val METADATA_RESOURCE_PATH = "/config/method-metadata.json"
 
 private val outputFile = File("reflection-demo/src/main/resources")
     .resolve(METADATA_RESOURCE_PATH.removePrefix("/"))
 
-private val reflectionRegistry: ReflectionRegistry = ReflectionRegistry(targets, targetSupportingTypes)
+private val reflectionRegistry: ReflectionRegistry = ReflectionRegistry(methodSources, methodSupportingTypes)
 
 private val metadataRegistry = DescriptorMetadataRegistry(MetadataLoader.fromResourceOrEmpty(METADATA_RESOURCE_PATH))
 

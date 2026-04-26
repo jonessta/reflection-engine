@@ -10,11 +10,11 @@ import kotlin.reflect.KClass
 object AcmeDemoConfig {
     const val METADATA_RESOURCE_PATH = "/config/acme-metadata.json"
 
-    val targets = listOf(
+    val methodSources = listOf(
         MethodSource.Instance(AcmeService())
     )
 
-    val targetSupportingTypes: List<KClass<*>> = listOf(
+    val methodSupportingTypes: List<KClass<*>> = listOf(
         Person::class,
         Address::class
     )

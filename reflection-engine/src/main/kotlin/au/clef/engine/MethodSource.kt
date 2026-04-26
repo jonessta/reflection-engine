@@ -9,8 +9,9 @@ import kotlin.reflect.jvm.javaMethod
 
 sealed class MethodSource {
 
-    abstract val targetClass: KClass<*>
+    abstract val declaringClass: KClass<*>
 
+    // todo move out and call InstanceMethodSource
     interface InstanceLike {
         val id: String
         val obj: Any
@@ -19,18 +20,18 @@ sealed class MethodSource {
     /**
      * Expose all supported static methods on this class.
      */
-    data class StaticClass(override val targetClass: KClass<*>) : MethodSource()
+    data class StaticClass(override val declaringClass: KClass<*>) : MethodSource()
 
     /**
      * Expose exactly one static method.
      */
-    data class StaticMethod(override val targetClass: KClass<*>, val methodId: MethodId) : MethodSource() {
+    data class StaticMethod(override val declaringClass: KClass<*>, val methodId: MethodId) : MethodSource() {
 
         companion object {
 
             fun from(declaringClass: KClass<*>, methodName: String, vararg parameterTypes: KClass<*>): StaticMethod =
                 StaticMethod(
-                    targetClass = declaringClass,
+                    declaringClass = declaringClass,
                     methodId = MethodId.from(declaringClass, methodName, *parameterTypes)
                 )
 
@@ -39,7 +40,7 @@ sealed class MethodSource {
                     "Function ${function.name} does not have a Java method"
                 }
                 return StaticMethod(
-                    targetClass = method.declaringClass.kotlin,
+                    declaringClass = method.declaringClass.kotlin,
                     methodId = MethodId.from(method)
                 )
             }
@@ -56,7 +57,7 @@ sealed class MethodSource {
         override val obj: Any,
         override val id: String = UUID.randomUUID().toString()
     ) : MethodSource(), InstanceLike {
-        override val targetClass: KClass<*> get() = obj::class
+        override val declaringClass: KClass<*> get() = obj::class
     }
 
     /**
@@ -70,13 +71,13 @@ sealed class MethodSource {
         /**
          * @param id The instance identifier of the service, user supplied or generated if not. Eg
          * val acmeService = AcmeService()
-         * val target = ExposedTarget.from(acmeService, "numberOdWidgets", WidgetItem::class)
+         * val methodSource = ExposedTarget.from(acmeService, "numberOdWidgets", WidgetItem::class)
          * OR
-         * val target = ExposedTarget.from(acmeService, "numberOdWidgets", WidgetItem::class, id="myWidgetService")
+         * val methodSource = ExposedTarget.from(acmeService, "numberOdWidgets", WidgetItem::class, id="myWidgetService")
          */
         override val id: String = UUID.randomUUID().toString()
     ) : MethodSource(), InstanceLike {
-        override val targetClass: KClass<*> get() = obj::class
+        override val declaringClass: KClass<*> get() = obj::class
 
         companion object {
 

@@ -2,8 +2,8 @@ package au.clef.engine.registry
 
 import au.clef.engine.ExecutionContext
 import au.clef.engine.ExecutionId
-import au.clef.engine.MethodSource
 import au.clef.engine.MethodNotFoundException
+import au.clef.engine.MethodSource
 import au.clef.engine.model.InheritanceLevel
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
@@ -40,8 +40,6 @@ class ReflectionRegistry(
         descriptorsByClass[clazz]?.toList()
             ?: throw IllegalArgumentException("Class not registered: ${clazz.name}")
 
-    fun descriptors(clazz: KClass<*>): List<MethodDescriptor> = descriptors(clazz.java)
-
     fun descriptor(id: MethodId): MethodDescriptor =
         entriesById[id]?.descriptor
             ?: throw MethodNotFoundException(methodId = id, available = entriesById.keys.map(MethodId::toString))
@@ -59,11 +57,12 @@ class ReflectionRegistry(
     fun allExecutionContexts(): List<ExecutionContext> = executionContextsById.values.toList()
 
     private fun registerMethodSource(methodSource: MethodSource) {
+        val clazz = methodSource.declaringClass.java
         when (methodSource) {
             is MethodSource.Instance ->
                 registerMethods(
-                    clazz = methodSource.declaringClass.java,
-                    predicate = { method -> !Modifier.isStatic(method.modifiers) },
+                    clazz = clazz,
+                    requireStatic = false,
                     executionContextFor = { methodId ->
                         ExecutionContext.Instance(methodSource.instanceId, methodSource.instance, methodId)
                     }
@@ -71,16 +70,20 @@ class ReflectionRegistry(
 
             is MethodSource.InstanceMethod ->
                 registerSingleMethod(
-                    clazz = methodSource.declaringClass.java,
+                    clazz = clazz,
                     methodId = methodSource.methodId,
                     requireStatic = false,
-                    executionContext = ExecutionContext.Instance(methodSource.instanceId, methodSource.instance, methodSource.methodId)
+                    executionContext = ExecutionContext.Instance(
+                        methodSource.instanceId,
+                        methodSource.instance,
+                        methodSource.methodId
+                    )
                 )
 
             is MethodSource.StaticClass ->
                 registerMethods(
-                    clazz = methodSource.declaringClass.java,
-                    predicate = { method -> Modifier.isStatic(method.modifiers) },
+                    clazz = clazz,
+                    requireStatic = true,
                     executionContextFor = { methodId ->
                         ExecutionContext.Static(methodId)
                     }
@@ -88,7 +91,7 @@ class ReflectionRegistry(
 
             is MethodSource.StaticMethod ->
                 registerSingleMethod(
-                    clazz = methodSource.declaringClass.java,
+                    clazz = clazz,
                     methodId = methodSource.methodId,
                     requireStatic = true,
                     executionContext = ExecutionContext.Static(methodSource.methodId)
@@ -98,17 +101,18 @@ class ReflectionRegistry(
 
     private fun registerMethods(
         clazz: Class<*>,
-        predicate: (Method) -> Boolean,
+        requireStatic: Boolean,
         executionContextFor: (MethodId) -> ExecutionContext
     ) {
-        val descriptors: MutableList<MethodDescriptor> = descriptorsByClass.getOrPut(clazz) { mutableListOf() }
+        val descriptors = descriptorsByClass.getOrPut(clazz) { mutableListOf() }
         collectHierarchyMethods(clazz, inheritanceLevel)
-            .filter(predicate)
+            .filter { method -> Modifier.isStatic(method.modifiers) == requireStatic }
             .forEach { method ->
                 val methodId = MethodId.from(method)
                 if (entriesById.containsKey(methodId))
                     return@forEach
-                val descriptor: MethodDescriptor = MethodDescriptor.from(method)
+
+                val descriptor = MethodDescriptor.from(method)
                 descriptors += descriptor
                 entriesById[methodId] = RegistryEntry(descriptor = descriptor, method = method)
                 val executionContext = executionContextFor(methodId)

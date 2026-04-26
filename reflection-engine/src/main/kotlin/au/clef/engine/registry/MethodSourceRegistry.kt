@@ -49,8 +49,7 @@ class MethodSourceRegistry(
             ?: throw MethodNotFoundException(methodId = id, available = entriesById.keys.map(MethodId::toString))
 
     fun executionContext(executionId: ExecutionId): ExecutionContext =
-        executionContextsById[executionId]
-            ?: throw IllegalArgumentException("Unknown executionId: ${executionId.value}")
+        executionContextsById[executionId] ?: throw IllegalArgumentException("Unknown executionId: $executionId")
 
     fun allDescriptors(): List<MethodDescriptor> = entriesById.values.map { it.descriptor }
 
@@ -59,43 +58,41 @@ class MethodSourceRegistry(
     private fun registerMethodSource(methodSource: MethodSource) {
         val clazz = methodSource.declaringClass.java
         when (methodSource) {
-            is MethodSource.Instance ->
-                registerMethods(
-                    clazz = clazz,
-                    requireStatic = false,
-                    executionContextFor = { methodId ->
-                        ExecutionContext.Instance(methodSource.instanceId, methodSource.instance, methodId)
-                    }
-                )
-
-            is MethodSource.InstanceMethod ->
-                registerSingleMethod(
-                    clazz = clazz,
-                    methodId = methodSource.methodId,
-                    requireStatic = false,
-                    executionContext = ExecutionContext.Instance(
+            is MethodSource.Instance -> registerMethods(
+                clazz = clazz,
+                requireStatic = false,
+                executionContextFor = { methodId: MethodId ->
+                    ExecutionContext.Instance(
                         methodSource.instanceId,
                         methodSource.instance,
-                        methodSource.methodId
+                        methodId
                     )
-                )
+                }
+            )
 
-            is MethodSource.StaticClass ->
-                registerMethods(
-                    clazz = clazz,
-                    requireStatic = true,
-                    executionContextFor = { methodId ->
-                        ExecutionContext.Static(methodId)
-                    }
+            is MethodSource.InstanceMethod -> registerSingleMethod(
+                clazz = clazz,
+                methodId = methodSource.methodId,
+                requireStatic = false,
+                executionContext = ExecutionContext.Instance(
+                    methodSource.instanceId,
+                    methodSource.instance,
+                    methodSource.methodId
                 )
+            )
 
-            is MethodSource.StaticMethod ->
-                registerSingleMethod(
-                    clazz = clazz,
-                    methodId = methodSource.methodId,
-                    requireStatic = true,
-                    executionContext = ExecutionContext.Static(methodSource.methodId)
-                )
+            is MethodSource.StaticClass -> registerMethods(
+                clazz = clazz,
+                requireStatic = true,
+                executionContextFor = { methodId: MethodId -> ExecutionContext.Static(methodId) }
+            )
+
+            is MethodSource.StaticMethod -> registerSingleMethod(
+                clazz = clazz,
+                methodId = methodSource.methodId,
+                requireStatic = true,
+                executionContext = ExecutionContext.Static(methodSource.methodId)
+            )
         }
     }
 

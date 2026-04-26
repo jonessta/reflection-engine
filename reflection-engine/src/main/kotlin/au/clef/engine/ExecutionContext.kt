@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 @JvmInline
-value class ExecutionId(val value: String) {
+value class ExecutionId(private val value: String) {
     override fun toString(): String = value
 }
 
@@ -21,11 +21,10 @@ sealed class ExecutionContext {
         override val executionId: ExecutionId = ExecutionId("static:${methodId.value}")
     }
 
+    /**
+     * @param instanceId Descriptive identifier for UI. Not used for runtime lookup during invocation.
+     */
     data class Instance(
-        /**
-         * Descriptive identifier for UI and execution id construction.
-         * Not used for runtime lookup during invocation.
-         */
         val instanceId: String,
         val instance: Any,
         override val methodId: MethodId

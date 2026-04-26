@@ -1,14 +1,16 @@
 package au.clef.api.model
 
+import au.clef.engine.ExecutionId
+import au.clef.engine.model.MethodId
 import kotlinx.serialization.Serializable
 
 /**
- * @param instanceId for UI display only, not required for  execution
+ * @param instanceId for UI display only, not required for execution
  */
 @Serializable
 data class ExecutionDescriptorDto(
-    val executionId: String,
-    val methodId: String,
+    val executionId: ExecutionId,
+    val methodId: MethodId,
     val instanceId: String? = null,
     val reflectedName: String,
     val displayName: String? = null,

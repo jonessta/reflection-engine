@@ -65,7 +65,7 @@ class MethodId private constructor(val value: String) {
             }
         }
 
-        fun fromValue(value: String): MethodId {
+        internal fun fromValue(value: String): MethodId {
             val match = METHOD_ID_OUTER_REGEX.matchEntire(value)
                 ?: throw IllegalMethodIdException("expected <class>#<method>(<paramTypes>)")
             val declaringClassName = match.groupValues[1]
@@ -87,6 +87,7 @@ class MethodId private constructor(val value: String) {
                     }
                 }
 
+            // todo you could put a debug guard and create the Method to se if its value?
             return MethodId(
                 formatMethodId(declaringClassName, methodName, parameterTypeNames)
             )

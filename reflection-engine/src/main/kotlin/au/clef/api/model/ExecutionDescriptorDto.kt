@@ -2,6 +2,9 @@ package au.clef.api.model
 
 import kotlinx.serialization.Serializable
 
+/**
+ * @param instanceId for UI display only, not required for  execution
+ */
 @Serializable
 data class ExecutionDescriptorDto(
     val executionId: String,

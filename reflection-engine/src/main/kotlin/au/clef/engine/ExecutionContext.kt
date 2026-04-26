@@ -1,7 +1,9 @@
 package au.clef.engine
 
 import au.clef.engine.model.MethodId
+import kotlinx.serialization.Serializable
 
+@Serializable
 @JvmInline
 value class ExecutionId(val value: String) {
     override fun toString(): String = value

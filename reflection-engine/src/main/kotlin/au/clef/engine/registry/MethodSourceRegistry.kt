@@ -115,7 +115,7 @@ class MethodSourceRegistry(
                 val descriptor = MethodDescriptor.from(method)
                 descriptors += descriptor
                 entriesById[methodId] = RegistryEntry(descriptor = descriptor, method = method)
-                val executionContext = executionContextFor(methodId)
+                val executionContext: ExecutionContext = executionContextFor(methodId)
                 executionContextsById[executionContext.executionId] = executionContext
             }
     }

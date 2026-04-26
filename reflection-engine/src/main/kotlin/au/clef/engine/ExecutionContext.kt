@@ -2,6 +2,11 @@ package au.clef.engine
 
 import au.clef.engine.model.MethodId
 
+@JvmInline
+value class ExecutionId(val value: String) {
+    override fun toString(): String = value
+}
+
 sealed class ExecutionContext {
     abstract val executionId: ExecutionId
     abstract val methodId: MethodId

@@ -12,6 +12,7 @@ import au.clef.engine.ExecutionContext
 import au.clef.engine.ExecutionId
 import au.clef.engine.ExposedTarget
 import au.clef.engine.ReflectionEngine
+import au.clef.engine.model.Value
 import au.clef.engine.registry.ReflectionRegistry
 import au.clef.metadata.DescriptorMetadataRegistry
 import au.clef.metadata.MetadataLoader
@@ -34,13 +35,9 @@ class ReflectionServiceApi(
     private val engine = ReflectionEngine(reflectionRegistry = reflectionRegistry, metadataRegistry = metadataRegistry)
 
     private val instanceRegistry = InstanceRegistry(
-        targets.mapNotNull { target ->
-            when (target) {
-                is ExposedTarget.Instance -> target.id to target.obj
-                is ExposedTarget.InstanceMethod -> target.id to target.obj
-                else -> null
-            }
-        }.toMap()
+        targets
+            .filterIsInstance<ExposedTarget.InstanceLike>()
+            .associate { it.id to it.obj }
     )
 
     private val classResolver: ClassResolver = DefaultClassResolver(reflectionTypes = engine.reflectionTypes)
@@ -60,10 +57,10 @@ class ReflectionServiceApi(
     )
 
     fun invoke(request: InvocationRequest): InvocationResponse {
-        val executionContext = reflectionRegistry.executionContext(
+        val executionContext: ExecutionContext = reflectionRegistry.executionContext(
             ExecutionId(request.executionId)
         )
-        val args = request.args.map(valueMapper::toEngineValue)
+        val args: List<Value> = request.args.map(valueMapper::toEngineValue)
 
         val result = when (executionContext) {
             is ExecutionContext.Static -> {

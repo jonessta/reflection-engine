@@ -33,11 +33,12 @@ val exposeStaticClass = ReflectionServiceApi(
 
 val exposeOneService = ReflectionServiceApi(
     // id is not necessary but giving it meaningfull name for UI
-    target = ExposedTarget.Instance(acmeService, id = "acmeService"),
+//    target = ExposedTarget.Instance(acmeService, id = "acmeService"),
+    target = ExposedTarget.Instance(acmeService),
     targetSupportingTypes = AcmeDemoConfig.targetSupportingTypes,
     metadataResourcePath = AcmeDemoConfig.METADATA_RESOURCE_PATH
 )
 
 fun main() {
-    WebServer(exposeOneService, WebServerConfig()).start()
+    WebServer(exposeOnlyMethods, WebServerConfig()).start()
 }

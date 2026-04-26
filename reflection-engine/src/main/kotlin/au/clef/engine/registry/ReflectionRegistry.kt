@@ -12,10 +12,7 @@ import java.lang.reflect.Modifier
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
-private data class RegistryEntry(
-    val descriptor: MethodDescriptor,
-    val method: Method
-)
+private data class RegistryEntry(val descriptor: MethodDescriptor, val method: Method)
 
 class ReflectionRegistry(
     targets: Collection<ExposedTarget>,
@@ -27,8 +24,7 @@ class ReflectionRegistry(
     private val entriesById: MutableMap<MethodId, RegistryEntry> = ConcurrentHashMap()
     private val executionContextsById: MutableMap<ExecutionId, ExecutionContext> = ConcurrentHashMap()
 
-    override val targetClasses: List<Class<*>> =
-        targets.map { it.targetClass.java }.distinct()
+    override val targetClasses: List<Class<*>> = targets.map { it.targetClass.java }.distinct()
 
     override val classes: List<Class<*>> =
         (targets.map { it.targetClass } + supportingTypes)
@@ -44,32 +40,23 @@ class ReflectionRegistry(
         descriptorsByClass[clazz]?.toList()
             ?: throw IllegalArgumentException("Class not registered: ${clazz.name}")
 
-    fun descriptors(clazz: KClass<*>): List<MethodDescriptor> =
-        descriptors(clazz.java)
+    fun descriptors(clazz: KClass<*>): List<MethodDescriptor> = descriptors(clazz.java)
 
     fun descriptor(id: MethodId): MethodDescriptor =
         entriesById[id]?.descriptor
-            ?: throw MethodNotFoundException(
-                methodId = id,
-                available = entriesById.keys.map(MethodId::toString)
-            )
+            ?: throw MethodNotFoundException(methodId = id, available = entriesById.keys.map(MethodId::toString))
 
     fun method(id: MethodId): Method =
         entriesById[id]?.method
-            ?: throw MethodNotFoundException(
-                methodId = id,
-                available = entriesById.keys.map(MethodId::toString)
-            )
+            ?: throw MethodNotFoundException(methodId = id, available = entriesById.keys.map(MethodId::toString))
 
     fun executionContext(executionId: ExecutionId): ExecutionContext =
         executionContextsById[executionId]
             ?: throw IllegalArgumentException("Unknown executionId: ${executionId.value}")
 
-    fun allDescriptors(): List<MethodDescriptor> =
-        entriesById.values.map { it.descriptor }
+    fun allDescriptors(): List<MethodDescriptor> = entriesById.values.map { it.descriptor }
 
-    fun allExecutionContexts(): List<ExecutionContext> =
-        executionContextsById.values.toList()
+    fun allExecutionContexts(): List<ExecutionContext> = executionContextsById.values.toList()
 
     private fun registerTarget(target: ExposedTarget) {
         when (target) {
@@ -114,21 +101,16 @@ class ReflectionRegistry(
         predicate: (Method) -> Boolean,
         executionContextFor: (MethodId) -> ExecutionContext
     ) {
-        val descriptors = descriptorsByClass.getOrPut(clazz) { mutableListOf() }
-
+        val descriptors: MutableList<MethodDescriptor> = descriptorsByClass.getOrPut(clazz) { mutableListOf() }
         collectHierarchyMethods(clazz, inheritanceLevel)
             .filter(predicate)
             .forEach { method ->
                 val methodId = MethodId.from(method)
-                if (entriesById.containsKey(methodId)) return@forEach
-
-                val descriptor = MethodDescriptor.from(method)
+                if (entriesById.containsKey(methodId))
+                    return@forEach
+                val descriptor: MethodDescriptor = MethodDescriptor.from(method)
                 descriptors += descriptor
-                entriesById[methodId] = RegistryEntry(
-                    descriptor = descriptor,
-                    method = method
-                )
-
+                entriesById[methodId] = RegistryEntry(descriptor = descriptor, method = method)
                 val executionContext = executionContextFor(methodId)
                 executionContextsById[executionContext.executionId] = executionContext
             }
@@ -141,26 +123,17 @@ class ReflectionRegistry(
         executionContext: ExecutionContext
     ) {
         val method = resolveMethod(clazz, methodId)
-
         if (requireStatic) {
-            require(Modifier.isStatic(method.modifiers)) {
-                "Method ${methodId.value} must be static"
-            }
+            require(Modifier.isStatic(method.modifiers)) { "Method ${methodId.value} must be static" }
         } else {
-            require(!Modifier.isStatic(method.modifiers)) {
-                "Method ${methodId.value} must be an instance method"
-            }
+            require(!Modifier.isStatic(method.modifiers)) { "Method ${methodId.value} must be an instance method" }
         }
 
         val descriptors = descriptorsByClass.getOrPut(clazz) { mutableListOf() }
-
         if (!entriesById.containsKey(methodId)) {
             val descriptor = MethodDescriptor.from(method)
             descriptors += descriptor
-            entriesById[methodId] = RegistryEntry(
-                descriptor = descriptor,
-                method = method
-            )
+            entriesById[methodId] = RegistryEntry(descriptor = descriptor, method = method)
         }
 
         executionContextsById[executionContext.executionId] = executionContext

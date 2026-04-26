@@ -26,7 +26,7 @@ private val acmeService = AcmeService()
 
 private val methodSources: List<MethodSource> = listOf(
     MethodSource.InstanceMethod.from(
-        obj = acmeService,
+        instance = acmeService,
         methodName = "personAddress",
         Person::class
     ),

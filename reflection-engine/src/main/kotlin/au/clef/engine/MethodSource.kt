@@ -13,7 +13,7 @@ sealed class MethodSource {
 
     interface ExposableInstance {
         val id: String
-        val obj: Any
+        val instance: Any
     }
 
     /**
@@ -53,11 +53,11 @@ sealed class MethodSource {
      * more human-readable ie accountingService rather than a UUID string.
      */
     data class Instance(
-        override val obj: Any,
+        override val instance: Any,
         override val id: String = UUID.randomUUID().toString()
     ) : MethodSource(), ExposableInstance {
 
-        override val declaringClass: KClass<*> get() = obj::class
+        override val declaringClass: KClass<*> get() = instance::class
     }
 
     /**
@@ -70,28 +70,28 @@ sealed class MethodSource {
      * val methodSource = ExposedTarget.from(acmeService, "numberOdWidgets", WidgetItem::class, id="myWidgetService")
      */
     data class InstanceMethod(
-        override val obj: Any,
+        override val instance: Any,
         val methodId: MethodId,
         override val id: String = UUID.randomUUID().toString()
     ) : MethodSource(), ExposableInstance {
 
-        override val declaringClass: KClass<*> get() = obj::class
+        override val declaringClass: KClass<*> get() = instance::class
 
         companion object {
 
             fun from(
-                obj: Any,
+                instance: Any,
                 methodName: String,
                 vararg parameterTypes: KClass<*>,
                 id: String = UUID.randomUUID().toString()
             ): InstanceMethod {
-                val klass: KClass<out Any> = obj::class
+                val klass: KClass<out Any> = instance::class
                 require(klass.java.methods.any { it.name == methodName }) {
                     "Method $methodName not found on ${klass.simpleName}"
                 }
                 return InstanceMethod(
-                    obj = obj,
-                    methodId = MethodId.from(obj::class, methodName, *parameterTypes),
+                    instance = instance,
+                    methodId = MethodId.from(instance::class, methodName, *parameterTypes),
                     id = id
                 )
             }

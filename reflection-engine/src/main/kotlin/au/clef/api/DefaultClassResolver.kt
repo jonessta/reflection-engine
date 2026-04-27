@@ -1,6 +1,5 @@
-package au.clef.web
+package au.clef.api
 
-import au.clef.api.ClassResolver
 import au.clef.engine.registry.MethodSourceTypes
 
 class DefaultClassResolver(methodSourceTypes: MethodSourceTypes) : ClassResolver {

@@ -26,8 +26,8 @@ class ResponseValueMapper {
 
             is Map<*, *> -> {
                 val entries = value.entries.associate { (k, v) ->
-                    require(k is String) { "Only string map keys are supported" }
-                    k to toDtoValue(v)
+                    val key = k?.toString() ?: "null"
+                    key to toDtoValue(v)
                 }
                 ValueDto.MapValue(entries)
             }

@@ -3,6 +3,7 @@ package au.clef.engine.convert
 import au.clef.engine.ObjectConstructionException
 import au.clef.engine.TypeMismatchException
 import au.clef.engine.model.Value
+import kotlinx.serialization.json.JsonPrimitive
 import java.lang.reflect.*
 import java.lang.reflect.Array
 import java.time.Instant
@@ -52,7 +53,11 @@ class TypeConverter {
             return rawValue
         }
 
-        val text = rawValue.toString()
+        val text = when (rawValue) {
+            is JsonPrimitive -> rawValue.content
+            else -> rawValue.toString()
+        }
+
         try {
             return when (wrappedTargetType) {
                 String::class.java -> text

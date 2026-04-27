@@ -1,5 +1,6 @@
 package au.clef.web
 
+import au.clef.api.DefaultClassResolver
 import au.clef.api.ResponseValueMapper
 import au.clef.api.ValueMapper
 import au.clef.api.model.ExecutionDescriptorDto

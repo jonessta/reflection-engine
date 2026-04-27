@@ -36,20 +36,16 @@ sealed class MethodSource {
                 declaringClass: KClass<*>,
                 methodName: String,
                 vararg parameterTypes: KClass<*>
-            ): StaticMethod =
-                StaticMethod(
-                    declaringClass = declaringClass,
-                    methodId = MethodId.from(declaringClass, methodName, *parameterTypes)
-                )
+            ): StaticMethod = StaticMethod(
+                declaringClass = declaringClass,
+                methodId = MethodId.from(declaringClass, methodName, *parameterTypes)
+            )
 
             fun from(function: KFunction<*>): StaticMethod {
                 val method: Method = requireNotNull(function.javaMethod) {
                     "Function ${function.name} does not have a Java method"
                 }
-                return StaticMethod(
-                    declaringClass = method.declaringClass.kotlin,
-                    methodId = MethodId.from(method)
-                )
+                return StaticMethod(declaringClass = method.declaringClass.kotlin, methodId = MethodId.from(method))
             }
         }
     }
@@ -74,8 +70,9 @@ sealed class MethodSource {
      * @param instanceId The instance identifier of the service, user-supplied or generated if not.
      * Example:
      * val acmeService = AcmeService()
-     * val methodSource = MethodSource.InstanceMethod.from(acmeService, "numberOfWidgets", WidgetItem::class)
-     * val namedMethodSource = MethodSource.InstanceMethod.from(
+     * val numberOfWidgetsSource = MethodSource.InstanceMethod.from(acmeService, "numberOfWidgets", WidgetItem::class)
+     * OR
+     * val numberOfWidgetsSource = MethodSource.InstanceMethod.from(
      *     instance = acmeService,
      *     methodName = "numberOfWidgets",
      *     WidgetItem::class,

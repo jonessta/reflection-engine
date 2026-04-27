@@ -14,6 +14,15 @@ class ResponseValueMapper {
             is Number -> ValueDto.Scalar(JsonPrimitive(value))
             is Boolean -> ValueDto.Scalar(JsonPrimitive(value))
             is Char -> ValueDto.Scalar(JsonPrimitive(value.toString()))
+            is Array<*> -> ValueDto.ListValue(value.map(::toDtoValue))
+            is IntArray -> ValueDto.ListValue(value.map(::toDtoValue))
+            is LongArray -> ValueDto.ListValue(value.map(::toDtoValue))
+            is DoubleArray -> ValueDto.ListValue(value.map(::toDtoValue))
+            is FloatArray -> ValueDto.ListValue(value.map(::toDtoValue))
+            is ShortArray -> ValueDto.ListValue(value.map(::toDtoValue))
+            is ByteArray -> ValueDto.ListValue(value.map(::toDtoValue))
+            is BooleanArray -> ValueDto.ListValue(value.map(::toDtoValue))
+            is CharArray -> ValueDto.ListValue(value.map(::toDtoValue))
 
             is Map<*, *> -> {
                 val entries = value.entries.associate { (k, v) ->
@@ -23,22 +32,21 @@ class ResponseValueMapper {
                 ValueDto.MapValue(entries)
             }
 
-            is Iterable<*> -> {
+            is Iterable<*> ->
                 ValueDto.ListValue(value.map(::toDtoValue))
-            }
 
-            else -> toRecord(value)
+            else ->
+                toRecord(value)
         }
 
     private fun toRecord(value: Any): ValueDto.Record {
         val clazz = value.javaClass
 
-        val fields = clazz.declaredFields
+        val fields: Map<String, ValueDto> = clazz.fields
             .filterNot { field ->
                 Modifier.isStatic(field.modifiers) || field.isSynthetic
             }
             .associate { field ->
-                field.isAccessible = true
                 field.name to toDtoValue(field.get(value))
             }
 

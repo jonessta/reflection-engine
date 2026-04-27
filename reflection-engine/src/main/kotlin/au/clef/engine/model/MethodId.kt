@@ -26,7 +26,7 @@ private fun formatMethodId(declaringClassName: String, methodName: String, param
     }
 
 @Serializable(with = MethodIdSerializer::class)
-class MethodId private constructor(val value: String) {
+class MethodId private constructor(internal val value: String) {
 
     override fun toString(): String = value
 

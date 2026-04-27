@@ -378,19 +378,16 @@
         selectedHint: document.getElementById('selectedHint'),
     };
 
-    function normalizeBaseUrl(url) {
-        return (url || '').trim().replace(/\/$/, '');
-    }
+    const normalizeBaseUrl = url => (url || '').trim().replace(/\/$/, '');
 
     function classShortName(typeName) {
-        if (!typeName) return '';
+        if (!typeName)
+            return '';
         const bits = typeName.split('.');
         return bits[bits.length - 1];
     }
 
-    function methodTitle(execution) {
-        return execution.displayName || execution.reflectedName;
-    }
+    const methodTitle = execution => execution.displayName || execution.reflectedName;
 
     function sampleValueDtoForType(typeName) {
         switch (typeName) {
@@ -445,9 +442,7 @@
         }
     }
 
-    function prettyJson(value) {
-        return JSON.stringify(value, null, 2);
-    }
+    const prettyJson = value => JSON.stringify(value, null, 2);
 
     function createInvocationPayload(execution) {
         return {
@@ -469,23 +464,20 @@
 
     async function loadExecutions() {
         const baseUrl = normalizeBaseUrl(els.baseUrl.value);
-        if (!baseUrl) return;
-
+        if (!baseUrl)
+            return;
         els.loadBtn.disabled = true;
         state.error = null;
 
         try {
             const executions = await fetchJson(`${baseUrl}/executions`);
             state.executions = Array.isArray(executions) ? executions : [];
-
             if (state.selected) {
                 state.selected = state.executions.find(x => x.executionId === state.selected.executionId) || null;
             }
-
             if (!state.selected && state.executions.length > 0) {
                 state.selected = state.executions[0];
             }
-
             render();
         } catch (error) {
             state.error = error.message || String(error);

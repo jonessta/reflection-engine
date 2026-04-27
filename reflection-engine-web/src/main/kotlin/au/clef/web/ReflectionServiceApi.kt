@@ -49,10 +49,9 @@ class ReflectionServiceApi(
     fun invoke(request: InvocationRequest): InvocationResponse {
         val executionContext = methodSourceRegistry.executionContext(request.executionId)
         val args = request.args.map(valueMapper::toEngineValue)
-        val descriptor = engine.descriptor(executionContext.methodId)
         val result = when (executionContext) {
-            is ExecutionContext.Static -> engine.invokeStatic(descriptor, args)
-            is ExecutionContext.Instance -> engine.invokeInstance(descriptor, executionContext.instance, args)
+            is ExecutionContext.Static -> engine.invokeStatic(executionContext.descriptor, args)
+            is ExecutionContext.Instance -> engine.invokeInstance(executionContext.descriptor, executionContext.instance, args)
         }
         return InvocationResponse(responseValueMapper.toDtoValue(result))
     }
@@ -61,7 +60,7 @@ class ReflectionServiceApi(
         methodSourceRegistry.allExecutionContexts().map(::toExecutionDescriptorDto)
 
     private fun toExecutionDescriptorDto(executionContext: ExecutionContext): ExecutionDescriptorDto {
-        val descriptor = engine.descriptor(executionContext.methodId)
+        val descriptor = executionContext.descriptor
 
         return ExecutionDescriptorDto(
             executionId = executionContext.executionId,

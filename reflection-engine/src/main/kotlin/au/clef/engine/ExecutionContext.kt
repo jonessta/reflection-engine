@@ -1,6 +1,6 @@
 package au.clef.engine
 
-import au.clef.engine.model.MethodId
+import au.clef.engine.model.MethodDescriptor
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -12,13 +12,11 @@ value class ExecutionId(private val value: String) {
 sealed class ExecutionContext {
 
     abstract val executionId: ExecutionId
-    abstract val methodId: MethodId
+    abstract val descriptor: MethodDescriptor
 
-    data class Static(
-        override val methodId: MethodId
-    ) : ExecutionContext() {
+    data class Static(override val descriptor: MethodDescriptor) : ExecutionContext() {
 
-        override val executionId: ExecutionId = ExecutionId("static:${methodId.value}")
+        override val executionId: ExecutionId = ExecutionId("static:${descriptor.id}")
     }
 
     /**
@@ -27,9 +25,9 @@ sealed class ExecutionContext {
     data class Instance(
         val instanceId: String,
         val instance: Any,
-        override val methodId: MethodId
+        override val descriptor: MethodDescriptor
     ) : ExecutionContext() {
 
-        override val executionId: ExecutionId = ExecutionId("instance:$instanceId:${methodId.value}")
+        override val executionId: ExecutionId = ExecutionId("instance:$instanceId:${descriptor.id}")
     }
 }

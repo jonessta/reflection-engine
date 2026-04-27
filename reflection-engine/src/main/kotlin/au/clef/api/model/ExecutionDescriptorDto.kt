@@ -1,7 +1,6 @@
 package au.clef.api.model
 
 import au.clef.engine.ExecutionId
-import au.clef.engine.model.MethodId
 import kotlinx.serialization.Serializable
 
 /**
@@ -10,7 +9,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ExecutionDescriptorDto(
     val executionId: ExecutionId,
-    val methodId: MethodId,
     val instanceId: String? = null,
     val reflectedName: String,
     val displayName: String? = null,

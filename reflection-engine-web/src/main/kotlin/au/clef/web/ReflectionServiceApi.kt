@@ -65,7 +65,6 @@ class ReflectionServiceApi(
 
         return ExecutionDescriptorDto(
             executionId = executionContext.executionId,
-            methodId = descriptor.id,
             instanceId = when (executionContext) {
                 is ExecutionContext.Static -> null
                 is ExecutionContext.Instance -> executionContext.instanceId

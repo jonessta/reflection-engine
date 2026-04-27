@@ -494,7 +494,7 @@
         return state.executions.filter(execution => {
             const haystack = [
                 execution.executionId,
-                execution.instanceId,
+                execution.instanceDescription,
                 execution.reflectedName,
                 execution.displayName,
                 execution.returnType,
@@ -551,7 +551,7 @@
         els.executionList.innerHTML = executions.map(execution => {
             const selected = state.selected?.executionId === execution.executionId;
             const kindClass = execution.isStatic ? 'static' : 'instance';
-            const kindLabel = execution.isStatic ? 'Static' : `Instance${execution.instanceId ? `: ${execution.instanceId}` : ''}`;
+            const kindLabel = execution.isStatic ? 'Static' : `Instance${execution.instanceDescription ? `: ${execution.instanceDescription}` : ''}`;
             const params = execution.parameters.map(p => p.label || p.name).join(', ');
             return `
           <article class="method-card ${selected ? 'active' : ''}" data-execution-id="${escapeAttr(execution.executionId)}">
@@ -589,7 +589,7 @@
           <h3 style="margin:0 0 6px;">${escapeHtml(methodTitle(execution))}</h3>
           <div class="pill-row">
             <span class="pill ${execution.isStatic ? 'static' : 'instance'}">${escapeHtml(execution.isStatic ? 'Static' : 'Instance')}</span>
-            ${execution.instanceId ? `<span class="pill">instanceId ${escapeHtml(execution.instanceId)}</span>` : ''}
+            ${execution.instanceDescription ? `<span class="pill">instanceDescription ${escapeHtml(execution.instanceDescription)}</span>` : ''}
             <span class="pill">returns ${escapeHtml(execution.returnType)}</span>
           </div>
         </div>

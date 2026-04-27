@@ -15,7 +15,11 @@ val acmeServiceInstance = AcmeService()
 val exposeMethodsOnInstanceAndStatic = ReflectionServiceApi(
     methodSources = listOf(
         // personName method on acmeService instance
-        MethodSource.InstanceMethod(acmeServiceInstance, instanceId="acmeService", methodId = MethodId.from(AcmeService::class, "personName", Person::class)),
+        MethodSource.InstanceMethod(
+            acmeServiceInstance,
+            instanceDescription = "ACME Service",
+            methodId = MethodId.from(AcmeService::class, "personName", Person::class)
+        ),
 //        MethodSource.InstanceMethod(acmeService, MethodId.from(AcmeService::class, "personName", Person::class)),
 
         // Kotlin file add function
@@ -34,7 +38,7 @@ val exposeAllMethodsOnStaticClass = ReflectionServiceApi(
 )
 
 val exposeAllMethodsService = ReflectionServiceApi(
-    methodSource = MethodSource.Instance(acmeServiceInstance, instanceId = "myService"),
+    methodSource = MethodSource.Instance(acmeServiceInstance, instanceDescription = "myService"),
 //    methodSource = MethodSource.Instance(acmeService),
     methodSupportingTypes = AcmeDemoConfig.methodSupportingTypes,
     metadataResourcePath = AcmeDemoConfig.METADATA_RESOURCE_PATH

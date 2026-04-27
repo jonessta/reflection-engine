@@ -2,7 +2,6 @@ package au.clef.engine
 
 import au.clef.engine.model.MethodId
 import java.lang.reflect.Method
-import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
@@ -12,7 +11,7 @@ sealed class MethodSource {
     abstract val declaringClass: KClass<*>
 
     interface ExposableInstance {
-        val instanceId: String
+        val instanceDescription: String
         val instance: Any
     }
 
@@ -45,60 +44,48 @@ sealed class MethodSource {
                 val method: Method = requireNotNull(function.javaMethod) {
                     "Function ${function.name} does not have a Java method"
                 }
-                return StaticMethod(declaringClass = method.declaringClass.kotlin, methodId = MethodId.from(method))
+                return StaticMethod(
+                    declaringClass = method.declaringClass.kotlin,
+                    methodId = MethodId.from(method)
+                )
             }
         }
     }
 
     /**
      * Expose all instance methods on this object.
-     *
-     * If no id is supplied, a UUID is assigned. A user-supplied id can be more
-     * meaningful for the UI layer, for example accountingService rather than a UUID.
      */
     data class Instance(
         override val instance: Any,
-        override val instanceId: String = UUID.randomUUID().toString()
+        override val instanceDescription: String,
     ) : MethodSource(), ExposableInstance {
-
         override val declaringClass: KClass<*> get() = instance::class
     }
 
     /**
      * Expose exactly one instance method on this object.
-     *
-     * @param instanceId The instance identifier of the service, user-supplied or generated if not.
-     * Example:
-     * val acmeService = AcmeService()
-     * val numberOfWidgetsSource = MethodSource.InstanceMethod.from(acmeService, "numberOfWidgets", WidgetItem::class)
-     * OR
-     * val numberOfWidgetsSource = MethodSource.InstanceMethod.from(
-     *     instance = acmeService,
-     *     methodName = "numberOfWidgets",
-     *     WidgetItem::class,
-     *     instanceId = "myWidgetService"
-     * )
      */
     data class InstanceMethod(
         override val instance: Any,
-        val methodId: MethodId,
-        override val instanceId: String = UUID.randomUUID().toString()
+        override val instanceDescription: String,
+        val methodId: MethodId
     ) : MethodSource(), ExposableInstance {
 
-        override val declaringClass: KClass<*> get() = instance::class
+        override val declaringClass: KClass<*>
+            get() = instance::class
 
         companion object {
-
             fun from(
                 instance: Any,
+                instanceDescription: String,
                 methodName: String,
-                vararg parameterTypes: KClass<*>,
-                instanceId: String = UUID.randomUUID().toString()
-            ): InstanceMethod = InstanceMethod(
-                instance = instance,
-                methodId = MethodId.from(instance::class, methodName, *parameterTypes),
-                instanceId = instanceId
-            )
+                vararg parameterTypes: KClass<*>
+            ): InstanceMethod =
+                InstanceMethod(
+                    instance = instance,
+                    instanceDescription = instanceDescription,
+                    methodId = MethodId.from(instance::class, methodName, *parameterTypes)
+                )
         }
     }
 }

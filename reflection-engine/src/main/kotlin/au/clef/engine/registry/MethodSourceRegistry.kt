@@ -62,8 +62,8 @@ class MethodSourceRegistry(
                 requireStatic = false,
                 executionContextFor = { descriptor ->
                     ExecutionContext.Instance(
-                        instanceId = methodSource.instanceId,
                         instance = methodSource.instance,
+                        instanceDescription = methodSource.instanceDescription,
                         descriptor = descriptor
                     )
                 }
@@ -75,8 +75,8 @@ class MethodSourceRegistry(
                 requireStatic = false,
                 executionContextFor = { descriptor ->
                     ExecutionContext.Instance(
-                        instanceId = methodSource.instanceId,
                         instance = methodSource.instance,
+                        instanceDescription = methodSource.instanceDescription,
                         descriptor = descriptor
                     )
                 }
@@ -103,19 +103,19 @@ class MethodSourceRegistry(
         executionContextFor: (MethodDescriptor) -> ExecutionContext
     ) {
         val descriptors = descriptorsByClass.getOrPut(clazz) { mutableListOf() }
-        collectHierarchyMethods(clazz, inheritanceLevel)
-            .filter { method -> Modifier.isStatic(method.modifiers) == requireStatic }
-            .forEach { method ->
-                val descriptor = MethodDescriptor.from(method)
-                val methodId = descriptor.id
-                if (entriesById.containsKey(methodId))
-                    return@forEach
+        for (method in collectHierarchyMethods(clazz, inheritanceLevel)) {
+            if (Modifier.isStatic(method.modifiers) != requireStatic) continue
 
-                descriptors += descriptor
-                entriesById[methodId] = RegistryEntry(descriptor = descriptor, method = method)
-                val executionContext = executionContextFor(descriptor)
-                executionContextsById[executionContext.executionId] = executionContext
-            }
+            val descriptor = MethodDescriptor.from(method)
+            val methodId = descriptor.id
+            if (entriesById.containsKey(methodId)) continue
+
+            descriptors += descriptor
+            entriesById[methodId] = RegistryEntry(descriptor = descriptor, method = method)
+
+            val executionContext = executionContextFor(descriptor)
+            executionContextsById[executionContext.executionId] = executionContext
+        }
     }
 
     private fun registerSingleMethod(
@@ -132,10 +132,9 @@ class MethodSourceRegistry(
         }
 
         val descriptors = descriptorsByClass.getOrPut(clazz) { mutableListOf() }
-        val descriptor = MethodDescriptor.from(method)
-        if (!entriesById.containsKey(descriptor.id)) {
-            descriptors += descriptor
-            entriesById[descriptor.id] = RegistryEntry(descriptor = descriptor, method = method)
+        val descriptor = entriesById[methodId]?.descriptor ?: MethodDescriptor.from(method).also {
+            descriptors += it
+            entriesById[it.id] = RegistryEntry(descriptor = it, method = method)
         }
 
         val executionContext = executionContextFor(descriptor)

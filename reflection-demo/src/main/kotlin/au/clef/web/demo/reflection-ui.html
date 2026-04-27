@@ -389,7 +389,7 @@
     }
 
     function methodTitle(execution) {
-        return execution.displayName || execution.reflectedName || execution.methodId;
+        return execution.displayName || execution.reflectedName;
     }
 
     function sampleValueDtoForType(typeName) {
@@ -502,7 +502,6 @@
         return state.executions.filter(execution => {
             const haystack = [
                 execution.executionId,
-                execution.methodId,
                 execution.instanceId,
                 execution.reflectedName,
                 execution.displayName,
@@ -568,7 +567,6 @@
               <p class="method-name">${escapeHtml(methodTitle(execution))}</p>
               <span class="pill ${kindClass}">${escapeHtml(kindLabel)}</span>
             </div>
-            <p class="method-id">${escapeHtml(execution.methodId)}</p>
             <div class="pill-row">
               <span class="pill">returns ${escapeHtml(classShortName(execution.returnType) || execution.returnType)}</span>
               <span class="pill">${execution.parameters.length} arg${execution.parameters.length === 1 ? '' : 's'}</span>
@@ -597,7 +595,6 @@
         els.detailPanel.innerHTML = `
         <div>
           <h3 style="margin:0 0 6px;">${escapeHtml(methodTitle(execution))}</h3>
-          <p class="method-id">${escapeHtml(execution.methodId)}</p>
           <div class="pill-row">
             <span class="pill ${execution.isStatic ? 'static' : 'instance'}">${escapeHtml(execution.isStatic ? 'Static' : 'Instance')}</span>
             ${execution.instanceId ? `<span class="pill">instanceId ${escapeHtml(execution.instanceId)}</span>` : ''}

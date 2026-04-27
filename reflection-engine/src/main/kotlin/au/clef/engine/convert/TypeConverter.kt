@@ -152,7 +152,7 @@ class TypeConverter {
 
         val keyType = when (targetType) {
             is ParameterizedType -> targetType.actualTypeArguments[0]
-            else -> String::class.java
+            else -> Any::class.java
         }
 
         val valueType = when (targetType) {
@@ -160,15 +160,13 @@ class TypeConverter {
             else -> Any::class.java
         }
 
-        val rawKeyType = rawClassOf(keyType)
-        if (rawKeyType != String::class.java) {
-            throw ObjectConstructionException("MapValue only supports String keys, but target type requires ${rawKeyType.name}")
+        val result = LinkedHashMap<Any?, Any?>()
+        value.entries.forEach { entry ->
+            val materializedKey = materialize(entry.key, keyType)
+            val materializedValue = materialize(entry.value, valueType)
+            result[materializedKey] = materializedValue
         }
 
-        val result = LinkedHashMap<String, Any?>()
-        value.entries.forEach { (key, entryValue) ->
-            result[key] = materialize(entryValue, valueType)
-        }
         return result
     }
 

@@ -404,18 +404,22 @@
             case 'byte':
             case 'java.lang.Byte':
                 return {kind: 'scalar', value: 0};
+
             case 'boolean':
             case 'java.lang.Boolean':
                 return {kind: 'scalar', value: false};
+
             case 'char':
             case 'java.lang.Character':
                 return {kind: 'scalar', value: 'a'};
+
             case 'java.lang.String':
             case 'String':
                 return {kind: 'scalar', value: ''};
+
             case 'au.clef.app.demo.model.Address':
                 return {
-                    kind: 'object',
+                    kind: 'record',
                     type: 'au.clef.app.demo.model.Address',
                     fields: {
                         number: {kind: 'scalar', value: 2},
@@ -423,9 +427,10 @@
                         zipCode: {kind: 'scalar', value: '2321'}
                     }
                 };
+
             case 'au.clef.app.demo.model.Person':
                 return {
-                    kind: 'object',
+                    kind: 'record',
                     type: 'au.clef.app.demo.model.Person',
                     fields: {
                         name: {kind: 'scalar', value: 'Alice'},
@@ -433,9 +438,10 @@
                         address: sampleValueDtoForType('au.clef.app.demo.model.Address')
                     }
                 };
+
             default:
                 return {
-                    kind: 'object',
+                    kind: 'record',
                     type: typeName,
                     fields: {}
                 };

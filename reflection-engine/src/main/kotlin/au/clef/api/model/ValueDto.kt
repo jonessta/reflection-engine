@@ -2,17 +2,17 @@ package au.clef.api.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 
 @Serializable
 sealed class ValueDto {
 
     @Serializable
     @SerialName("scalar")
-    data class Scalar(val value: JsonElement) : ValueDto()
+    data class Scalar(val value: JsonPrimitive?) : ValueDto()
 
     @Serializable
-    @SerialName("object")
+    @SerialName("record")
     data class Record(
         val type: String,
         val fields: Map<String, ValueDto>
@@ -20,13 +20,23 @@ sealed class ValueDto {
 
     @Serializable
     @SerialName("list")
-    data class ListValue(val items: List<ValueDto>) : ValueDto()
+    data class ListValue(
+        val items: List<ValueDto>
+    ) : ValueDto()
 
     @Serializable
     @SerialName("map")
-    data class MapValue(val entries: Map<String, ValueDto>) : ValueDto()
+    data class MapValue(
+        val entries: List<MapEntryDto>
+    ) : ValueDto()
 
     @Serializable
     @SerialName("null")
     data object Null : ValueDto()
 }
+
+@Serializable
+data class MapEntryDto(
+    val key: ValueDto,
+    val value: ValueDto
+)

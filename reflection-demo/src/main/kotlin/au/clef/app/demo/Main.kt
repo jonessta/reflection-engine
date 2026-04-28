@@ -7,7 +7,6 @@ import au.clef.app.demo.model.add
 import au.clef.engine.MethodSource
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.*
-import au.clef.engine.model.Values.scalar
 import au.clef.engine.registry.MethodSourceRegistry
 import au.clef.metadata.*
 import au.clef.metadata.model.MetadataRoot
@@ -91,29 +90,27 @@ private fun showAllDescriptors() {
 }
 
 private fun runInstanceMethodOnServiceInstance() {
-    val result = engine.invokeInstance(PERSON_ADDRESS_METHOD_ID, acmeService, personValue())
+    val result = engine.invokeInstance(PERSON_ADDRESS_METHOD_ID, acmeService, person())
     println("-----------> runInstanceMethodOnServiceInstance: $result")
 }
 
 private fun runJavaStaticMethod() {
-    val result = engine.invokeStatic(STATIC_JAVA_MATH_MAX_METHOD_ID, scalar(10), scalar(20))
+    val result = engine.invokeStatic(STATIC_JAVA_MATH_MAX_METHOD_ID, 10, 10)
     println("-----------> runJavaStaticMethod: $result")
 }
 
 private fun runKotlinTopLevelMethod() {
-    val result = engine.invokeStatic(KOTLIN_ADD_METHOD_ID, scalar(10), scalar(20))
+    val result = engine.invokeStatic(KOTLIN_ADD_METHOD_ID, 10, 10)
     println("-----------> runKotlinTopLevelMethod: $result")
 }
 
-private fun personValue(name: String = "Alice", age: Int = 25): Value.Record =
-    Values.record(
-        Person::class,
-        "name" to scalar(name),
-        "age" to scalar(age),
-        "address" to Values.record(
-            Address::class,
-            "number" to scalar(2),
-            "street" to scalar("Smith st"),
-            "zipCode" to scalar("2321")
+private fun person(name: String = "Alice", age: Int = 25): Person =
+    Person(
+        name = name,
+        age = age,
+        address = Address(
+            number = 2,
+            street = "Smith st",
+            zipCode = "2321"
         )
     )

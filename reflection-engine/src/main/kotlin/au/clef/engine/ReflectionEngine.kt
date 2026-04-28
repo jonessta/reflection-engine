@@ -1,17 +1,13 @@
 package au.clef.engine
 
-import au.clef.engine.convert.TypeConverter
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
-import au.clef.engine.model.Value
 import au.clef.engine.registry.MethodSourceRegistry
 import au.clef.engine.registry.MethodSourceTypes
 import au.clef.metadata.DescriptorMetadataRegistry
-import java.lang.reflect.Method
 import kotlin.reflect.KClass
 
 class ReflectionEngine(
-    private val typeConverter: TypeConverter = TypeConverter(),
     private val reflectionRegistry: MethodSourceRegistry,
     private val metadataRegistry: DescriptorMetadataRegistry? = null
 ) {
@@ -38,50 +34,44 @@ class ReflectionEngine(
         return metadataRegistry?.apply(descriptor) ?: descriptor
     }
 
-    fun invokeInstance(methodId: MethodId, instance: Any, args: List<Value>): Any? =
-        invokeDescriptor(descriptor(methodId), instance, args)
+    fun invokeStatic(methodId: MethodId, vararg args: Any?): Any? =
+        invokeStatic(methodId, args.toList())
 
-    fun invokeStatic(methodId: MethodId, args: List<Value>): Any? =
+    fun invokeStatic(methodId: MethodId, args: List<Any?>): Any? =
         invokeDescriptor(descriptor(methodId), null, args)
 
-    fun invokeInstance(methodId: MethodId, instance: Any, vararg args: Value): Any? =
-        invokeDescriptor(descriptor(methodId), instance, args.toList())
+    fun invokeInstance(methodId: MethodId, instance: Any, vararg args: Any?): Any? =
+        invokeInstance(methodId, instance, args.toList())
 
-    fun invokeStatic(methodId: MethodId, vararg args: Value): Any? =
-        invokeDescriptor(descriptor(methodId), null, args.toList())
+    fun invokeInstance(methodId: MethodId, instance: Any, args: List<Any?>): Any? =
+        invokeDescriptor(descriptor(methodId), instance, args)
 
-    fun invokeStatic(descriptor: MethodDescriptor, args: List<Value>): Any? =
+    fun invokeStatic(descriptor: MethodDescriptor, args: List<Any?>): Any? =
         invokeDescriptor(descriptor, null, args)
 
-    fun invokeInstance(descriptor: MethodDescriptor, instance: Any, args: List<Value>): Any? =
+    fun invokeInstance(descriptor: MethodDescriptor, instance: Any, args: List<Any?>): Any? =
         invokeDescriptor(descriptor, instance, args)
 
     private fun invokeDescriptor(
         descriptor: MethodDescriptor,
         instance: Any?,
-        args: List<Value>
+        args: List<Any?>
     ): Any? {
-        val method: Method = reflectionRegistry.method(descriptor.id)
+        val method = reflectionRegistry.method(descriptor.id)
 
         if (!descriptor.isStatic && instance == null) {
             throw MissingInstanceException("${descriptor.id}")
         }
 
         if (descriptor.isStatic && instance != null) {
-            throw IllegalArgumentException(
-                "Static method ${descriptor.id} must not be invoked with an instance"
-            )
+            throw IllegalArgumentException("Static method ${descriptor.id} must not receive an instance")
         }
 
         require(args.size == method.parameterCount) {
             "Expected ${method.parameterCount} args for ${descriptor.id}, got ${args.size}"
         }
 
-        val convertedArgs: Array<Any?> = args.mapIndexed { index, arg ->
-            typeConverter.materialize(arg, method.parameterTypes[index])
-        }.toTypedArray()
-
-        val targetObject = if (descriptor.isStatic) null else instance
-        return method.invoke(targetObject, *convertedArgs)
+        val target = if (descriptor.isStatic) null else instance
+        return method.invoke(target, *args.toTypedArray())
     }
 }

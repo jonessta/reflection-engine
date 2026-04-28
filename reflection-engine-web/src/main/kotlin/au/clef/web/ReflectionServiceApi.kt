@@ -65,7 +65,9 @@ class ReflectionServiceApi(
         val executionContext = methodSourceRegistry.executionContext(request.executionId)
         val descriptor = executionContext.descriptor
 
-        val args: List<Value> = request.args.map(requestValueMapper::toEngineValue)
+        val args: List<Any?> = request.args.zip(descriptor.parameters).map { (argDto, param) ->
+            requestValueMapper.materialize(argDto, param.type)
+        }
 
         val result: Any? = when (executionContext) {
             is ExecutionContext.Static ->
@@ -75,7 +77,7 @@ class ReflectionServiceApi(
                 engine.invokeInstance(descriptor, executionContext.instance, args)
         }
 
-        return InvocationResponse(result = responseValueMapper.toDtoValue(result))
+        return InvocationResponse(responseValueMapper.toDtoValue(result))
     }
 
     fun executionDescriptors(): List<ExecutionDescriptorDto> =

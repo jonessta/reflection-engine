@@ -1,9 +1,5 @@
-package au.clef.web
+package au.clef.api
 
-import au.clef.api.DefaultClassResolver
-import au.clef.api.RequestValueMapper
-import au.clef.api.ResponseValueMapper
-import au.clef.api.ScalarConverter
 import au.clef.api.model.ExecutionDescriptorDto
 import au.clef.api.model.InvocationRequest
 import au.clef.api.model.InvocationResponse
@@ -17,7 +13,6 @@ import au.clef.metadata.DescriptorMetadataRegistry
 import au.clef.metadata.MetadataLoader
 import kotlin.reflect.KClass
 
-// todo move to api module
 class ReflectionServiceApi(
     methodSources: Collection<MethodSource>,
     methodSupportingTypes: Collection<KClass<*>> = emptyList(),

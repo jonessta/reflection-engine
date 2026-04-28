@@ -257,7 +257,7 @@ data class SamplePerson(val name: String, val age: Int)
 
 class SampleMutablePerson {
     var name: String = ""
-    var age: Int = 0;
+    var age: Int = 0
 }
 
 data class SampleOptionalHolder(val name: String?)

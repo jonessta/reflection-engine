@@ -6,9 +6,7 @@ import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
 
-sealed class MethodSource {
-
-    abstract val declaringClass: KClass<*>
+sealed class MethodSource(val declaringClass: KClass<*>) {
 
     interface ExposableInstance {
         val instanceDescription: String
@@ -18,17 +16,15 @@ sealed class MethodSource {
     /**
      * Expose all supported static methods on this class.
      */
-    data class StaticClass(
-        override val declaringClass: KClass<*>
-    ) : MethodSource()
+    class StaticClass(declaringClass: KClass<*>) : MethodSource(declaringClass)
 
     /**
      * Expose exactly one static method.
      */
-    data class StaticMethod(
-        override val declaringClass: KClass<*>,
+    class StaticMethod(
+        declaringClass: KClass<*>,
         val methodId: MethodId
-    ) : MethodSource() {
+    ) : MethodSource(declaringClass) {
 
         companion object {
             fun from(
@@ -55,24 +51,19 @@ sealed class MethodSource {
     /**
      * Expose all instance methods on this object.
      */
-    data class Instance(
+    class Instance(
         override val instance: Any,
-        override val instanceDescription: String,
-    ) : MethodSource(), ExposableInstance {
-        override val declaringClass: KClass<*> get() = instance::class
-    }
+        override val instanceDescription: String
+    ) : MethodSource(instance::class), ExposableInstance
 
     /**
      * Expose exactly one instance method on this object.
      */
-    data class InstanceMethod(
+    class InstanceMethod(
         override val instance: Any,
         override val instanceDescription: String,
         val methodId: MethodId
-    ) : MethodSource(), ExposableInstance {
-
-        override val declaringClass: KClass<*>
-            get() = instance::class
+    ) : MethodSource(instance::class), ExposableInstance {
 
         companion object {
             fun from(

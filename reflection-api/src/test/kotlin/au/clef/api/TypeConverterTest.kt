@@ -256,7 +256,7 @@ enum class SampleStatus {
 data class SamplePerson(val name: String, val age: Int)
 
 class SampleMutablePerson {
-    var name: String = "";
+    var name: String = ""
     var age: Int = 0;
 }
 

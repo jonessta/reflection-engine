@@ -37,9 +37,9 @@ class WebServer(
 
             install(CORS) {
                 anyHost()
-                allowHeader(io.ktor.http.HttpHeaders.ContentType)
-                allowMethod(io.ktor.http.HttpMethod.Get)
-                allowMethod(io.ktor.http.HttpMethod.Post)
+                allowHeader(HttpHeaders.ContentType)
+                allowMethod(HttpMethod.Get)
+                allowMethod(HttpMethod.Post)
                 allowNonSimpleContentTypes = true
             }
 

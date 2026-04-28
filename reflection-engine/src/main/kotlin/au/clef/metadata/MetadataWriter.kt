@@ -1,7 +1,6 @@
 package au.clef.metadata
 
 import au.clef.metadata.model.MetadataRoot
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 

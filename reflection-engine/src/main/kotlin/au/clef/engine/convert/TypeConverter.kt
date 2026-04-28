@@ -1,22 +1,39 @@
 package au.clef.engine.convert
 
+import au.clef.api.ScalarValueDecoder
 import au.clef.engine.ObjectConstructionException
 import au.clef.engine.TypeMismatchException
+import au.clef.engine.model.MapEntry
 import au.clef.engine.model.Value
 import kotlinx.serialization.json.JsonPrimitive
-import java.lang.reflect.*
 import java.lang.reflect.Array
+import java.lang.reflect.Constructor
+import java.lang.reflect.Field
+import java.lang.reflect.ParameterizedType
+import java.lang.reflect.Type
+import java.net.URI
+import java.net.URL
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.util.*
+import java.util.Currency
+import java.util.LinkedHashMap
+import java.util.LinkedHashSet
+import java.util.Locale
+import java.util.UUID
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
 
-class TypeConverter {
+class TypeConverter(
+    userDefinedScalarDecoders: List<ScalarValueDecoder> = emptyList()
+) {
+    private val scalarDecoders: List<ScalarValueDecoder> =
+        userDefinedScalarDecoders + DefaultScalarValueDecoders.all
 
     fun materialize(value: Value, targetType: Class<*>): Any? =
         materialize(value, targetType as Type)
@@ -51,8 +68,34 @@ class TypeConverter {
         }
 
         val wrappedTargetType = wrapPrimitive(rawTargetType)
+        val normalizedValue = normalizeScalar(rawValue)
 
-        val normalizedValue: Any? = when (rawValue) {
+        if (normalizedValue == null) {
+            if (rawTargetType.isPrimitive) {
+                throw TypeMismatchException(Value.Scalar(null), rawTargetType)
+            }
+            return null
+        }
+
+        if (wrappedTargetType.isInstance(normalizedValue)) {
+            return normalizedValue
+        }
+
+        scalarDecoders.firstOrNull { it.canDecode(normalizedValue, wrappedTargetType) }?.let { decoder ->
+            return try {
+                decoder.decode(normalizedValue, wrappedTargetType)
+            } catch (e: TypeMismatchException) {
+                throw e
+            } catch (e: Exception) {
+                throw TypeMismatchException(Value.Scalar(rawValue), rawTargetType)
+            }
+        }
+
+        throw TypeMismatchException(Value.Scalar(rawValue), rawTargetType)
+    }
+
+    private fun normalizeScalar(rawValue: Any?): Any? =
+        when (rawValue) {
             is JsonPrimitive -> {
                 if (rawValue.isString) {
                     rawValue.content
@@ -68,53 +111,8 @@ class TypeConverter {
                     }
                 }
             }
-
             else -> rawValue
         }
-
-        if (normalizedValue == null) {
-            if (rawTargetType.isPrimitive) {
-                throw TypeMismatchException(Value.Scalar(null), rawTargetType)
-            }
-            return null
-        }
-
-        if (wrappedTargetType.isInstance(normalizedValue)) {
-            return normalizedValue
-        }
-
-        val text = normalizedValue.toString()
-
-        try {
-            return when (wrappedTargetType) {
-                String::class.java -> text
-                Int::class.javaObjectType -> text.toInt()
-                Long::class.javaObjectType -> text.toLong()
-                Double::class.javaObjectType -> text.toDouble()
-                Float::class.javaObjectType -> text.toFloat()
-                Short::class.javaObjectType -> text.toShort()
-                Byte::class.javaObjectType -> text.toByte()
-                Boolean::class.javaObjectType -> parseBoolean(text)
-                Char::class.javaObjectType -> parseChar(text)
-                UUID::class.java -> UUID.fromString(text)
-                Instant::class.java -> Instant.parse(text)
-                LocalDate::class.java -> LocalDate.parse(text)
-                LocalDateTime::class.java -> LocalDateTime.parse(text)
-                LocalTime::class.java -> LocalTime.parse(text)
-                else -> {
-                    if (wrappedTargetType.isEnum) {
-                        convertEnum(text, wrappedTargetType)
-                    } else {
-                        throw TypeMismatchException(Value.Scalar(rawValue), rawTargetType)
-                    }
-                }
-            }
-        } catch (e: TypeMismatchException) {
-            throw e
-        } catch (e: Exception) {
-            throw TypeMismatchException(Value.Scalar(rawValue), rawTargetType)
-        }
-    }
 
     private fun convertInstance(value: Value.Instance, targetType: Type): Any {
         val instance = value.obj
@@ -143,31 +141,33 @@ class TypeConverter {
             is ParameterizedType -> targetType.actualTypeArguments[0]
             else -> Any::class.java
         }
+
         val materializedItems = value.items.map { item ->
             materialize(item, elementType)
         }
+
         return when {
             rawTargetType.isArray -> {
                 val componentType = rawTargetType.componentType
                 val array = Array.newInstance(componentType, materializedItems.size)
-                materializedItems.forEachIndexed { index, element -> Array.set(array, index, element) }
+                materializedItems.forEachIndexed { index, element ->
+                    Array.set(array, index, element)
+                }
                 array
             }
 
-            Set::class.java.isAssignableFrom(rawTargetType) -> {
+            Set::class.java.isAssignableFrom(rawTargetType) ->
                 LinkedHashSet(materializedItems)
-            }
 
             List::class.java.isAssignableFrom(rawTargetType) ||
-                    Collection::class.java.isAssignableFrom(rawTargetType) -> {
+                    Collection::class.java.isAssignableFrom(rawTargetType) ->
                 materializedItems.toMutableList()
-            }
 
-            Iterable::class.java.isAssignableFrom(rawTargetType) -> {
+            Iterable::class.java.isAssignableFrom(rawTargetType) ->
                 materializedItems
-            }
 
-            else -> throw TypeMismatchException(value, rawTargetType)
+            else ->
+                throw TypeMismatchException(value, rawTargetType)
         }
     }
 
@@ -188,7 +188,7 @@ class TypeConverter {
         }
 
         val result = LinkedHashMap<Any?, Any?>()
-        value.entries.forEach { entry ->
+        value.entries.forEach { entry: MapEntry ->
             val materializedKey = materialize(entry.key, keyType)
             val materializedValue = materialize(entry.value, valueType)
             result[materializedKey] = materializedValue
@@ -218,6 +218,7 @@ class TypeConverter {
 
         return try {
             val arguments = linkedMapOf<KParameter, Any?>()
+
             for (parameter in valueParameters) {
                 val name = parameter.name
                     ?: throw ObjectConstructionException(
@@ -226,14 +227,14 @@ class TypeConverter {
 
                 val fieldValue = value.fields[name]
                 if (fieldValue == null) {
-                    if (parameter.isOptional) {
-                        continue
-                    }
+                    if (parameter.isOptional) continue
                     if (parameter.type.isMarkedNullable) {
                         arguments[parameter] = null
                         continue
                     }
-                    throw ObjectConstructionException("Missing constructor argument '$name' for ${targetType.name}")
+                    throw ObjectConstructionException(
+                        "Missing constructor argument '$name' for ${targetType.name}"
+                    )
                 }
 
                 arguments[parameter] = materialize(fieldValue, rawJavaTypeOf(parameter))
@@ -264,6 +265,7 @@ class TypeConverter {
                 field.isAccessible = true
                 field.set(instance, materialize(fieldValue, field.genericType))
             }
+
             instance
         } catch (e: ObjectConstructionException) {
             throw e
@@ -273,14 +275,15 @@ class TypeConverter {
     }
 
     private fun buildWithSingleJavaConstructor(value: Value.Record, targetType: Class<*>): Any? {
-        val constructors: List<Constructor<*>> = targetType.declaredConstructors.toList()
+        val constructors = targetType.declaredConstructors.toList()
         if (constructors.size != 1) {
             return null
         }
 
-        val ctor: Constructor<*> = constructors[0]
+        val ctor = constructors[0]
         return try {
             val args = ArrayList<Any?>()
+
             ctor.parameters.forEachIndexed { index, parameter ->
                 val fieldName =
                     if (parameter.isNamePresent && parameter.name != null && value.fields.containsKey(parameter.name)) {
@@ -290,7 +293,9 @@ class TypeConverter {
                     }
 
                 val fieldValue = value.fields[fieldName]
-                    ?: throw ObjectConstructionException("Missing constructor argument '$fieldName' for ${targetType.name}")
+                    ?: throw ObjectConstructionException(
+                        "Missing constructor argument '$fieldName' for ${targetType.name}"
+                    )
 
                 args += materialize(fieldValue, parameter.parameterizedType)
             }
@@ -302,28 +307,6 @@ class TypeConverter {
         } catch (e: Exception) {
             throw ObjectConstructionException("Failed to construct ${targetType.name}: ${e.message}", e)
         }
-    }
-
-    private fun convertEnum(text: String, targetType: Class<*>): Any {
-        val constants: kotlin.Array<out Any?> = targetType.enumConstants
-            ?: throw TypeMismatchException(Value.Scalar(text), targetType)
-
-        return constants.firstOrNull { constant ->
-            val enumName = (constant as Enum<*>).name
-            enumName == text || enumName.equals(text, ignoreCase = true)
-        } ?: throw TypeMismatchException(Value.Scalar(text), targetType)
-    }
-
-    private fun parseBoolean(text: String): Boolean =
-        when (text.trim().lowercase()) {
-            "true" -> true
-            "false" -> false
-            else -> throw IllegalArgumentException("Invalid boolean value: $text")
-        }
-
-    private fun parseChar(text: String): Char {
-        require(text.length == 1) { "Invalid char value: $text" }
-        return text[0]
     }
 
     private fun findField(targetType: Class<*>, fieldName: String): Field? {
@@ -345,14 +328,13 @@ class TypeConverter {
             else -> throw ObjectConstructionException("Unsupported target type: $type")
         }
 
-    private fun rawJavaTypeOf(parameter: KParameter): Type {
-        return when (val classifier = parameter.type.classifier) {
+    private fun rawJavaTypeOf(parameter: KParameter): Type =
+        when (val classifier = parameter.type.classifier) {
             is KClass<*> -> classifier.java
             else -> throw ObjectConstructionException(
                 "Unsupported Kotlin parameter type '${parameter.name}'"
             )
         }
-    }
 
     private fun wrapPrimitive(type: Class<*>): Class<*> =
         when (type) {
@@ -367,4 +349,119 @@ class TypeConverter {
             Void.TYPE -> Void::class.java
             else -> type
         }
+}
+
+class SimpleScalarValueDecoder(
+    private val predicate: (Any, Class<*>) -> Boolean,
+    private val decoder: (Any, Class<*>) -> Any?
+) : ScalarValueDecoder {
+    override fun canDecode(rawValue: Any, targetType: Class<*>): Boolean =
+        predicate(rawValue, targetType)
+
+    override fun decode(rawValue: Any, targetType: Class<*>): Any? =
+        decoder(rawValue, targetType)
+}
+
+object DefaultScalarValueDecoders {
+    val all: List<ScalarValueDecoder> = listOf(
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == String::class.java },
+            decoder = { rawValue, _ -> rawValue.toString() }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == Int::class.javaObjectType },
+            decoder = { rawValue, _ -> rawValue.toString().toInt() }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == Long::class.javaObjectType },
+            decoder = { rawValue, _ -> rawValue.toString().toLong() }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == Double::class.javaObjectType },
+            decoder = { rawValue, _ -> rawValue.toString().toDouble() }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == Float::class.javaObjectType },
+            decoder = { rawValue, _ -> rawValue.toString().toFloat() }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == Short::class.javaObjectType },
+            decoder = { rawValue, _ -> rawValue.toString().toShort() }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == Byte::class.javaObjectType },
+            decoder = { rawValue, _ -> rawValue.toString().toByte() }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == Boolean::class.javaObjectType },
+            decoder = { rawValue, _ ->
+                when (rawValue.toString().trim().lowercase()) {
+                    "true" -> true
+                    "false" -> false
+                    else -> throw IllegalArgumentException("Invalid boolean value: $rawValue")
+                }
+            }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == Char::class.javaObjectType },
+            decoder = { rawValue, _ ->
+                val text = rawValue.toString()
+                require(text.length == 1) { "Invalid char value: $rawValue" }
+                text[0]
+            }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == UUID::class.java },
+            decoder = { rawValue, _ -> UUID.fromString(rawValue.toString()) }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == Instant::class.java },
+            decoder = { rawValue, _ -> Instant.parse(rawValue.toString()) }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == LocalDate::class.java },
+            decoder = { rawValue, _ -> LocalDate.parse(rawValue.toString()) }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == LocalDateTime::class.java },
+            decoder = { rawValue, _ -> LocalDateTime.parse(rawValue.toString()) }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == LocalTime::class.java },
+            decoder = { rawValue, _ -> LocalTime.parse(rawValue.toString()) }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == URI::class.java },
+            decoder = { rawValue, _ -> URI.create(rawValue.toString()) }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == URL::class.java },
+            decoder = { rawValue, _ -> URI.create(rawValue.toString()).toURL() }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == Path::class.java },
+            decoder = { rawValue, _ -> Paths.get(rawValue.toString()) }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == Locale::class.java },
+            decoder = { rawValue, _ -> Locale.forLanguageTag(rawValue.toString()) }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType == Currency::class.java },
+            decoder = { rawValue, _ -> Currency.getInstance(rawValue.toString()) }
+        ),
+        SimpleScalarValueDecoder(
+            predicate = { _, targetType -> targetType.isEnum },
+            decoder = { rawValue, targetType ->
+                val text = rawValue.toString()
+                val constants = targetType.enumConstants
+                    ?: throw IllegalArgumentException("No enum constants for ${targetType.name}")
+
+                constants.firstOrNull { constant ->
+                    val enumName = (constant as Enum<*>).name
+                    enumName == text || enumName.equals(text, ignoreCase = true)
+                } ?: throw IllegalArgumentException("Invalid enum value '$text' for ${targetType.name}")
+            }
+        )
+    )
 }

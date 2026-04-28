@@ -14,6 +14,8 @@ import java.time.LocalTime
 import java.util.*
 
 /**
+ * Server → Client
+ *
  * val mapper = ResponseValueMapper(
  *     scalarValueEncoder(
  *         predicate = { it is Money },

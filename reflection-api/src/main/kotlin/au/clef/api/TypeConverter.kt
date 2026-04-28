@@ -3,7 +3,6 @@ package au.clef.api
 import au.clef.api.model.MapEntry
 import au.clef.api.model.Value
 import au.clef.engine.ObjectConstructionException
-import au.clef.engine.TypeMismatchException
 import kotlinx.serialization.json.JsonPrimitive
 import java.lang.reflect.Array
 import java.lang.reflect.Constructor

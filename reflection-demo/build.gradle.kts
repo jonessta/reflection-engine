@@ -5,6 +5,7 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":reflection-api"))
     implementation(project(":reflection-engine"))
     implementation(project(":reflection-engine-web"))
 

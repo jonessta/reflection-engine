@@ -1,6 +1,5 @@
 package au.clef.engine
 
-import au.clef.api.model.Value
 import au.clef.engine.model.MethodId
 
 open class EngineException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
@@ -12,11 +11,6 @@ class MethodNotFoundException(
 )
 
 class MissingInstanceException(methodName: String) : EngineException("Instance required for method $methodName")
-
-class TypeMismatchException(
-    value: Value,
-    targetType: Class<*>
-) : EngineException("Cannot convert $value to ${targetType.name}")
 
 class ObjectConstructionException(
     message: String,

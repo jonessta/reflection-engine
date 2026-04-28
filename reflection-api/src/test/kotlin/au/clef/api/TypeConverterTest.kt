@@ -2,7 +2,6 @@ package au.clef.api
 
 import au.clef.api.model.Value
 import au.clef.engine.ObjectConstructionException
-import au.clef.engine.TypeMismatchException
 import kotlin.test.*
 
 class TypeConverterTest {

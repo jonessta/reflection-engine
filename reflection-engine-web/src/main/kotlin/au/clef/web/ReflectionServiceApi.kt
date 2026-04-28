@@ -1,6 +1,9 @@
 package au.clef.web
 
-import au.clef.api.*
+import au.clef.api.DefaultClassResolver
+import au.clef.api.RequestValueMapper
+import au.clef.api.ResponseValueMapper
+import au.clef.api.ScalarConverter
 import au.clef.api.model.ExecutionDescriptorDto
 import au.clef.api.model.InvocationRequest
 import au.clef.api.model.InvocationResponse
@@ -14,12 +17,12 @@ import au.clef.metadata.DescriptorMetadataRegistry
 import au.clef.metadata.MetadataLoader
 import kotlin.reflect.KClass
 
+// todo move to api module
 class ReflectionServiceApi(
     methodSources: Collection<MethodSource>,
     methodSupportingTypes: Collection<KClass<*>> = emptyList(),
     metadataResourcePath: String? = null,
-    userDefinedScalarDecoders: List<ScalarValueDecoder> = emptyList(),
-    userDefinedScalarEncoders: List<ScalarValueEncoder> = emptyList()
+    userDefinedScalarConverters: List<ScalarConverter<out Any>> = emptyList()
 ) {
 
     private val methodSourceRegistry = MethodSourceRegistry(
@@ -27,45 +30,47 @@ class ReflectionServiceApi(
         methodSupportingTypes = methodSupportingTypes
     )
 
-    private val metadataRegistry: DescriptorMetadataRegistry? = metadataResourcePath
-        ?.let(MetadataLoader::fromResourceOrEmpty)
-        ?.let(::DescriptorMetadataRegistry)
+    private val metadataRegistry: DescriptorMetadataRegistry? =
+        metadataResourcePath
+            ?.let(MetadataLoader::fromResourceOrEmpty)
+            ?.let(::DescriptorMetadataRegistry)
 
     private val engine = ReflectionEngine(
         reflectionRegistry = methodSourceRegistry,
         metadataRegistry = metadataRegistry
     )
 
-    private val classResolver = DefaultClassResolver(engine.methodSourceTypes)
-
     private val requestValueMapper = RequestValueMapper(
-        valueMapper = ValueMapper(classResolver),
-        typeConverter = TypeConverter(userDefinedScalarDecoders)
+        classResolver = DefaultClassResolver(engine.methodSourceTypes),
+        userDefinedScalarConverters = userDefinedScalarConverters
     )
 
-    private val responseValueMapper = ResponseValueMapper(userDefinedScalarEncoders)
+    private val responseValueMapper = ResponseValueMapper(
+        userDefinedScalarConverters = userDefinedScalarConverters
+    )
 
     constructor(
         methodSource: MethodSource,
         methodSupportingTypes: Collection<KClass<*>> = emptyList(),
         metadataResourcePath: String? = null,
-        userDefinedScalarDecoders: List<ScalarValueDecoder> = emptyList(),
-        userDefinedScalarEncoders: List<ScalarValueEncoder> = emptyList()
+        userDefinedScalarConverters: List<ScalarConverter<out Any>> = emptyList()
     ) : this(
         methodSources = listOf(methodSource),
         methodSupportingTypes = methodSupportingTypes,
         metadataResourcePath = metadataResourcePath,
-        userDefinedScalarDecoders = userDefinedScalarDecoders,
-        userDefinedScalarEncoders = userDefinedScalarEncoders
+        userDefinedScalarConverters = userDefinedScalarConverters
     )
 
     fun invoke(request: InvocationRequest): InvocationResponse {
-        val executionContext = methodSourceRegistry.executionContext(request.executionId)
-        val descriptor = executionContext.descriptor
+        val executionContext: ExecutionContext =
+            methodSourceRegistry.executionContext(request.executionId)
 
-        val args: List<Any?> = request.args.zip(descriptor.parameters).map { (argDto, param) ->
-            requestValueMapper.materialize(argDto, param.type)
-        }
+        val descriptor: MethodDescriptor = executionContext.descriptor
+
+        val args: List<Any?> =
+            request.args.zip(descriptor.parameters).map { (argDto, param) ->
+                requestValueMapper.materialize(argDto, param.type)
+            }
 
         val result: Any? = when (executionContext) {
             is ExecutionContext.Static ->
@@ -75,13 +80,17 @@ class ReflectionServiceApi(
                 engine.invokeInstance(descriptor, executionContext.instance, args)
         }
 
-        return InvocationResponse(responseValueMapper.toDtoValue(result))
+        return InvocationResponse(
+            result = responseValueMapper.toDtoValue(result)
+        )
     }
 
     fun executionDescriptors(): List<ExecutionDescriptorDto> =
         methodSourceRegistry.allExecutionContexts().map(::toExecutionDescriptorDto)
 
-    private fun toExecutionDescriptorDto(executionContext: ExecutionContext): ExecutionDescriptorDto {
+    private fun toExecutionDescriptorDto(
+        executionContext: ExecutionContext
+    ): ExecutionDescriptorDto {
         val descriptor: MethodDescriptor = executionContext.descriptor
 
         return ExecutionDescriptorDto(

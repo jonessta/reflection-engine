@@ -5,28 +5,21 @@ import au.clef.app.demo.model.AcmeService
 import au.clef.app.demo.model.Person
 import au.clef.app.demo.model.add
 import au.clef.engine.MethodSource
-import au.clef.engine.model.MethodId
 import au.clef.web.ReflectionServiceApi
 import au.clef.web.WebServer
 import au.clef.web.WebServerConfig
-import kotlin.collections.emptyList
 
-val acmeServiceInstance = AcmeService()
+private val acmeServiceInstance = AcmeService()
 
-val exposeMethodsOnInstanceAndStatic = ReflectionServiceApi(
+private val exposeMethodsOnInstanceAndStatic = ReflectionServiceApi(
     methodSources = listOf(
-        // personName method on acmeService instance
-        MethodSource.InstanceMethod(
-            acmeServiceInstance,
+        MethodSource.InstanceMethod.from(
+            instance = acmeServiceInstance,
             instanceDescription = "ACME Service",
-            methodId = MethodId.from(AcmeService::class, "personName", Person::class)
+            methodName = "personName",
+            Person::class
         ),
-//        MethodSource.InstanceMethod(acmeService, MethodId.from(AcmeService::class, "personName", Person::class)),
-
-        // Kotlin file add function
         MethodSource.StaticMethod.from(::add),
-
-        // Static "max" method java Math class
         MethodSource.StaticMethod.from(Math::class, "max", Int::class, Int::class),
         MethodSource.StaticMethod.from(Math::class, "min", Int::class, Int::class)
     ),
@@ -34,16 +27,17 @@ val exposeMethodsOnInstanceAndStatic = ReflectionServiceApi(
     metadataResourcePath = AcmeDemoConfig.METADATA_RESOURCE_PATH
 )
 
-val exposeAllMethodsOnStaticClass = ReflectionServiceApi(
+private val exposeAllMethodsOnStaticClass = ReflectionServiceApi(
     methodSource = MethodSource.StaticClass(Math::class),
     metadataResourcePath = AcmeDemoConfig.METADATA_RESOURCE_PATH,
-    userDefinedScalarDecoders = emptyList(),
-    userDefinedScalarEncoders = emptyList(),
+    userDefinedScalarConverters = emptyList()
 )
 
-val exposeAllMethodsService = ReflectionServiceApi(
-    methodSource = MethodSource.Instance(acmeServiceInstance, instanceDescription = "myService"),
-//    methodSource = MethodSource.Instance(acmeService),
+private val exposeAllMethodsService = ReflectionServiceApi(
+    methodSource = MethodSource.Instance(
+        instance = acmeServiceInstance,
+        instanceDescription = "myService"
+    ),
     methodSupportingTypes = AcmeDemoConfig.methodSupportingTypes,
     metadataResourcePath = AcmeDemoConfig.METADATA_RESOURCE_PATH
 )

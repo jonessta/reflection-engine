@@ -27,7 +27,8 @@ val exposeMethodsOnInstanceAndStatic = ReflectionServiceApi(
         MethodSource.StaticMethod.from(::add),
 
         // Static "max" method java Math class
-        MethodSource.StaticMethod.from(Math::class, "max", Int::class, Int::class)
+        MethodSource.StaticMethod.from(Math::class, "max", Int::class, Int::class),
+        MethodSource.StaticMethod.from(Math::class, "min", Int::class, Int::class)
     ),
     methodSupportingTypes = AcmeDemoConfig.methodSupportingTypes,
     metadataResourcePath = AcmeDemoConfig.METADATA_RESOURCE_PATH

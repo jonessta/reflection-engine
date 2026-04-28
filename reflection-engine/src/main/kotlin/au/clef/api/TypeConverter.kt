@@ -1,10 +1,9 @@
-package au.clef.engine.convert
+package au.clef.api
 
-import au.clef.api.ScalarValueDecoder
+import au.clef.api.model.MapEntry
+import au.clef.api.model.Value
 import au.clef.engine.ObjectConstructionException
 import au.clef.engine.TypeMismatchException
-import au.clef.engine.model.MapEntry
-import au.clef.engine.model.Value
 import kotlinx.serialization.json.JsonPrimitive
 import java.lang.reflect.Array
 import java.lang.reflect.Constructor

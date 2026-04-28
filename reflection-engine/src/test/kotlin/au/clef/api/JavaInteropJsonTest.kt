@@ -8,7 +8,6 @@ import au.clef.api.model.ValueDto
 import au.clef.engine.ExecutionContext
 import au.clef.engine.MethodSource
 import au.clef.engine.ReflectionEngine
-import au.clef.engine.convert.TypeConverter
 import au.clef.engine.model.InheritanceLevel
 import au.clef.engine.registry.MethodSourceRegistry
 import kotlinx.serialization.json.Json

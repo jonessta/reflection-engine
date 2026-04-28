@@ -1,7 +1,7 @@
 package au.clef.engine
 
+import au.clef.api.model.Value
 import au.clef.engine.model.MethodId
-import au.clef.engine.model.Value
 
 open class EngineException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 

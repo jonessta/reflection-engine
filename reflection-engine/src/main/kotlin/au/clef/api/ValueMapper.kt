@@ -1,8 +1,8 @@
 package au.clef.api
 
+import au.clef.api.model.MapEntry
+import au.clef.api.model.Value
 import au.clef.api.model.ValueDto
-import au.clef.engine.model.MapEntry
-import au.clef.engine.model.Value
 
 interface ClassResolver {
     fun resolve(typeName: String): Class<*>

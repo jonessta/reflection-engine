@@ -4,11 +4,8 @@ import au.clef.api.model.MapEntry
 import au.clef.api.model.Value
 import au.clef.engine.ObjectConstructionException
 import kotlinx.serialization.json.JsonPrimitive
+import java.lang.reflect.*
 import java.lang.reflect.Array
-import java.lang.reflect.Constructor
-import java.lang.reflect.Field
-import java.lang.reflect.ParameterizedType
-import java.lang.reflect.Type
 import java.net.URI
 import java.net.URL
 import java.nio.file.Path
@@ -17,17 +14,12 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.util.Currency
-import java.util.LinkedHashMap
-import java.util.LinkedHashSet
-import java.util.Locale
-import java.util.UUID
+import java.util.*
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
 
-// move to api package
 class TypeConverter(
     userDefinedScalarDecoders: List<ScalarValueDecoder> = emptyList()
 ) {
@@ -113,6 +105,7 @@ class TypeConverter(
                     }
                 }
             }
+
             else -> rawValue
         }
 
@@ -365,100 +358,55 @@ class SimpleScalarValueDecoder(
 }
 
 object DefaultScalarValueDecoders {
+
+    private fun decoder(
+        targetType: Class<*>,
+        decode: (String) -> Any?
+    ): ScalarValueDecoder =
+        SimpleScalarValueDecoder(
+            predicate = { _, actualTargetType -> actualTargetType == targetType },
+            decoder = { rawValue, _ -> decode(rawValue.toString()) }
+        )
+
+    private fun text(rawValue: Any): String =
+        rawValue.toString()
+
     val all: List<ScalarValueDecoder> = listOf(
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == String::class.java },
-            decoder = { rawValue, _ -> rawValue.toString() }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == Int::class.javaObjectType },
-            decoder = { rawValue, _ -> rawValue.toString().toInt() }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == Long::class.javaObjectType },
-            decoder = { rawValue, _ -> rawValue.toString().toLong() }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == Double::class.javaObjectType },
-            decoder = { rawValue, _ -> rawValue.toString().toDouble() }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == Float::class.javaObjectType },
-            decoder = { rawValue, _ -> rawValue.toString().toFloat() }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == Short::class.javaObjectType },
-            decoder = { rawValue, _ -> rawValue.toString().toShort() }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == Byte::class.javaObjectType },
-            decoder = { rawValue, _ -> rawValue.toString().toByte() }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == Boolean::class.javaObjectType },
-            decoder = { rawValue, _ ->
-                when (rawValue.toString().trim().lowercase()) {
-                    "true" -> true
-                    "false" -> false
-                    else -> throw IllegalArgumentException("Invalid boolean value: $rawValue")
-                }
+        decoder(String::class.java) { it },
+        decoder(Int::class.javaObjectType) { it.toInt() },
+        decoder(Long::class.javaObjectType) { it.toLong() },
+        decoder(Double::class.javaObjectType) { it.toDouble() },
+        decoder(Float::class.javaObjectType) { it.toFloat() },
+        decoder(Short::class.javaObjectType) { it.toShort() },
+        decoder(Byte::class.javaObjectType) { it.toByte() },
+        decoder(Boolean::class.javaObjectType) {
+            when (it.trim().lowercase()) {
+                "true" -> true
+                "false" -> false
+                else -> throw IllegalArgumentException("Invalid boolean value: $it")
             }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == Char::class.javaObjectType },
-            decoder = { rawValue, _ ->
-                val text = rawValue.toString()
-                require(text.length == 1) { "Invalid char value: $rawValue" }
-                text[0]
-            }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == UUID::class.java },
-            decoder = { rawValue, _ -> UUID.fromString(rawValue.toString()) }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == Instant::class.java },
-            decoder = { rawValue, _ -> Instant.parse(rawValue.toString()) }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == LocalDate::class.java },
-            decoder = { rawValue, _ -> LocalDate.parse(rawValue.toString()) }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == LocalDateTime::class.java },
-            decoder = { rawValue, _ -> LocalDateTime.parse(rawValue.toString()) }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == LocalTime::class.java },
-            decoder = { rawValue, _ -> LocalTime.parse(rawValue.toString()) }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == URI::class.java },
-            decoder = { rawValue, _ -> URI.create(rawValue.toString()) }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == URL::class.java },
-            decoder = { rawValue, _ -> URI.create(rawValue.toString()).toURL() }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == Path::class.java },
-            decoder = { rawValue, _ -> Paths.get(rawValue.toString()) }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == Locale::class.java },
-            decoder = { rawValue, _ -> Locale.forLanguageTag(rawValue.toString()) }
-        ),
-        SimpleScalarValueDecoder(
-            predicate = { _, targetType -> targetType == Currency::class.java },
-            decoder = { rawValue, _ -> Currency.getInstance(rawValue.toString()) }
-        ),
+        },
+        decoder(Char::class.javaObjectType) {
+            require(it.length == 1) { "Invalid char value: $it" }
+            it[0]
+        },
+        decoder(UUID::class.java) { UUID.fromString(it) },
+        decoder(Instant::class.java) { Instant.parse(it) },
+        decoder(LocalDate::class.java) { LocalDate.parse(it) },
+        decoder(LocalDateTime::class.java) { LocalDateTime.parse(it) },
+        decoder(LocalTime::class.java) { LocalTime.parse(it) },
+        decoder(URI::class.java) { URI.create(it) },
+        decoder(URL::class.java) { URI.create(it).toURL() },
+        decoder(Path::class.java) { Paths.get(it) },
+        decoder(Locale::class.java) { Locale.forLanguageTag(it) },
+        decoder(Currency::class.java) { Currency.getInstance(it) },
+
         SimpleScalarValueDecoder(
             predicate = { _, targetType -> targetType.isEnum },
             decoder = { rawValue, targetType ->
-                val text = rawValue.toString()
+                val text = text(rawValue)
                 val constants = targetType.enumConstants
                     ?: throw IllegalArgumentException("No enum constants for ${targetType.name}")
-
                 constants.firstOrNull { constant ->
                     val enumName = (constant as Enum<*>).name
                     enumName == text || enumName.equals(text, ignoreCase = true)

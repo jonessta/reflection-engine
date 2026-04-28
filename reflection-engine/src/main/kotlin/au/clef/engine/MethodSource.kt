@@ -21,10 +21,7 @@ sealed class MethodSource(val declaringClass: KClass<*>) {
     /**
      * Expose exactly one static method.
      */
-    class StaticMethod(
-        declaringClass: KClass<*>,
-        val methodId: MethodId
-    ) : MethodSource(declaringClass) {
+    class StaticMethod(declaringClass: KClass<*>, val methodId: MethodId) : MethodSource(declaringClass) {
 
         companion object {
             fun from(

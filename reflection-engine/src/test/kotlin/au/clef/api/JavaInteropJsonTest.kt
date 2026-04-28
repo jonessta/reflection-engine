@@ -1,25 +1,18 @@
 package au.clef.api
 
-import au.clef.api.model.ExecutionDescriptorDto
-import au.clef.api.model.InvocationRequest
-import au.clef.api.model.InvocationResponse
-import au.clef.api.model.ParamDescriptorDto
-import au.clef.api.model.ValueDto
+import au.clef.api.model.*
 import au.clef.engine.ExecutionContext
 import au.clef.engine.MethodSource
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.InheritanceLevel
 import au.clef.engine.registry.MethodSourceRegistry
-import au.clef.metadata.DescriptorMetadataRegistry
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Test
 import java.net.URI
 import java.time.LocalDate
 import java.time.Month
-import java.util.Collections
-import java.util.Locale
+import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
@@ -45,8 +38,7 @@ class JavaInteropJsonTest {
     )
 
     private val engine = ReflectionEngine(
-        reflectionRegistry = registry,
-        metadataRegistry = null as DescriptorMetadataRegistry?
+        reflectionRegistry = registry
     )
 
     private val valueMapper = ValueMapper(
@@ -104,31 +96,11 @@ class JavaInteropJsonTest {
         val localeResponse = invoke(localeRequest)
         val singletonMapResponse = invoke(singletonMapRequest)
 
-        println("=== LOCALDATE REQUEST JSON ===")
-        println(json.encodeToString(localDateRequest))
-        println("=== LOCALDATE RESPONSE JSON ===")
-        println(json.encodeToString(localDateResponse))
-
-        println("=== URI REQUEST JSON ===")
-        println(json.encodeToString(uriRequest))
-        println("=== URI RESPONSE JSON ===")
-        println(json.encodeToString(uriResponse))
-
-        println("=== LOCALE REQUEST JSON ===")
-        println(json.encodeToString(localeRequest))
-        println("=== LOCALE RESPONSE JSON ===")
-        println(json.encodeToString(localeResponse))
-
-        println("=== SINGLETON MAP REQUEST JSON ===")
-        println(json.encodeToString(singletonMapRequest))
-        println("=== SINGLETON MAP RESPONSE JSON ===")
-        println(json.encodeToString(singletonMapResponse))
-
         assertScalarString(localDateResponse, "2026-04-28")
         assertScalarString(uriResponse, "https://example.com/a/b?x=1")
 
-        val localeResult = assertIs<ValueDto.Record>(localeResponse.result)
-        assertEquals("java.util.Locale", localeResult.type)
+        val localeScalar = assertIs<ValueDto.Scalar>(localeResponse.result)
+        assertEquals(JsonPrimitive("en_AU"), localeScalar.value)
 
         val mapResult = assertIs<ValueDto.MapValue>(singletonMapResponse.result)
         assertEquals(1, mapResult.entries.size)

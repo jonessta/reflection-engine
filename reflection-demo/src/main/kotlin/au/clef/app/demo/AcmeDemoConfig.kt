@@ -11,7 +11,7 @@ object AcmeDemoConfig {
     const val METADATA_RESOURCE_PATH = "/config/acme-metadata.json"
 
     val methodSources = listOf(
-        MethodSource.Instance(AcmeService(), instanceDescription="ACME Service 1"),
+        MethodSource.Instance(AcmeService(), instanceDescription = "ACME Service 1"),
     )
 
     val methodSupportingTypes: List<KClass<*>> = listOf(

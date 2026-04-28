@@ -11,7 +11,9 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.util.UUID
+import java.util.*
+import java.util.Currency
+import java.util.Locale
 
 class ResponseValueMapper(
     private val scalarEncoders: List<ScalarValueEncoder> = DefaultScalarValueEncoders.all
@@ -144,6 +146,14 @@ object DefaultScalarValueEncoders {
         SimpleScalarValueEncoder(
             predicate = { it is LocalTime },
             encoder = { JsonPrimitive(it.toString()) }
+        ),
+        SimpleScalarValueEncoder(
+            predicate = { it is Locale },
+            encoder = { JsonPrimitive(it.toString()) }
+        ),
+        SimpleScalarValueEncoder(
+            predicate = { it is Currency },
+            encoder = { JsonPrimitive((it as Currency).currencyCode) }
         )
     )
 }

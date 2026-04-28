@@ -1,9 +1,6 @@
 package au.clef.web
 
-import au.clef.api.DefaultClassResolver
-import au.clef.api.ResponseValueMapper
-import au.clef.api.ScalarValueEncoder
-import au.clef.api.ValueMapper
+import au.clef.api.*
 import au.clef.api.model.ExecutionDescriptorDto
 import au.clef.api.model.InvocationRequest
 import au.clef.api.model.InvocationResponse
@@ -11,6 +8,9 @@ import au.clef.api.model.ParamDescriptorDto
 import au.clef.engine.ExecutionContext
 import au.clef.engine.MethodSource
 import au.clef.engine.ReflectionEngine
+import au.clef.engine.convert.TypeConverter
+import au.clef.engine.model.MethodDescriptor
+import au.clef.engine.model.Value
 import au.clef.engine.registry.MethodSourceRegistry
 import au.clef.metadata.DescriptorMetadataRegistry
 import au.clef.metadata.MetadataLoader
@@ -20,9 +20,14 @@ class ReflectionServiceApi(
     methodSources: Collection<MethodSource>,
     methodSupportingTypes: Collection<KClass<*>> = emptyList(),
     metadataResourcePath: String? = null,
+    userDefinedScalarDecoders: List<ScalarValueDecoder> = emptyList(),
     userDefinedScalarEncoders: List<ScalarValueEncoder> = emptyList()
 ) {
-    private val methodSourceRegistry = MethodSourceRegistry(methodSources, methodSupportingTypes)
+
+    private val methodSourceRegistry = MethodSourceRegistry(
+        methodSources = methodSources,
+        methodSupportingTypes = methodSupportingTypes
+    )
 
     private val metadataRegistry: DescriptorMetadataRegistry? = metadataResourcePath
         ?.let(MetadataLoader::fromResourceOrEmpty)
@@ -35,7 +40,10 @@ class ReflectionServiceApi(
 
     private val classResolver = DefaultClassResolver(engine.methodSourceTypes)
 
-    private val valueMapper = ValueMapper(classResolver)
+    private val requestValueMapper = RequestValueMapper(
+        valueMapper = ValueMapper(classResolver),
+        typeConverter = TypeConverter(userDefinedScalarDecoders)
+    )
 
     private val responseValueMapper = ResponseValueMapper(userDefinedScalarEncoders)
 
@@ -43,33 +51,39 @@ class ReflectionServiceApi(
         methodSource: MethodSource,
         methodSupportingTypes: Collection<KClass<*>> = emptyList(),
         metadataResourcePath: String? = null,
+        userDefinedScalarDecoders: List<ScalarValueDecoder> = emptyList(),
         userDefinedScalarEncoders: List<ScalarValueEncoder> = emptyList()
     ) : this(
         methodSources = listOf(methodSource),
         methodSupportingTypes = methodSupportingTypes,
         metadataResourcePath = metadataResourcePath,
+        userDefinedScalarDecoders = userDefinedScalarDecoders,
         userDefinedScalarEncoders = userDefinedScalarEncoders
     )
 
     fun invoke(request: InvocationRequest): InvocationResponse {
         val executionContext = methodSourceRegistry.executionContext(request.executionId)
-        val args = request.args.map(valueMapper::toEngineValue)
-        val result = when (executionContext) {
-            is ExecutionContext.Static -> engine.invokeStatic(executionContext.descriptor, args)
-            is ExecutionContext.Instance -> engine.invokeInstance(
-                executionContext.descriptor,
-                executionContext.instance,
-                args
-            )
+        val descriptor = executionContext.descriptor
+
+        val args: List<Value> = request.args.map(requestValueMapper::toEngineValue)
+
+        val result: Any? = when (executionContext) {
+            is ExecutionContext.Static ->
+                engine.invokeStatic(descriptor, args)
+
+            is ExecutionContext.Instance ->
+                engine.invokeInstance(descriptor, executionContext.instance, args)
         }
-        return InvocationResponse(responseValueMapper.toDtoValue(result))
+
+        return InvocationResponse(result = responseValueMapper.toDtoValue(result))
     }
 
     fun executionDescriptors(): List<ExecutionDescriptorDto> =
         methodSourceRegistry.allExecutionContexts().map(::toExecutionDescriptorDto)
 
     private fun toExecutionDescriptorDto(executionContext: ExecutionContext): ExecutionDescriptorDto {
-        val descriptor = executionContext.descriptor
+        val descriptor: MethodDescriptor = executionContext.descriptor
+
         return ExecutionDescriptorDto(
             executionId = executionContext.executionId,
             instanceDescription = when (executionContext) {

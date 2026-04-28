@@ -29,6 +29,7 @@ import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
 
+// move to api package
 class TypeConverter(
     userDefinedScalarDecoders: List<ScalarValueDecoder> = emptyList()
 ) {
@@ -36,9 +37,12 @@ class TypeConverter(
         userDefinedScalarDecoders + DefaultScalarValueDecoders.all
 
     fun materialize(value: Value, targetType: Class<*>): Any? =
-        materialize(value, targetType as Type)
+        materializeInternal(value, targetType as Type)
 
-    private fun materialize(value: Value, targetType: Type): Any? {
+    fun materialize(value: Value, targetType: Type): Any? =
+        materializeInternal(value, targetType)
+
+    private fun materializeInternal(value: Value, targetType: Type): Any? {
         if (value is Value.Null) {
             val rawType = rawClassOf(targetType)
             if (rawType.isPrimitive) {

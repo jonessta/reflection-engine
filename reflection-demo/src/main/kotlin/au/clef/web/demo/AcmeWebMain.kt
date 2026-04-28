@@ -9,6 +9,7 @@ import au.clef.engine.model.MethodId
 import au.clef.web.ReflectionServiceApi
 import au.clef.web.WebServer
 import au.clef.web.WebServerConfig
+import kotlin.collections.emptyList
 
 val acmeServiceInstance = AcmeService()
 
@@ -35,6 +36,7 @@ val exposeMethodsOnInstanceAndStatic = ReflectionServiceApi(
 val exposeAllMethodsOnStaticClass = ReflectionServiceApi(
     methodSource = MethodSource.StaticClass(Math::class),
     metadataResourcePath = AcmeDemoConfig.METADATA_RESOURCE_PATH,
+    userDefinedScalarDecoders = emptyList(),
     userDefinedScalarEncoders = emptyList(),
 )
 

@@ -1,10 +1,9 @@
 package au.clef.api
 
-import au.clef.api.ResponseValueMapper
-import au.clef.api.ValueMapper
 import au.clef.api.model.ExecutionDescriptorDto
 import au.clef.api.model.InvocationRequest
 import au.clef.api.model.InvocationResponse
+import au.clef.api.model.ParamDescriptorDto
 import au.clef.api.model.ValueDto
 import au.clef.engine.ExecutionContext
 import au.clef.engine.MethodSource
@@ -18,10 +17,12 @@ import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Test
 import java.net.URI
 import java.time.LocalDate
+import java.time.Month
 import java.util.Collections
 import java.util.Locale
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 
 class JavaInteropJsonTest {
 
@@ -56,16 +57,16 @@ class JavaInteropJsonTest {
 
     @Test
     fun `generate descriptors and invoke JDK methods with JSON`() {
-        val descriptors = registry.allExecutionContexts()
-            .map(::toExecutionDescriptorDto)
+        val descriptors = registry.allExecutionContexts().map(::toExecutionDescriptorDto)
 
-        println("=== EXECUTION DESCRIPTORS ===")
-        println(json.encodeToString(descriptors))
-
-        val localDateDescriptor = descriptors.first { it.reflectedName == "of" && it.returnType == "java.time.LocalDate" }
-        val uriDescriptor = descriptors.first { it.reflectedName == "create" && it.returnType == "java.net.URI" }
-        val localeDescriptor = descriptors.first { it.reflectedName == "forLanguageTag" }
-        val singletonMapDescriptor = descriptors.first { it.reflectedName == "singletonMap" }
+        val localDateDescriptor =
+            descriptors.first { it.reflectedName == "of" && it.returnType == "java.time.LocalDate" }
+        val uriDescriptor =
+            descriptors.first { it.reflectedName == "create" && it.returnType == "java.net.URI" }
+        val localeDescriptor =
+            descriptors.first { it.reflectedName == "forLanguageTag" }
+        val singletonMapDescriptor =
+            descriptors.first { it.reflectedName == "singletonMap" }
 
         val localDateRequest = InvocationRequest(
             executionId = localDateDescriptor.executionId,
@@ -98,38 +99,124 @@ class JavaInteropJsonTest {
             )
         )
 
+        val localDateResponse = invoke(localDateRequest)
+        val uriResponse = invoke(uriRequest)
+        val localeResponse = invoke(localeRequest)
+        val singletonMapResponse = invoke(singletonMapRequest)
+
         println("=== LOCALDATE REQUEST JSON ===")
         println(json.encodeToString(localDateRequest))
-        val localDateResponse = invoke(localDateRequest)
         println("=== LOCALDATE RESPONSE JSON ===")
         println(json.encodeToString(localDateResponse))
 
         println("=== URI REQUEST JSON ===")
         println(json.encodeToString(uriRequest))
-        val uriResponse = invoke(uriRequest)
         println("=== URI RESPONSE JSON ===")
         println(json.encodeToString(uriResponse))
 
         println("=== LOCALE REQUEST JSON ===")
         println(json.encodeToString(localeRequest))
-        val localeResponse = invoke(localeRequest)
         println("=== LOCALE RESPONSE JSON ===")
         println(json.encodeToString(localeResponse))
 
         println("=== SINGLETON MAP REQUEST JSON ===")
         println(json.encodeToString(singletonMapRequest))
-        val singletonMapResponse = invoke(singletonMapRequest)
         println("=== SINGLETON MAP RESPONSE JSON ===")
         println(json.encodeToString(singletonMapResponse))
 
-        assertEquals(
-            LocalDate.of(2026, 4, 28).toString(),
-            (localDateResponse.result as ValueDto.Record).fields["day"]?.let { null } ?: LocalDate.of(2026, 4, 28).toString()
+        assertScalarString(localDateResponse, "2026-04-28")
+        assertScalarString(uriResponse, "https://example.com/a/b?x=1")
+
+        val localeResult = assertIs<ValueDto.Record>(localeResponse.result)
+        assertEquals("java.util.Locale", localeResult.type)
+
+        val mapResult = assertIs<ValueDto.MapValue>(singletonMapResponse.result)
+        assertEquals(1, mapResult.entries.size)
+    }
+
+    @Test
+    fun `invokes enum factory method from JSON`() {
+        val response = invokeSingleStatic(
+            methodSource = MethodSource.StaticMethod.from(Month::class, "valueOf", String::class),
+            args = listOf(ValueDto.Scalar(JsonPrimitive("APRIL")))
         )
 
-        assertTrue(uriResponse.result is ValueDto.Record)
-        assertTrue(localeResponse.result is ValueDto.Record)
-        assertTrue(singletonMapResponse.result is ValueDto.MapValue)
+        assertScalarString(response, "APRIL")
+    }
+
+    @Test
+    fun `rejects invalid enum value`() {
+        val localRegistry = MethodSourceRegistry(
+            listOf(MethodSource.StaticMethod.from(Month::class, "valueOf", String::class))
+        )
+        val localEngine = ReflectionEngine(reflectionRegistry = localRegistry)
+        val localMapper = ValueMapper(DefaultClassResolver(localEngine.methodSourceTypes))
+        val execution = localRegistry.allExecutionContexts().single()
+
+        val request = InvocationRequest(
+            executionId = execution.executionId,
+            args = listOf(ValueDto.Scalar(JsonPrimitive("NOT_A_MONTH")))
+        )
+
+        assertFailsWith<Exception> {
+            val args = request.args.map(localMapper::toEngineValue)
+            when (execution) {
+                is ExecutionContext.Static ->
+                    localEngine.invokeStatic(execution.descriptor, args)
+
+                is ExecutionContext.Instance ->
+                    localEngine.invokeInstance(execution.descriptor, execution.instance, args)
+            }
+        }
+    }
+
+    @Test
+    fun `invokes Java varargs method from JSON list`() {
+        val response = invokeSingleStatic(
+            methodSource = MethodSource.StaticMethod.from(
+                java.nio.file.Paths::class,
+                "get",
+                String::class,
+                Array<String>::class
+            ),
+            args = listOf(
+                ValueDto.Scalar(JsonPrimitive("root")),
+                ValueDto.ListValue(
+                    listOf(
+                        ValueDto.Scalar(JsonPrimitive("child")),
+                        ValueDto.Scalar(JsonPrimitive("leaf.txt"))
+                    )
+                )
+            )
+        )
+
+        assertScalarString(response, "root\\child\\leaf.txt")
+    }
+
+    @Test
+    fun `supports maps with non string keys`() {
+        val response = invokeSingleStatic(
+            methodSource = MethodSource.StaticMethod.from(
+                Collections::class,
+                "singletonMap",
+                Any::class,
+                Any::class
+            ),
+            args = listOf(
+                ValueDto.Scalar(JsonPrimitive(123)),
+                ValueDto.Scalar(JsonPrimitive("value-123"))
+            )
+        )
+
+        val mapValue = assertIs<ValueDto.MapValue>(response.result)
+        assertEquals(1, mapValue.entries.size)
+
+        val entry = mapValue.entries.single()
+        val key = assertIs<ValueDto.Scalar>(entry.key)
+        val value = assertIs<ValueDto.Scalar>(entry.value)
+
+        assertEquals(JsonPrimitive(123), key.value)
+        assertEquals(JsonPrimitive("value-123"), value.value)
     }
 
     private fun invoke(request: InvocationRequest): InvocationResponse {
@@ -149,6 +236,29 @@ class JavaInteropJsonTest {
         )
     }
 
+    private fun invokeSingleStatic(
+        methodSource: MethodSource.StaticMethod,
+        args: List<ValueDto>
+    ): InvocationResponse {
+        val localRegistry = MethodSourceRegistry(listOf(methodSource))
+        val localEngine = ReflectionEngine(reflectionRegistry = localRegistry)
+        val localValueMapper = ValueMapper(DefaultClassResolver(localEngine.methodSourceTypes))
+        val localResponseMapper = ResponseValueMapper()
+        val execution = localRegistry.allExecutionContexts().single() as ExecutionContext.Static
+
+        val result = localEngine.invokeStatic(
+            execution.descriptor,
+            args.map(localValueMapper::toEngineValue)
+        )
+
+        return InvocationResponse(localResponseMapper.toDtoValue(result))
+    }
+
+    private fun assertScalarString(response: InvocationResponse, expected: String) {
+        val scalar = assertIs<ValueDto.Scalar>(response.result)
+        assertEquals(JsonPrimitive(expected), scalar.value)
+    }
+
     private fun toExecutionDescriptorDto(executionContext: ExecutionContext): ExecutionDescriptorDto {
         val descriptor = executionContext.descriptor
 
@@ -163,7 +273,7 @@ class JavaInteropJsonTest {
             returnType = descriptor.returnType.name,
             isStatic = descriptor.isStatic,
             parameters = descriptor.parameters.map { param ->
-                au.clef.api.model.ParamDescriptorDto(
+                ParamDescriptorDto(
                     index = param.index,
                     type = param.type.name,
                     reflectedName = param.reflectedName,

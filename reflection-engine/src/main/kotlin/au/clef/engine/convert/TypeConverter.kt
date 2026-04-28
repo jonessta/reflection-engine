@@ -42,21 +42,48 @@ class TypeConverter {
 
     private fun convertScalar(rawValue: Any?, targetType: Type): Any? {
         val rawTargetType = rawClassOf(targetType)
+
         if (rawValue == null) {
             if (rawTargetType.isPrimitive) {
                 throw TypeMismatchException(Value.Scalar(null), rawTargetType)
             }
             return null
         }
+
         val wrappedTargetType = wrapPrimitive(rawTargetType)
-        if (wrappedTargetType.isInstance(rawValue)) {
-            return rawValue
+
+        val normalizedValue: Any? = when (rawValue) {
+            is JsonPrimitive -> {
+                if (rawValue.isString) {
+                    rawValue.content
+                } else {
+                    val text = rawValue.content
+                    when {
+                        text.equals("true", ignoreCase = true) -> true
+                        text.equals("false", ignoreCase = true) -> false
+                        text.toIntOrNull() != null -> text.toInt()
+                        text.toLongOrNull() != null -> text.toLong()
+                        text.toDoubleOrNull() != null -> text.toDouble()
+                        else -> text
+                    }
+                }
+            }
+
+            else -> rawValue
         }
 
-        val text = when (rawValue) {
-            is JsonPrimitive -> rawValue.content
-            else -> rawValue.toString()
+        if (normalizedValue == null) {
+            if (rawTargetType.isPrimitive) {
+                throw TypeMismatchException(Value.Scalar(null), rawTargetType)
+            }
+            return null
         }
+
+        if (wrappedTargetType.isInstance(normalizedValue)) {
+            return normalizedValue
+        }
+
+        val text = normalizedValue.toString()
 
         try {
             return when (wrappedTargetType) {

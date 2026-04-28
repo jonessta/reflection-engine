@@ -12,12 +12,18 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.util.*
-import java.util.Currency
-import java.util.Locale
 
-class ResponseValueMapper(
-    private val scalarEncoders: List<ScalarValueEncoder> = DefaultScalarValueEncoders.all
-) {
+/**
+ * val mapper = ResponseValueMapper(
+ *     scalarValueEncoder(
+ *         predicate = { it is Money },
+ *         encoder = { JsonPrimitive((it as Money).amount.toPlainString()) }
+ *     )
+ * )
+ */
+class ResponseValueMapper(userDefinedScalarEncoders: List<ScalarValueEncoder> = emptyList()) {
+
+    private val scalarEncoders: List<ScalarValueEncoder> = userDefinedScalarEncoders + DefaultScalarValueEncoders.all
 
     fun toDtoValue(value: Any?): ValueDto =
         when (value) {
@@ -74,23 +80,6 @@ class ResponseValueMapper(
             fields = fields
         )
     }
-}
-
-interface ScalarValueEncoder {
-    fun canEncode(value: Any): Boolean
-    fun encode(value: Any): JsonPrimitive
-}
-
-class SimpleScalarValueEncoder(
-    private val predicate: (Any) -> Boolean,
-    private val encoder: (Any) -> JsonPrimitive
-) : ScalarValueEncoder {
-
-    override fun canEncode(value: Any): Boolean =
-        predicate(value)
-
-    override fun encode(value: Any): JsonPrimitive =
-        encoder(value)
 }
 
 object DefaultScalarValueEncoders {

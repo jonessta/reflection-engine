@@ -2,6 +2,7 @@ package au.clef.web
 
 import au.clef.api.DefaultClassResolver
 import au.clef.api.ResponseValueMapper
+import au.clef.api.ScalarValueEncoder
 import au.clef.api.ValueMapper
 import au.clef.api.model.ExecutionDescriptorDto
 import au.clef.api.model.InvocationRequest
@@ -18,7 +19,8 @@ import kotlin.reflect.KClass
 class ReflectionServiceApi(
     methodSources: Collection<MethodSource>,
     methodSupportingTypes: Collection<KClass<*>> = emptyList(),
-    metadataResourcePath: String? = null
+    metadataResourcePath: String? = null,
+    userDefinedScalarEncoders: List<ScalarValueEncoder> = emptyList()
 ) {
     private val methodSourceRegistry = MethodSourceRegistry(methodSources, methodSupportingTypes)
 
@@ -35,16 +37,18 @@ class ReflectionServiceApi(
 
     private val valueMapper = ValueMapper(classResolver)
 
-    private val responseValueMapper = ResponseValueMapper()
+    private val responseValueMapper = ResponseValueMapper(userDefinedScalarEncoders)
 
     constructor(
         methodSource: MethodSource,
         methodSupportingTypes: Collection<KClass<*>> = emptyList(),
-        metadataResourcePath: String? = null
+        metadataResourcePath: String? = null,
+        userDefinedScalarEncoders: List<ScalarValueEncoder> = emptyList()
     ) : this(
         methodSources = listOf(methodSource),
         methodSupportingTypes = methodSupportingTypes,
-        metadataResourcePath = metadataResourcePath
+        metadataResourcePath = metadataResourcePath,
+        userDefinedScalarEncoders = userDefinedScalarEncoders
     )
 
     fun invoke(request: InvocationRequest): InvocationResponse {

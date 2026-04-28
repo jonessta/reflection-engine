@@ -34,7 +34,8 @@ val exposeMethodsOnInstanceAndStatic = ReflectionServiceApi(
 
 val exposeAllMethodsOnStaticClass = ReflectionServiceApi(
     methodSource = MethodSource.StaticClass(Math::class),
-    metadataResourcePath = AcmeDemoConfig.METADATA_RESOURCE_PATH
+    metadataResourcePath = AcmeDemoConfig.METADATA_RESOURCE_PATH,
+    userDefinedScalarEncoders = emptyList(),
 )
 
 val exposeAllMethodsService = ReflectionServiceApi(

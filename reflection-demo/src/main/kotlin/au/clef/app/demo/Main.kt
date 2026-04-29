@@ -22,7 +22,6 @@ private val KOTLIN_ADD_METHOD_ID = MethodId.from(::add.javaMethod!!)
 
 private val acmeService = AcmeService()
 
-
 private val methodSources: List<MethodSource> = listOf(
     MethodSource.InstanceMethod.from(
         instance = acmeService,

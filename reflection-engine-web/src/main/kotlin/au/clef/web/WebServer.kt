@@ -1,5 +1,6 @@
 package au.clef.web
 
+import au.clef.api.ReflectionApiConfig
 import au.clef.api.ReflectionServiceApi
 import au.clef.api.model.InvocationRequest
 import au.clef.api.model.InvocationResponse
@@ -21,9 +22,17 @@ data class WebServerConfig(
 )
 
 class WebServer(
-    private val reflectionService: ReflectionServiceApi,
+    apiConfig: ReflectionApiConfig,
     private val config: WebServerConfig = WebServerConfig()
 ) {
+
+    private val reflectionServiceApi = ReflectionServiceApi(
+        methodSources = apiConfig.reflectionConfig.methodSources,
+        methodSupportingTypes = apiConfig.reflectionConfig.methodSupportingTypes,
+        metadataResourcePath = apiConfig.reflectionConfig.metadataResourcePath,
+        userDefinedScalarConverters = apiConfig.userDefinedScalarConverters
+    )
+
     fun start() {
         embeddedServer(Netty, host = config.host, port = config.port) {
             install(ContentNegotiation) {
@@ -48,7 +57,7 @@ class WebServer(
                 get("health") {
                     call.respond(mapOf("ok" to true))
                 }
-                reflectionRoutes(reflectionService)
+                reflectionRoutes(reflectionServiceApi)
             }
         }.start(wait = true)
     }

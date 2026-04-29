@@ -8,12 +8,35 @@ data class ReflectionConfig(
     val methodSupportingTypes: Collection<KClass<*>> = emptyList(),
     val metadataResourcePath: String? = null,
     val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-) {
-    constructor(
-        methodSource: MethodSource,
-        methodSupportingTypes: Collection<KClass<*>> = emptyList(),
-        metadataResourcePath: String? = null,
-        inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-    )
-            : this(listOf(methodSource), methodSupportingTypes, metadataResourcePath, inheritanceLevel)
+)
+
+class ReflectionConfigBuilder internal constructor(firstMethodSource: MethodSource) {
+
+    private val methodSources = mutableListOf(firstMethodSource)
+    private val methodSupportingTypes = mutableListOf<KClass<*>>()
+    private var metadataResourcePath: String? = null
+    private var inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
+
+    fun methodSource(source: MethodSource): ReflectionConfigBuilder = apply { methodSources += source }
+
+    fun methodSources(vararg sources: MethodSource): ReflectionConfigBuilder = apply { methodSources += sources }
+
+    fun supportingType(type: KClass<*>): ReflectionConfigBuilder = apply { methodSupportingTypes += type }
+
+    fun supportingTypes(vararg types: KClass<*>): ReflectionConfigBuilder = apply { methodSupportingTypes += types }
+
+    fun metadataResourcePath(path: String?): ReflectionConfigBuilder = apply { metadataResourcePath = path }
+
+    fun inheritanceLevel(level: InheritanceLevel): ReflectionConfigBuilder = apply { inheritanceLevel = level }
+
+    fun build(): ReflectionConfig =
+        ReflectionConfig(
+            methodSources = methodSources.toList(),
+            methodSupportingTypes = methodSupportingTypes.toList(),
+            metadataResourcePath = metadataResourcePath,
+            inheritanceLevel = inheritanceLevel
+        )
 }
+
+fun reflectionConfig(methodSource: MethodSource, vararg methodSources: MethodSource): ReflectionConfigBuilder =
+    ReflectionConfigBuilder(methodSource).apply { methodSources(*methodSources) }

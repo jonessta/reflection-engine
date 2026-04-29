@@ -1,12 +1,9 @@
 package au.clef.api
 
-import au.clef.api.model.ExecutionDescriptorDto
-import au.clef.api.model.InvocationRequest
-import au.clef.api.model.InvocationResponse
-import au.clef.api.model.ParamDescriptorDto
-import au.clef.api.model.ValueDto
+import au.clef.api.model.*
 import au.clef.engine.ExecutionContext
 import au.clef.engine.MethodSource
+import au.clef.engine.MethodSource.StaticMethod
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.InheritanceLevel
 import au.clef.engine.registry.MethodSourceRegistry
@@ -16,8 +13,7 @@ import java.net.URI
 import java.nio.file.Paths
 import java.time.LocalDate
 import java.time.Month
-import java.util.Collections
-import java.util.Locale
+import java.util.*
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
@@ -25,10 +21,10 @@ import kotlin.test.assertIs
 class JavaInteropJsonTest {
 
     private val methodSources: List<MethodSource> = listOf(
-        MethodSource.StaticMethod.from(LocalDate::class, "of", Int::class, Int::class, Int::class),
-        MethodSource.StaticMethod.from(URI::class, "create", String::class),
-        MethodSource.StaticMethod.from(Locale::class, "forLanguageTag", String::class),
-        MethodSource.StaticMethod.from(Collections::class, "singletonMap", Any::class, Any::class)
+        StaticMethod(LocalDate::class, "of", Int::class, Int::class, Int::class),
+        StaticMethod(URI::class, "create", String::class),
+        StaticMethod(Locale::class, "forLanguageTag", String::class),
+        StaticMethod(Collections::class, "singletonMap", Any::class, Any::class)
     )
 
     private val registry = MethodSourceRegistry(
@@ -112,7 +108,7 @@ class JavaInteropJsonTest {
     @Test
     fun `invokes enum factory method from JSON`() {
         val response = invokeSingleStatic(
-            methodSource = MethodSource.StaticMethod.from(Month::class, "valueOf", String::class),
+            methodSource = StaticMethod(Month::class, "valueOf", String::class),
             args = listOf(ValueDto.Scalar(JsonPrimitive("APRIL")))
         )
 
@@ -122,7 +118,7 @@ class JavaInteropJsonTest {
     @Test
     fun `rejects invalid enum value`() {
         val localRegistry = MethodSourceRegistry(
-            listOf(MethodSource.StaticMethod.from(Month::class, "valueOf", String::class))
+            listOf(StaticMethod(Month::class, "valueOf", String::class))
         )
         val localEngine = ReflectionEngine(reflectionRegistry = localRegistry)
         val localRequestValueMapper = RequestValueMapper(
@@ -147,7 +143,7 @@ class JavaInteropJsonTest {
     @Test
     fun `invokes Java varargs method from JSON list`() {
         val response = invokeSingleStatic(
-            methodSource = MethodSource.StaticMethod.from(
+            methodSource = StaticMethod(
                 Paths::class,
                 "get",
                 String::class,
@@ -170,7 +166,7 @@ class JavaInteropJsonTest {
     @Test
     fun `supports maps with non string keys`() {
         val response = invokeSingleStatic(
-            methodSource = MethodSource.StaticMethod.from(
+            methodSource = StaticMethod(
                 Collections::class,
                 "singletonMap",
                 Any::class,
@@ -215,7 +211,7 @@ class JavaInteropJsonTest {
     }
 
     private fun invokeSingleStatic(
-        methodSource: MethodSource.StaticMethod,
+        methodSource: StaticMethod,
         args: List<ValueDto>
     ): InvocationResponse {
         val localRegistry = MethodSourceRegistry(listOf(methodSource))

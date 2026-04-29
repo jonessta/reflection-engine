@@ -5,8 +5,12 @@ import au.clef.app.demo.model.Address
 import au.clef.app.demo.model.Person
 import au.clef.app.demo.model.add
 import au.clef.engine.MethodSource
+import au.clef.engine.MethodSource.InstanceMethod
+import au.clef.engine.MethodSource.StaticMethod
 import au.clef.engine.ReflectionEngine
-import au.clef.engine.model.*
+import au.clef.engine.model.MethodDescriptor
+import au.clef.engine.model.MethodId
+import au.clef.engine.model.ParamDescriptor
 import au.clef.engine.registry.MethodSourceRegistry
 import au.clef.metadata.*
 import au.clef.metadata.model.MetadataRoot
@@ -23,15 +27,15 @@ private val KOTLIN_ADD_METHOD_ID = MethodId.from(::add.javaMethod!!)
 private val acmeService = AcmeService()
 
 private val methodSources: List<MethodSource> = listOf(
-    MethodSource.InstanceMethod.from(
+    InstanceMethod(
         instance = acmeService,
         instanceDescription = "ACME Service",
         methodName = "personAddress",
         Person::class
     ),
-//    MethodSource.Instance(obj = acmeService),
-    MethodSource.StaticMethod.from(::add),
-    MethodSource.StaticMethod.from(Math::class, "max", Int::class, Int::class)
+//    Instance(obj = acmeService),
+    StaticMethod(::add),
+    StaticMethod(Math::class, "max", Int::class, Int::class)
 )
 
 private val methodSupportingTypes: List<KClass<*>> = listOf(Person::class, Address::class)

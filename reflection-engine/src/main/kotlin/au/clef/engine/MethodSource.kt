@@ -1,7 +1,6 @@
 package au.clef.engine
 
 import au.clef.engine.model.MethodId
-import java.lang.reflect.Method
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
@@ -21,27 +20,18 @@ sealed class MethodSource(val declaringClass: KClass<*>) {
     /**
      * Expose exactly one static method.
      */
-    class StaticMethod(declaringClass: KClass<*>, val methodId: MethodId) : MethodSource(declaringClass) {
+    class StaticMethod : MethodSource {
+        val methodId: MethodId
 
-        companion object {
-            fun from(
-                declaringClass: KClass<*>,
-                methodName: String,
-                vararg parameterTypes: KClass<*>
-            ): StaticMethod = StaticMethod(
-                declaringClass = declaringClass,
-                methodId = MethodId.from(declaringClass, methodName, *parameterTypes)
-            )
+        constructor(declaringClass: KClass<*>, methodName: String, vararg parameterTypes: KClass<*>)
+                : super(declaringClass) {
+            this.methodId = MethodId.from(declaringClass, methodName, *parameterTypes)
+        }
 
-            fun from(function: KFunction<*>): StaticMethod {
-                val method: Method = requireNotNull(function.javaMethod) {
-                    "Function ${function.name} does not have a Java method"
-                }
-                return StaticMethod(
-                    declaringClass = method.declaringClass.kotlin,
-                    methodId = MethodId.from(method)
-                )
-            }
+        constructor(function: KFunction<*>)
+                : super(declaringClass = requireNotNull(function.javaMethod) { "Function ${function.name} does not have a Java method" }.declaringClass.kotlin) {
+            this.methodId =
+                MethodId.from(requireNotNull(function.javaMethod) { "Function ${function.name} does not have a Java method" })
         }
     }
 
@@ -62,18 +52,15 @@ sealed class MethodSource(val declaringClass: KClass<*>) {
         val methodId: MethodId
     ) : MethodSource(instance::class), ExposableInstance {
 
-        companion object {
-            fun from(
-                instance: Any,
-                instanceDescription: String,
-                methodName: String,
-                vararg parameterTypes: KClass<*>
-            ): InstanceMethod =
-                InstanceMethod(
-                    instance = instance,
-                    instanceDescription = instanceDescription,
-                    methodId = MethodId.from(instance::class, methodName, *parameterTypes)
-                )
-        }
+        constructor(
+            instance: Any,
+            instanceDescription: String,
+            methodName: String,
+            vararg parameterTypes: KClass<*>
+        ) : this(
+            instance = instance,
+            instanceDescription = instanceDescription,
+            methodId = MethodId.from(instance::class, methodName, *parameterTypes)
+        )
     }
 }

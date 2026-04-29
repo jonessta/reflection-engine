@@ -1,11 +1,16 @@
 package au.clef.api
 
-import au.clef.api.model.*
+import au.clef.api.model.ExecutionDescriptorDto
+import au.clef.api.model.InvocationRequest
+import au.clef.api.model.InvocationResponse
+import au.clef.api.model.ParamDescriptorDto
+import au.clef.api.model.ValueDto
 import au.clef.engine.ExecutionContext
-import au.clef.engine.MethodSource
 import au.clef.engine.MethodSource.StaticMethod
+import au.clef.engine.ReflectionConfig
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.InheritanceLevel
+import au.clef.engine.reflectionConfig
 import au.clef.engine.registry.MethodSourceRegistry
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Test
@@ -13,28 +18,31 @@ import java.net.URI
 import java.nio.file.Paths
 import java.time.LocalDate
 import java.time.Month
-import java.util.*
+import java.util.Collections
+import java.util.Locale
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 
 class JavaInteropJsonTest {
 
-    private val methodSources: List<MethodSource> = listOf(
+    private val reflectionConfig: ReflectionConfig = reflectionConfig(
         StaticMethod(LocalDate::class, "of", Int::class, Int::class, Int::class),
         StaticMethod(URI::class, "create", String::class),
         StaticMethod(Locale::class, "forLanguageTag", String::class),
         StaticMethod(Collections::class, "singletonMap", Any::class, Any::class)
     )
+        .inheritanceLevel(InheritanceLevel.DeclaredOnly)
+        .build()
 
     private val registry = MethodSourceRegistry(
-        methodSources = methodSources,
-        methodSupportingTypes = emptyList(),
-        inheritanceLevel = InheritanceLevel.DeclaredOnly
+        methodSources = reflectionConfig.methodSources,
+        methodSupportingTypes = reflectionConfig.methodSupportingTypes,
+        inheritanceLevel = reflectionConfig.inheritanceLevel
     )
 
     private val engine = ReflectionEngine(
-        reflectionRegistry = registry
+        reflectionConfig = reflectionConfig
     )
 
     private val requestValueMapper = RequestValueMapper(
@@ -117,13 +125,22 @@ class JavaInteropJsonTest {
 
     @Test
     fun `rejects invalid enum value`() {
+        val localConfig = reflectionConfig(
+            StaticMethod(Month::class, "valueOf", String::class)
+        ).build()
+
         val localRegistry = MethodSourceRegistry(
-            listOf(StaticMethod(Month::class, "valueOf", String::class))
+            methodSources = localConfig.methodSources,
+            methodSupportingTypes = localConfig.methodSupportingTypes,
+            inheritanceLevel = localConfig.inheritanceLevel
         )
-        val localEngine = ReflectionEngine(reflectionRegistry = localRegistry)
+
+        val localEngine = ReflectionEngine(reflectionConfig = localConfig)
+
         val localRequestValueMapper = RequestValueMapper(
             classResolver = DefaultClassResolver(localEngine.methodSourceTypes)
         )
+
         val execution = localRegistry.allExecutionContexts().single() as ExecutionContext.Static
         val descriptor = execution.descriptor
 
@@ -214,11 +231,22 @@ class JavaInteropJsonTest {
         methodSource: StaticMethod,
         args: List<ValueDto>
     ): InvocationResponse {
-        val localRegistry = MethodSourceRegistry(listOf(methodSource))
-        val localEngine = ReflectionEngine(reflectionRegistry = localRegistry)
+        val localConfig = reflectionConfig(methodSource).build()
+
+        val localEngine = ReflectionEngine(
+            reflectionConfig = localConfig
+        )
+
+        val localRegistry = MethodSourceRegistry(
+            methodSources = localConfig.methodSources,
+            methodSupportingTypes = localConfig.methodSupportingTypes,
+            inheritanceLevel = localConfig.inheritanceLevel
+        )
+
         val localRequestValueMapper = RequestValueMapper(
             classResolver = DefaultClassResolver(localEngine.methodSourceTypes)
         )
+
         val localResponseValueMapper = ResponseValueMapper()
 
         val execution = localRegistry.allExecutionContexts().single() as ExecutionContext.Static

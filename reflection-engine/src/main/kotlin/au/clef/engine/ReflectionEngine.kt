@@ -8,9 +8,14 @@ import au.clef.metadata.DescriptorMetadataRegistry
 import kotlin.reflect.KClass
 
 class ReflectionEngine(
-    private val reflectionRegistry: MethodSourceRegistry,
+    reflectionConfig: ReflectionConfig,
     private val metadataRegistry: DescriptorMetadataRegistry? = null
 ) {
+    private val reflectionRegistry = MethodSourceRegistry(
+        methodSources = reflectionConfig.methodSources,
+        methodSupportingTypes = reflectionConfig.methodSupportingTypes,
+        inheritanceLevel = reflectionConfig.inheritanceLevel
+    )
 
     val methodSourceTypes: MethodSourceTypes get() = reflectionRegistry
 

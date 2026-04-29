@@ -17,11 +17,7 @@ class ReflectionConfigBuilder internal constructor(firstMethodSource: MethodSour
     private var metadataResourcePath: String? = null
     private var inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
 
-    fun methodSource(source: MethodSource): ReflectionConfigBuilder = apply { methodSources += source }
-
     fun methodSources(vararg sources: MethodSource): ReflectionConfigBuilder = apply { methodSources += sources }
-
-    fun supportingType(type: KClass<*>): ReflectionConfigBuilder = apply { methodSupportingTypes += type }
 
     fun supportingTypes(vararg types: KClass<*>): ReflectionConfigBuilder = apply { methodSupportingTypes += types }
 

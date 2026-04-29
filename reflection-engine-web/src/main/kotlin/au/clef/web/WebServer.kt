@@ -26,12 +26,7 @@ class WebServer(
     private val config: WebServerConfig = WebServerConfig()
 ) {
 
-    private val reflectionServiceApi = ReflectionServiceApi(
-        methodSources = apiConfig.reflectionConfig.methodSources,
-        methodSupportingTypes = apiConfig.reflectionConfig.methodSupportingTypes,
-        metadataResourcePath = apiConfig.reflectionConfig.metadataResourcePath,
-        userDefinedScalarConverters = apiConfig.userDefinedScalarConverters
-    )
+    private val reflectionServiceApi = ReflectionServiceApi(apiConfig)
 
     fun start() {
         embeddedServer(Netty, host = config.host, port = config.port) {

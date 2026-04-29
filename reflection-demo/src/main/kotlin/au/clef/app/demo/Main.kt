@@ -4,18 +4,18 @@ import au.clef.app.demo.model.AcmeService
 import au.clef.app.demo.model.Address
 import au.clef.app.demo.model.Person
 import au.clef.app.demo.model.add
-import au.clef.engine.MethodSource
 import au.clef.engine.MethodSource.InstanceMethod
 import au.clef.engine.MethodSource.StaticMethod
+import au.clef.engine.ReflectionConfig
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
 import au.clef.engine.model.ParamDescriptor
+import au.clef.engine.reflectionConfig
 import au.clef.engine.registry.MethodSourceRegistry
 import au.clef.metadata.*
 import au.clef.metadata.model.MetadataRoot
 import java.io.File
-import kotlin.reflect.KClass
 import kotlin.reflect.jvm.javaMethod
 
 private val PERSON_ADDRESS_METHOD_ID = MethodId.from(AcmeService::class, "personAddress", Person::class)
@@ -26,31 +26,34 @@ private val KOTLIN_ADD_METHOD_ID = MethodId.from(::add.javaMethod!!)
 
 private val acmeService = AcmeService()
 
-private val methodSources: List<MethodSource> = listOf(
+private const val METADATA_RESOURCE_PATH = "/config/method-metadata.json"
+
+private val outputFile = File("reflection-demo/src/main/resources")
+    .resolve(METADATA_RESOURCE_PATH.removePrefix("/"))
+
+private val reflectionConfig: ReflectionConfig = reflectionConfig(
     InstanceMethod(
         instance = acmeService,
         instanceDescription = "ACME Service",
         methodName = "personAddress",
         Person::class
     ),
-//    Instance(obj = acmeService),
     StaticMethod(::add),
     StaticMethod(Math::class, "max", Int::class, Int::class)
 )
+    .supportingTypes(Person::class, Address::class)
+    .metadataResourcePath(METADATA_RESOURCE_PATH)
+    .build()
 
-private val methodSupportingTypes: List<KClass<*>> = listOf(Person::class, Address::class)
-
-private const val METADATA_RESOURCE_PATH = "/config/method-metadata.json"
-
-private val outputFile = File("reflection-demo/src/main/resources")
-    .resolve(METADATA_RESOURCE_PATH.removePrefix("/"))
-
-private val reflectionRegistry = MethodSourceRegistry(methodSources, methodSupportingTypes)
+private val reflectionRegistry = MethodSourceRegistry(
+    methodSources = reflectionConfig.methodSources,
+    methodSupportingTypes = reflectionConfig.methodSupportingTypes,
+    inheritanceLevel = reflectionConfig.inheritanceLevel
+)
 
 private val metadataRegistry = DescriptorMetadataRegistry(MetadataLoader.fromResourceOrEmpty(METADATA_RESOURCE_PATH))
 
-private val engine: ReflectionEngine =
-    ReflectionEngine(reflectionRegistry = reflectionRegistry, metadataRegistry = metadataRegistry)
+private val engine = ReflectionEngine(reflectionConfig = reflectionConfig, metadataRegistry = metadataRegistry)
 
 fun main() {
     generateMetadata()
@@ -68,7 +71,7 @@ private fun generateMetadata() {
     println(MetadataWriter.toJson(metadata))
 }
 
-// todo fix it should cgeck per method not whole class
+// todo fix it should check per method not whole class
 private fun validateMetadata() {
     val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(METADATA_RESOURCE_PATH)
     val issues: List<ValidationIssue> = MetadataValidator(reflectionRegistry).validate(metadata)

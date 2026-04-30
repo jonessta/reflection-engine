@@ -20,7 +20,6 @@ data class ParamDescriptorDto(
     val type: String,
     val reflectedName: String,
     val name: String,
-    val label: String? = null,
     val nullable: Boolean,
     val scalarLike: Boolean = false
 )

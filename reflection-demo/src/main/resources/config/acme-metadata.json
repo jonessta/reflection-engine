@@ -6,8 +6,7 @@
       "order": null,
       "parameters": [
         {
-          "name": "aaa",
-          "label": "peraon"
+          "name": "aaa"
         }
       ]
     },
@@ -17,12 +16,10 @@
       "order": null,
       "parameters": [
         {
-          "name": "num1",
-          "label": null
+          "name": "num1"
         },
         {
-          "name": "num2",
-          "label": null
+          "name": "num2"
         }
       ]
     },
@@ -32,12 +29,10 @@
       "order": null,
       "parameters": [
         {
-          "name": "num1",
-          "label": null
+          "name": "num1"
         },
         {
-          "name": "num2",
-          "label": null
+          "name": "num2"
         }
       ]
     },
@@ -47,12 +42,10 @@
       "order": null,
       "parameters": [
         {
-          "name": "num1",
-          "label": null
+          "name": "num1"
         },
         {
-          "name": "num2",
-          "label": null
+          "name": "num2"
         }
       ]
     }

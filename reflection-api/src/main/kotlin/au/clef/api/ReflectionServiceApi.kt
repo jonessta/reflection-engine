@@ -89,7 +89,6 @@ class ReflectionServiceApi(
                     type = param.logicalType.name,
                     reflectedName = param.reflectedName,
                     name = param.name,
-                    label = param.label,
                     nullable = param.nullable,
                     scalarLike = requestValueMapper.isScalarLike(param.logicalType)
                 )

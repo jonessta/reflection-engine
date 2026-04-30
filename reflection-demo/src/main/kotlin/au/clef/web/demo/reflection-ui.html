@@ -522,7 +522,7 @@
                 execution.reflectedName,
                 execution.displayName,
                 execution.returnType,
-                ...execution.parameters.map(p => `${p.name} ${p.label || ''} ${p.type}`)
+                ...execution.parameters.map(p => `${p.name || ''} ${p.type}`)
             ].filter(Boolean).join(' ').toLowerCase();
 
             return haystack.includes(filter);
@@ -576,7 +576,7 @@
             const selected = state.selected?.executionId === execution.executionId;
             const kindClass = execution.isStatic ? 'static' : 'instance';
             const kindLabel = execution.isStatic ? 'Static' : `Instance${execution.instanceDescription ? `: ${execution.instanceDescription}` : ''}`;
-            const params = execution.parameters.map(p => p.label || p.name).join(', ');
+            const params = execution.parameters.map(p => p.name).join(', ');
             return `
           <article class="method-card ${selected ? 'active' : ''}" data-execution-id="${escapeAttr(execution.executionId)}">
             <div class="method-top">
@@ -626,7 +626,7 @@
                 <div class="param-card">
                   <div class="param-head">
                     <div>
-                      <p class="param-name">${escapeHtml(param.label || param.name)}</p>
+                      <p class="param-name">${escapeHtml(param.name)}</p>
                       <p class="param-type">${escapeHtml(param.type)}</p>
                     </div>
                     <span class="pill">${param.nullable ? 'nullable' : 'required'}</span>

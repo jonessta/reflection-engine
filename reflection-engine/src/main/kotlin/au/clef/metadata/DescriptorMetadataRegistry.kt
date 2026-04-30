@@ -25,7 +25,6 @@ class DescriptorMetadataRegistry(
                         runtimeType = param.runtimeType,
                         reflectedName = param.reflectedName,
                         name = paramMeta.name ?: param.name,
-                        label = paramMeta.label ?: param.label,
                         nullable = param.nullable
                     )
                 }

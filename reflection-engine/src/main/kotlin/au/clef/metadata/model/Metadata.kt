@@ -18,5 +18,5 @@ data class MethodMetadata(
 
 @Serializable
 data class ParamMetadata(
-    val name: String? = null, val label: String? = null
+    val name: String? = null
 )

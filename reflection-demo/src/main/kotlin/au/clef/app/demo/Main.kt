@@ -102,9 +102,7 @@ private fun showAllDescriptors() {
                     "${param.logicalType.name} (runtime=${param.runtimeType.name})"
                 }
 
-            println(
-                " name=${param.name}, label=${param.label}, type=$typeText"
-            )
+            println(" name=${param.name}, type=$typeText")
         }
     }
 }

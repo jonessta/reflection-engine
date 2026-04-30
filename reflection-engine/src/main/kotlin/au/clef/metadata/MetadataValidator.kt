@@ -44,13 +44,6 @@ class MetadataValidator(private val methodSourceRegistry: MethodSourceRegistry) 
                         message = "Parameter name is blank"
                     )
                 }
-                if (paramMetadata.label != null && paramMetadata.label.isBlank()) {
-                    issues += ValidationIssue(
-                        severity = Severity.WARNING,
-                        location = "${methodId}:param[$index]",
-                        message = "Parameter label is blank"
-                    )
-                }
                 if (paramMetadata.name != null && paramMetadata.name == descriptorParam.reflectedName) {
                     issues += ValidationIssue(
                         severity = Severity.WARNING,

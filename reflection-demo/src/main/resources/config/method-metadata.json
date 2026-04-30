@@ -6,8 +6,7 @@
       "order": null,
       "parameters": [
         {
-          "name": "param0",
-          "label": null
+          "name": "param0"
         }
       ]
     },
@@ -17,12 +16,10 @@
       "order": null,
       "parameters": [
         {
-          "name": "param0",
-          "label": null
+          "name": "param0"
         },
         {
-          "name": "param1",
-          "label": null
+          "name": "param1"
         }
       ]
     },
@@ -32,12 +29,10 @@
       "order": null,
       "parameters": [
         {
-          "name": "param0",
-          "label": null
+          "name": "param0"
         },
         {
-          "name": "param1",
-          "label": null
+          "name": "param1"
         }
       ]
     }

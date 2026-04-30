@@ -88,7 +88,6 @@ data class ParamDescriptor(
     val runtimeType: Class<*>,
     val reflectedName: String,
     val name: String,
-    val label: String? = null,
     val nullable: Boolean
 )
 

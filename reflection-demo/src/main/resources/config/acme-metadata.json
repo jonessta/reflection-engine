@@ -7,7 +7,7 @@
       "parameters": [
         {
           "name": "aaa",
-          "label": "ccccc"
+          "label": "peraon"
         }
       ]
     },
@@ -17,11 +17,11 @@
       "order": null,
       "parameters": [
         {
-          "name": "ssss",
-          "label": "www"
+          "name": "num1",
+          "label": null
         },
         {
-          "name": "vvv",
+          "name": "num2",
           "label": null
         }
       ]
@@ -32,11 +32,11 @@
       "order": null,
       "parameters": [
         {
-          "name": "rrr",
+          "name": "num1",
           "label": null
         },
         {
-          "name": "yyy",
+          "name": "num2",
           "label": null
         }
       ]
@@ -47,11 +47,11 @@
       "order": null,
       "parameters": [
         {
-          "name": "uuuu",
+          "name": "num1",
           "label": null
         },
         {
-          "name": "mmmm",
+          "name": "num2",
           "label": null
         }
       ]

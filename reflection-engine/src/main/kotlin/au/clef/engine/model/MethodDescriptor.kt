@@ -44,16 +44,16 @@ class MethodDescriptor(
             )
 
         fun from(
-            function: KFunction<*>,
+            kotlinFunction: KFunction<*>,
             method: Method,
             id: MethodId,
             displayName: String? = null
         ): MethodDescriptor =
             MethodDescriptor(
                 id = id,
-                reflectedName = function.name,
+                reflectedName = kotlinFunction.name,
                 displayName = displayName,
-                parameters = buildKotlinParamDescriptors(function, method),
+                parameters = buildKotlinParamDescriptors(kotlinFunction, method),
                 returnType = method.returnType,
                 isStatic = Modifier.isStatic(method.modifiers)
             )
@@ -100,7 +100,6 @@ private fun buildJavaParamDescriptors(method: Method): List<ParamDescriptor> =
             runtimeType = parameter.type,
             reflectedName = parameter.name,
             name = parameter.name,
-            label = null,
             nullable = !parameter.type.isPrimitive
         )
     }
@@ -124,7 +123,6 @@ private fun buildKotlinParamDescriptors(
             runtimeType = runtimeParameterTypes[index],
             reflectedName = parameterName,
             name = parameterName,
-            label = null,
             nullable = parameter.type.isMarkedNullable
         )
     }

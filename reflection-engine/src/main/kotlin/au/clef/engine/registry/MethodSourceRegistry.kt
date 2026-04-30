@@ -18,11 +18,11 @@ import kotlin.reflect.jvm.javaMethod
 
 private data class RegistryEntry(
     val descriptor: MethodDescriptor,
-    val method: Method
+    val javaMethod: Method
 )
 
 private data class ResolvedMethod(
-    val function: KFunction<*>?,
+    val kotlinFunction: KFunction<*>?,
     val method: Method
 )
 
@@ -97,7 +97,7 @@ class MethodSourceRegistry(
             )
 
     fun method(id: MethodId): Method =
-        entriesById[id]?.method
+        entriesById[id]?.javaMethod
             ?: throw MethodNotFoundException(
                 methodId = id,
                 available = entriesById.keys.map(MethodId::toString)
@@ -168,18 +168,18 @@ class MethodSourceRegistry(
     ) {
         val descriptors = descriptorsByClass.getOrPut(clazz) { mutableListOf() }
 
-        for (method in collectHierarchyMethods(clazz, inheritanceLevel)) {
-            if (Modifier.isStatic(method.modifiers) != requireStatic) continue
+        for (javaMethod in collectHierarchyMethods(clazz, inheritanceLevel)) {
+            if (Modifier.isStatic(javaMethod.modifiers) != requireStatic) continue
 
-            val methodId = MethodId.from(method)
+            val methodId = MethodId.from(javaMethod)
             if (entriesById.containsKey(methodId)) continue
 
-            val descriptor = MethodDescriptor.from(method)
+            val descriptor = MethodDescriptor.from(javaMethod)
 
             descriptors += descriptor
             entriesById[methodId] = RegistryEntry(
                 descriptor = descriptor,
-                method = method
+                javaMethod = javaMethod
             )
 
             val executionContext = executionContextFor(methodId)
@@ -194,14 +194,14 @@ class MethodSourceRegistry(
         executionContextFor: (MethodId) -> ExecutionContext
     ) {
         val resolved = resolveMethod(clazz, methodId)
-        val method = resolved.method
+        val javaMethod = resolved.method
 
         if (requireStatic) {
-            require(Modifier.isStatic(method.modifiers)) {
+            require(Modifier.isStatic(javaMethod.modifiers)) {
                 "Method ${methodId.value} must be static"
             }
         } else {
-            require(!Modifier.isStatic(method.modifiers)) {
+            require(!Modifier.isStatic(javaMethod.modifiers)) {
                 "Method ${methodId.value} must be an instance method"
             }
         }
@@ -210,16 +210,16 @@ class MethodSourceRegistry(
 
         if (!entriesById.containsKey(methodId)) {
             val descriptor =
-                if (resolved.function != null) {
+                if (resolved.kotlinFunction != null) {
                     MethodDescriptor.from(
-                        function = resolved.function,
-                        method = method,
+                        kotlinFunction = resolved.kotlinFunction,
+                        method = javaMethod,
                         id = methodId
                     )
                 } else {
                     val parsed = ParsedMethodId.parse(methodId)
                     MethodDescriptor.from(
-                        method = method,
+                        method = javaMethod,
                         id = methodId,
                         logicalMethodName = parsed.methodName
                     )
@@ -228,7 +228,7 @@ class MethodSourceRegistry(
             descriptors += descriptor
             entriesById[methodId] = RegistryEntry(
                 descriptor = descriptor,
-                method = method
+                javaMethod = javaMethod
             )
         }
 
@@ -237,7 +237,7 @@ class MethodSourceRegistry(
     }
 
     private fun resolveMethod(clazz: Class<*>, methodId: MethodId): ResolvedMethod {
-        resolveJavaMethod(clazz, methodId)?.let { return ResolvedMethod(function = null, method = it) }
+        resolveJavaMethod(clazz, methodId)?.let { return ResolvedMethod(kotlinFunction = null, method = it) }
         resolveKotlinMethod(clazz.kotlin, methodId)?.let { return it }
 
         val availableJava = collectHierarchyMethods(clazz, inheritanceLevel)
@@ -266,10 +266,10 @@ class MethodSourceRegistry(
                         function.javaMethod != null
             }
 
-        val function = candidates.singleOrNull() ?: return null
+        val kotlinFunction = candidates.singleOrNull() ?: return null
         return ResolvedMethod(
-            function = function,
-            method = requireNotNull(function.javaMethod)
+            kotlinFunction = kotlinFunction,
+            method = requireNotNull(kotlinFunction.javaMethod)
         )
     }
 

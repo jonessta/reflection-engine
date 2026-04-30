@@ -22,7 +22,7 @@ internal val acmeConfig = reflectionConfig(
     .metadataResourcePath("/config/acme-metadata.json")
     .build()
 
-val webConfig = WebServerConfig(port = 8080, host = "0.0.0.0")
+val webConfig = WebServerConfig()
 
 fun main() {
     WebServer(acmeConfig, webConfig).start()

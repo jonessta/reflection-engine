@@ -1,8 +1,12 @@
 package au.clef.web.demo
 
-import au.clef.api.ReflectionApiConfig
+import au.clef.api.reflectionApiConfig
 import au.clef.api.scalarConverter
-import au.clef.app.demo.model.*
+import au.clef.app.demo.model.Address
+import au.clef.app.demo.model.Customer
+import au.clef.app.demo.model.CustomerId
+import au.clef.app.demo.model.CustomerService
+import au.clef.app.demo.model.EmailAddress
 import au.clef.engine.MethodSource.InstanceMethod
 import au.clef.engine.reflectionConfig
 import au.clef.web.WebServer
@@ -18,9 +22,8 @@ internal val customerReflectionConfig = reflectionConfig(
     .supportingTypes(Customer::class, Address::class)
     .build()
 
-val customerReflectionApiConfig = ReflectionApiConfig(
-    reflectionConfig = customerReflectionConfig,
-    userDefinedScalarConverters = listOf(
+val customerReflectionApiConfig = reflectionApiConfig(customerReflectionConfig)
+    .scalarConverters(
         scalarConverter(
             type = CustomerId::class,
             encode = { JsonPrimitive(it.value) },
@@ -32,13 +35,8 @@ val customerReflectionApiConfig = ReflectionApiConfig(
             decode = { EmailAddress(it) }
         )
     )
-)
-
-val customerWebConfig = WebServerConfig(
-    port = 8080,
-    host = "0.0.0.0"
-)
+    .build()
 
 fun main() {
-    WebServer(customerReflectionApiConfig, customerWebConfig).start()
+    WebServer(customerReflectionApiConfig, WebServerConfig()).start()
 }

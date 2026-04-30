@@ -26,3 +26,6 @@ class ReflectionApiConfigBuilder(
             userDefinedScalarConverters = userDefinedScalarConverters.toList()
         )
 }
+
+fun reflectionApiConfig(reflectionConfig: ReflectionConfig): ReflectionApiConfigBuilder =
+    ReflectionApiConfigBuilder(reflectionConfig)

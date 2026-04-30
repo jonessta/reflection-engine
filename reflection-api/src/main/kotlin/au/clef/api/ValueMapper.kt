@@ -1,6 +1,7 @@
 package au.clef.api
 
 import au.clef.api.model.MapEntry
+import au.clef.api.model.MapEntryDto
 import au.clef.api.model.Value
 import au.clef.api.model.ValueDto
 
@@ -13,45 +14,30 @@ interface ClassResolver {
     fun resolve(typeName: String): ResolvedType
 }
 
-class ValueMapper(
-    private val classResolver: ClassResolver
-) {
-    fun toEngineValue(dto: ValueDto): Value =
-        when (dto) {
-            is ValueDto.Scalar ->
-                Value.Scalar(dto.value)
+class ValueMapper(private val classResolver: ClassResolver) {
 
-            is ValueDto.Record -> {
-                when (val resolvedType = classResolver.resolve(dto.type)) {
-                    is ResolvedType.Structured ->
-                        Value.Record(
-                            type = resolvedType.type,
-                            fields = dto.fields.mapValues { (_, valueDto) ->
-                                toEngineValue(valueDto)
-                            }
-                        )
+    fun toEngineValue(dto: ValueDto): Value = when (dto) {
+        is ValueDto.Scalar    -> Value.Scalar(dto.value)
+        is ValueDto.ListValue  -> Value.ListValue(dto.items.map(::toEngineValue))
+        is ValueDto.Null       -> Value.Null
+        is ValueDto.MapValue   -> Value.MapValue(dto.entries.map { it.toEntry() })
+        is ValueDto.Record     -> mapRecord(dto)
+    }
 
-                    is ResolvedType.Scalar ->
-                        throw IllegalArgumentException(
-                            "Type ${dto.type} is scalar-like and must not be sent as a record"
-                        )
-                }
-            }
-
-            is ValueDto.ListValue ->
-                Value.ListValue(dto.items.map(::toEngineValue))
-
-            is ValueDto.MapValue ->
-                Value.MapValue(
-                    dto.entries.map { entry ->
-                        MapEntry(
-                            key = toEngineValue(entry.key),
-                            value = toEngineValue(entry.value)
-                        )
-                    }
-                )
-
-            ValueDto.Null ->
-                Value.Null
+    private fun mapRecord(dto: ValueDto.Record): Value.Record {
+        val resolved = classResolver.resolve(dto.type)
+        if (resolved !is ResolvedType.Structured) {
+            throw IllegalArgumentException("Type ${dto.type} is scalar-like and cannot be a record")
         }
+
+        return Value.Record(
+            type = resolved.type,
+            fields = dto.fields.mapValues { (_, v) -> toEngineValue(v) }
+        )
+    }
+
+    private fun MapEntryDto.toEntry() = MapEntry(
+        key = toEngineValue(key),
+        value = toEngineValue(value)
+    )
 }

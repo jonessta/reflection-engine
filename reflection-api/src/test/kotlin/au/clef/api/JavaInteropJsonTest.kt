@@ -42,7 +42,7 @@ class JavaInteropJsonTest {
     )
 
     private val responseValueMapper = ResponseValueMapper(
-        scalarTypeRegistry = scalarTypeRegistry
+        scalarRegistry = scalarTypeRegistry
     )
 
     @Test
@@ -235,7 +235,7 @@ class JavaInteropJsonTest {
         )
 
         val localResponseValueMapper = ResponseValueMapper(
-            scalarTypeRegistry = localScalarTypeRegistry
+            scalarRegistry = localScalarTypeRegistry
         )
 
         val execution = localEngine.executionContexts().single() as ExecutionContext.Static

@@ -17,43 +17,53 @@ data class MetadataGenerationConfig(
     val outputFile: File
 )
 
-fun generateMetadata(config: MetadataGenerationConfig) {
-    val methodSourceRegistry = MethodSourceRegistry(
-        methodSources = config.methodSources,
-        methodSupportingTypes = config.methodSupportingTypes
-    )
+fun generateMetadata(config: MetadataGenerationConfig): Unit {
+    val methodSourceRegistry: MethodSourceRegistry =
+        MethodSourceRegistry(
+            methodSources = config.methodSources,
+            methodSupportingTypes = config.methodSupportingTypes
+        )
 
-    val metadata = MetadataGenerator(methodSourceRegistry).generate()
+    val metadata: MetadataRoot =
+        MetadataGenerator(methodSourceRegistry).generate()
+
     MetadataWriter.writeToFile(metadata, config.outputFile)
 }
 
-class MetadataGenerator(private val methodSourceRegistry: MethodSourceRegistry) {
+class MetadataGenerator(
+    private val methodSourceRegistry: MethodSourceRegistry
+) {
 
-    private fun generate(clazz: Class<*>): MetadataRoot {
-        val descriptors: List<MethodDescriptor> = methodSourceRegistry.descriptors(clazz)
-        val methods: Map<MethodId, MethodMetadata> =
-            descriptors
-                .sortedBy { descriptor: MethodDescriptor -> descriptor.reflectedName }
-                .associate { descriptor: MethodDescriptor ->
-                    descriptor.id to MethodMetadata(
-                        parameters = descriptor.parameters.map { param: ParamDescriptor ->
-                            ParamMetadata(name = defaultParameterName(param))
-                        }
-                    )
-                }
-        return MetadataRoot(methods = methods)
+    private fun generateMethods(clazz: Class<*>): Map<MethodId, MethodMetadata> {
+        val descriptors: List<MethodDescriptor> =
+            methodSourceRegistry.descriptors(clazz)
+
+        return descriptors
+            .sortedBy { descriptor: MethodDescriptor -> descriptor.id.toString() }
+            .associate { descriptor: MethodDescriptor ->
+                descriptor.id to MethodMetadata(
+                    parameters = descriptor.parameters.map { param: ParamDescriptor ->
+                        ParamMetadata(
+                            name = defaultParameterName(param)
+                        )
+                    }
+                )
+            }
     }
 
     fun generate(): MetadataRoot {
-        val methods: Map<MethodId, MethodMetadata> = methodSourceRegistry.declaringClasses
-            .flatMap { clazz: Class<*> ->
-                generate(clazz).methods.entries
-            }
-            .associate { entry: Map.Entry<MethodId, MethodMetadata> ->
-                entry.key to entry.value
-            }
+        val methods: Map<MethodId, MethodMetadata> =
+            methodSourceRegistry.declaringClasses
+                .flatMap { clazz: Class<*> ->
+                    generateMethods(clazz).entries
+                }
+                .associate { entry: Map.Entry<MethodId, MethodMetadata> ->
+                    entry.key to entry.value
+                }
 
-        return MetadataRoot(methods = methods)
+        return MetadataRoot(
+            methods = methods
+        )
     }
 
     private fun defaultParameterName(param: ParamDescriptor): String =

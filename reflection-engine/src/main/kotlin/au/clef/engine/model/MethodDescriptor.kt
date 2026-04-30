@@ -17,45 +17,65 @@ class MethodDescriptor(
 
     companion object {
 
-        // todo why not make the from just constructors?
-        fun from(method: Method, displayName: String? = null): MethodDescriptor =
-            MethodDescriptor(
-                id = MethodId.from(method),
-                reflectedName = method.name,
+        fun from(
+            javaMethod: Method,
+            displayName: String? = null
+        ): MethodDescriptor =
+            create(
+                id = MethodId.from(javaMethod),
+                name = javaMethod.name,
                 displayName = displayName,
-                parameters = buildJavaParamDescriptors(method),
-                returnType = method.returnType,
-                isStatic = Modifier.isStatic(method.modifiers)
+                parameters = buildJavaParamDescriptors(javaMethod),
+                returnType = javaMethod.returnType,
+                isStatic = Modifier.isStatic(javaMethod.modifiers)
             )
 
         fun from(
-            method: Method,
+            javaMethod: Method,
             id: MethodId,
             logicalMethodName: String,
             displayName: String? = null
         ): MethodDescriptor =
-            MethodDescriptor(
+            create(
                 id = id,
-                reflectedName = logicalMethodName,
+                // todo change ?? reflectionName is legacy
+                name = logicalMethodName,
                 displayName = displayName,
-                parameters = buildJavaParamDescriptors(method),
-                returnType = method.returnType,
-                isStatic = Modifier.isStatic(method.modifiers)
+                parameters = buildJavaParamDescriptors(javaMethod),
+                returnType = javaMethod.returnType,
+                isStatic = Modifier.isStatic(javaMethod.modifiers)
             )
 
         fun from(
             kotlinFunction: KFunction<*>,
-            method: Method,
+            javaMethod: Method,
             id: MethodId,
             displayName: String? = null
         ): MethodDescriptor =
+            create(
+                id = id,
+                name = kotlinFunction.name,
+                displayName = displayName,
+                parameters = buildKotlinParamDescriptors(kotlinFunction, javaMethod),
+                returnType = javaMethod.returnType,
+                isStatic = Modifier.isStatic(javaMethod.modifiers)
+            )
+
+        private fun create(
+            id: MethodId,
+            name: String,
+            displayName: String?,
+            parameters: List<ParamDescriptor>,
+            returnType: Class<*>,
+            isStatic: Boolean
+        ): MethodDescriptor =
             MethodDescriptor(
                 id = id,
-                reflectedName = kotlinFunction.name,
+                reflectedName = name,
                 displayName = displayName,
-                parameters = buildKotlinParamDescriptors(kotlinFunction, method),
-                returnType = method.returnType,
-                isStatic = Modifier.isStatic(method.modifiers)
+                parameters = parameters,
+                returnType = returnType,
+                isStatic = isStatic
             )
     }
 
@@ -91,12 +111,13 @@ data class ParamDescriptor(
     val nullable: Boolean
 )
 
-private fun buildJavaParamDescriptors(method: Method): List<ParamDescriptor> =
-    method.parameters.mapIndexed { index, parameter ->
+private fun buildJavaParamDescriptors(javaMethod: Method): List<ParamDescriptor> =
+    javaMethod.parameters.mapIndexed { index, parameter ->
         ParamDescriptor(
             index = index,
             logicalType = parameter.type,
             runtimeType = parameter.type,
+            // todo do I need reflectedName?
             reflectedName = parameter.name,
             name = parameter.name,
             nullable = !parameter.type.isPrimitive
@@ -104,15 +125,17 @@ private fun buildJavaParamDescriptors(method: Method): List<ParamDescriptor> =
     }
 
 private fun buildKotlinParamDescriptors(
-    function: KFunction<*>,
-    method: Method
+    kotlinFunction: KFunction<*>,
+    javaMethod: Method
 ): List<ParamDescriptor> {
-    val valueParameters = function.parameters.filter { it.kind == KParameter.Kind.VALUE }
-    val runtimeParameterTypes = method.parameterTypes
+    val valueParameters: List<KParameter> =
+        kotlinFunction.parameters.filter { it.kind == KParameter.Kind.VALUE }
+
+    val runtimeParameterTypes: Array<Class<*>> = javaMethod.parameterTypes
 
     return valueParameters.mapIndexed { index, parameter ->
         val classifier = parameter.type.classifier as? KClass<*>
-            ?: error("Unsupported parameter type in function '${function.name}'")
+            ?: error("Unsupported parameter type in function '${kotlinFunction.name}'")
 
         val parameterName = parameter.name ?: "arg$index"
 

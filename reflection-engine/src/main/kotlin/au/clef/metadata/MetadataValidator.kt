@@ -8,22 +8,40 @@ import au.clef.metadata.model.MetadataRoot
 import au.clef.metadata.model.MethodMetadata
 import au.clef.metadata.model.ParamMetadata
 
-class MetadataValidator(private val methodSourceRegistry: MethodSourceRegistry) {
+class MetadataValidator(
+    private val methodSourceRegistry: MethodSourceRegistry
+) {
 
     fun validate(metadata: MetadataRoot): List<ValidationIssue> {
         val issues: MutableList<ValidationIssue> = mutableListOf()
+
         val allDescriptors: List<MethodDescriptor> = methodSourceRegistry.allDescriptors()
+
         val descriptorMap: Map<MethodId, MethodDescriptor> =
-            allDescriptors.associateBy { descriptor: MethodDescriptor -> descriptor.id }
+            allDescriptors.associateBy { descriptor: MethodDescriptor ->
+                descriptor.id
+            }
 
         metadata.methods.forEach { (methodId: MethodId, methodMetadata: MethodMetadata) ->
             val descriptor: MethodDescriptor? = descriptorMap[methodId]
+
             if (descriptor == null) {
                 issues += ValidationIssue(
-                    severity = Severity.ERROR, location = methodId.toString(), message = "Method not found"
+                    severity = Severity.ERROR,
+                    location = methodId.toString(),
+                    message = "Method not found"
                 )
                 return@forEach
             }
+
+            if (methodMetadata.displayName != null && methodMetadata.displayName.isBlank()) {
+                issues += ValidationIssue(
+                    severity = Severity.WARNING,
+                    location = methodId.toString(),
+                    message = "Display name is blank"
+                )
+            }
+
             if (methodMetadata.parameters.size > descriptor.parameters.size) {
                 issues += ValidationIssue(
                     severity = Severity.ERROR,
@@ -31,12 +49,14 @@ class MetadataValidator(private val methodSourceRegistry: MethodSourceRegistry) 
                     message = "Metadata defines ${methodMetadata.parameters.size} parameters but method has ${descriptor.parameters.size}"
                 )
             }
+
             methodMetadata.parameters.forEachIndexed { index: Int, paramMetadata: ParamMetadata ->
                 if (index >= descriptor.parameters.size) {
                     return@forEachIndexed
                 }
 
                 val descriptorParam: ParamDescriptor = descriptor.parameters[index]
+
                 if (paramMetadata.name != null && paramMetadata.name.isBlank()) {
                     issues += ValidationIssue(
                         severity = Severity.WARNING,
@@ -44,6 +64,7 @@ class MetadataValidator(private val methodSourceRegistry: MethodSourceRegistry) 
                         message = "Parameter name is blank"
                     )
                 }
+
                 if (paramMetadata.name != null && paramMetadata.name == descriptorParam.reflectedName) {
                     issues += ValidationIssue(
                         severity = Severity.WARNING,
@@ -53,12 +74,18 @@ class MetadataValidator(private val methodSourceRegistry: MethodSourceRegistry) 
                 }
             }
         }
+
         return issues
     }
 }
 
-data class ValidationIssue(val severity: Severity, val location: String, val message: String)
+data class ValidationIssue(
+    val severity: Severity,
+    val location: String,
+    val message: String
+)
 
 enum class Severity {
-    WARNING, ERROR
+    WARNING,
+    ERROR
 }

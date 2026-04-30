@@ -5,7 +5,6 @@ import au.clef.api.model.InvocationRequest
 import au.clef.api.model.InvocationResponse
 import au.clef.api.model.ParamDescriptorDto
 import au.clef.engine.ExecutionContext
-import au.clef.engine.ReflectionConfig
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.MethodDescriptor
 import au.clef.metadata.DescriptorMetadataRegistry
@@ -14,83 +13,75 @@ import au.clef.metadata.MetadataLoader
 class ReflectionServiceApi(
     apiConfig: ReflectionApiConfig
 ) {
-    private val reflectionConfig: ReflectionConfig = apiConfig.reflectionConfig
 
-    private val scalarTypeRegistry = apiConfig.scalarTypeRegistry
+    private val scalarRegistry: ScalarTypeRegistry = apiConfig.scalarTypeRegistry
 
     private val metadataRegistry: DescriptorMetadataRegistry? =
-        reflectionConfig.metadataResourcePath
-            ?.let(MetadataLoader::fromResourceOrEmpty)
+        apiConfig.reflectionConfig.metadataResourcePath
+            ?.let(MetadataLoader::fromResource)
             ?.let(::DescriptorMetadataRegistry)
 
-    private val engine = ReflectionEngine(
-        reflectionConfig = reflectionConfig,
-        metadataRegistry = metadataRegistry
-    )
+    private val engine: ReflectionEngine =
+        ReflectionEngine(apiConfig.reflectionConfig, metadataRegistry)
 
-    private val classResolver = DefaultClassResolver(
-        methodSourceTypes = engine,
-        scalarTypeRegistry = scalarTypeRegistry
-    )
+    private val requestMapper: RequestValueMapper =
+        RequestValueMapper(
+            DefaultClassResolver(engine, scalarRegistry),
+            scalarRegistry
+        )
 
-    private val requestValueMapper = RequestValueMapper(
-        classResolver = classResolver,
-        scalarTypeRegistry = scalarTypeRegistry
-    )
-
-    private val responseValueMapper = ResponseValueMapper(
-        scalarTypeRegistry = scalarTypeRegistry
-    )
+    private val responseMapper: ResponseValueMapper =
+        ResponseValueMapper(scalarRegistry)
 
     fun invoke(request: InvocationRequest): InvocationResponse {
-        val executionContext = engine.executionContext(request.executionId)
-        val descriptor = engine.descriptor(executionContext.methodId)
+        val context: ExecutionContext = engine.executionContext(request.executionId)
+        val descriptor: MethodDescriptor = engine.descriptor(context.methodId)
 
-        val args = request.args.zip(descriptor.parameters).map { (argDto, param) ->
-            requestValueMapper.materialize(argDto, param.runtimeType)
+        require(request.args.size == descriptor.parameters.size) {
+            "Expected ${descriptor.parameters.size} args for ${descriptor.id}, got ${request.args.size}"
         }
 
-        val result: Any? = when (executionContext) {
-            is ExecutionContext.Static ->
-                engine.invokeStatic(descriptor, args)
+        val args: List<Any?> =
+            request.args.zip(descriptor.parameters) { dto, param ->
+                requestMapper.materialize(dto, param.runtimeType)
+            }
 
-            is ExecutionContext.Instance ->
-                engine.invokeInstance(descriptor, executionContext.instance, args)
-        }
+        val result: Any? =
+            when (context) {
+                is ExecutionContext.Static ->
+                    engine.invokeStatic(descriptor, args)
 
-        return InvocationResponse(
-            result = responseValueMapper.toDtoValue(result)
-        )
+                is ExecutionContext.Instance ->
+                    engine.invokeInstance(descriptor, context.instance, args)
+            }
+
+        return InvocationResponse(responseMapper.toDtoValue(result))
     }
 
     fun executionDescriptors(): List<ExecutionDescriptorDto> =
-        engine.executionContexts().map { executionContext ->
-            val descriptor = engine.descriptor(executionContext.methodId)
-            toExecutionDescriptorDto(executionContext, descriptor)
+        engine.executionContexts().map { ctx: ExecutionContext ->
+            toExecutionDescriptorDto(ctx, engine.descriptor(ctx.methodId))
         }
 
     private fun toExecutionDescriptorDto(
-        executionContext: ExecutionContext,
-        descriptor: MethodDescriptor
+        ctx: ExecutionContext,
+        desc: MethodDescriptor
     ): ExecutionDescriptorDto =
         ExecutionDescriptorDto(
-            executionId = executionContext.executionId,
-            instanceDescription = when (executionContext) {
-                is ExecutionContext.Static -> null
-                is ExecutionContext.Instance -> executionContext.instanceDescription
-            },
-            reflectedName = descriptor.reflectedName,
-            displayName = descriptor.displayName,
-            returnType = descriptor.returnType.name,
-            isStatic = descriptor.isStatic,
-            parameters = descriptor.parameters.map { param ->
+            executionId = ctx.executionId,
+            instanceDescription = (ctx as? ExecutionContext.Instance)?.instanceDescription,
+            reflectedName = desc.reflectedName,
+            displayName = desc.displayName,
+            returnType = desc.returnType.name,
+            isStatic = desc.isStatic,
+            parameters = desc.parameters.map { p ->
                 ParamDescriptorDto(
-                    index = param.index,
-                    type = param.logicalType.name,
-                    reflectedName = param.reflectedName,
-                    name = param.name,
-                    nullable = param.nullable,
-                    scalarLike = requestValueMapper.isScalarLike(param.logicalType)
+                    index = p.index,
+                    type = p.logicalType.name,
+                    reflectedName = p.reflectedName,
+                    name = p.name,
+                    nullable = p.nullable,
+                    scalarLike = requestMapper.isScalarLike(p.logicalType)
                 )
             }
         )

@@ -27,7 +27,7 @@ class ReflectionEngine(
     fun executionContext(executionId: ExecutionId): ExecutionContext =
         reflectionRegistry.executionContext(executionId)
 
-    fun executionContexts(): List<ExecutionContext> =
+    fun executionContexts(): Collection<ExecutionContext> =
         reflectionRegistry.allExecutionContexts()
 
     fun descriptors(clazz: KClass<*>): List<MethodDescriptor> =

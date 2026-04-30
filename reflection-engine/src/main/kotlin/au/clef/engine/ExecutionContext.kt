@@ -23,8 +23,8 @@ sealed class ExecutionContext(
     }
 
     data class Instance(
-        val instanceDescription: String,
         val instance: Any,
+        val instanceDescription: String,
         override val methodId: MethodId
     ) : ExecutionContext(methodId) {
         override val executionId: ExecutionId =

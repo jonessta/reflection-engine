@@ -62,17 +62,9 @@ class InlineScalarJsonTest {
         .build()
 
     private val scalarTypeRegistry = ScalarTypeRegistry(
-        userDefinedScalarConverters = listOf(
-            scalarConverter(
-                type = CustomerId::class,
-                encode = { JsonPrimitive(it.value) },
-                decode = { CustomerId(it) }
-            ),
-            scalarConverter(
-                type = EmailAddress::class,
-                encode = { JsonPrimitive(it.value) },
-                decode = { EmailAddress(it) }
-            )
+        userDefinedConverters = listOf(
+            scalarConverter<CustomerId>({ JsonPrimitive(it.value) }, { CustomerId(it) }),
+            scalarConverter<EmailAddress>({ JsonPrimitive(it.value) }, { EmailAddress(it) })
         )
     )
 
@@ -86,7 +78,7 @@ class InlineScalarJsonTest {
     )
 
     private val responseValueMapper = ResponseValueMapper(
-        scalarTypeRegistry = scalarTypeRegistry
+        scalarRegistry = scalarTypeRegistry
     )
 
     @Test

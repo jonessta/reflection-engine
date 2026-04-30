@@ -18,46 +18,63 @@ interface ScalarConverter<T : Any> {
     fun decode(text: String): T
 }
 
-object DefaultScalarConverters {
-    val all: List<ScalarConverter<out Any>> = listOf(
-        scalarConverter(String::class, { JsonPrimitive(it) }, { it }),
-        scalarConverter(Int::class, { JsonPrimitive(it) }, { it.toInt() }),
-        scalarConverter(Long::class, { JsonPrimitive(it) }, { it.toLong() }),
-        scalarConverter(Double::class, { JsonPrimitive(it) }, { it.toDouble() }),
-        scalarConverter(Float::class, { JsonPrimitive(it) }, { it.toFloat() }),
-        scalarConverter(Short::class, { JsonPrimitive(it) }, { it.toShort() }),
-        scalarConverter(Byte::class, { JsonPrimitive(it) }, { it.toByte() }),
-        scalarConverter(Boolean::class, { JsonPrimitive(it) }, {
-            when (it.trim().lowercase()) {
-                "true" -> true
-                "false" -> false
-                else -> throw IllegalArgumentException("Invalid boolean value: $it")
-            }
-        }),
-        scalarConverter(Char::class, { JsonPrimitive(it.toString()) }, {
-            require(it.length == 1) { "Invalid char value: $it" }
-            it[0]
-        }),
-        scalarConverter(UUID::class, { JsonPrimitive(it.toString()) }, { UUID.fromString(it) }),
-        scalarConverter(Instant::class, { JsonPrimitive(it.toString()) }, { Instant.parse(it) }),
-        scalarConverter(LocalDate::class, { JsonPrimitive(it.toString()) }, { LocalDate.parse(it) }),
-        scalarConverter(LocalDateTime::class, { JsonPrimitive(it.toString()) }, { LocalDateTime.parse(it) }),
-        scalarConverter(LocalTime::class, { JsonPrimitive(it.toString()) }, { LocalTime.parse(it) }),
-        scalarConverter(URI::class, { JsonPrimitive(it.toString()) }, { URI.create(it) }),
-        scalarConverter(URL::class, { JsonPrimitive(it.toString()) }, { URI.create(it).toURL() }),
-        scalarConverter(Path::class, { JsonPrimitive(it.toString()) }, { Paths.get(it) }),
-        scalarConverter(Locale::class, { JsonPrimitive(it.toString()) }, { Locale.forLanguageTag(it) }),
-        scalarConverter(Currency::class, { JsonPrimitive(it.currencyCode) }, { Currency.getInstance(it) })
-    )
-}
-
-fun <T : Any> scalarConverter(
-    type: KClass<T>,
-    encode: (T) -> JsonPrimitive,
-    decode: (String) -> T
+inline fun <reified T : Any> scalarConverter(
+    noinline decode: (String) -> T
 ): ScalarConverter<T> =
     object : ScalarConverter<T> {
-        override val type: KClass<T> = type
+        override val type: KClass<T> = T::class
+        override fun encode(value: T): JsonPrimitive = JsonPrimitive(value.toString())
+        override fun decode(text: String): T = decode(text)
+    }
+
+inline fun <reified T : Any> scalarConverter(
+    noinline encode: (T) -> JsonPrimitive,
+    noinline decode: (String) -> T
+): ScalarConverter<T> =
+    object : ScalarConverter<T> {
+        override val type: KClass<T> = T::class
         override fun encode(value: T): JsonPrimitive = encode(value)
         override fun decode(text: String): T = decode(text)
     }
+
+object DefaultScalarConverters {
+    val all: List<ScalarConverter<out Any>> = listOf(
+        scalarConverter<String> { it },
+        scalarConverter<Int> { it.toInt() },
+        scalarConverter<Long> { it.toLong() },
+        scalarConverter<Double> { it.toDouble() },
+        scalarConverter<Float> { it.toFloat() },
+        scalarConverter<Short> { it.toShort() },
+        scalarConverter<Byte> { it.toByte() },
+        scalarConverter<Boolean> { it.toBooleanStrict() },
+        scalarConverter<Char>(
+            encode = { JsonPrimitive(it.toString()) },
+            decode = {
+                require(it.length == 1) { "Invalid char: $it" }
+                it[0]
+            }
+        ),
+        scalarConverter<UUID>(UUID::fromString),
+        scalarConverter<URI>(URI::create),
+        scalarConverter<URL>(
+            encode = { JsonPrimitive(it.toString()) },
+            decode = { URI.create(it).toURL() }
+        ),
+        scalarConverter<Instant>(Instant::parse),
+        scalarConverter<LocalDate>(LocalDate::parse),
+        scalarConverter<LocalDateTime>(LocalDateTime::parse),
+        scalarConverter<LocalTime>(LocalTime::parse),
+        scalarConverter<Path>(
+            encode = { JsonPrimitive(it.toString()) },
+            decode = Paths::get
+        ),
+        scalarConverter<Locale>(
+            encode = { JsonPrimitive(it.toLanguageTag()) },
+            decode = Locale::forLanguageTag
+        ),
+        scalarConverter<Currency>(
+            encode = { JsonPrimitive(it.currencyCode) },
+            decode = Currency::getInstance
+        )
+    )
+}

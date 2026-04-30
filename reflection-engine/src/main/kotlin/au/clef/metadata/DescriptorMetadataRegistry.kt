@@ -13,7 +13,7 @@ class DescriptorMetadataRegistry(
         val methodMeta: MethodMetadata = metadata.methods[descriptor.id] ?: return descriptor
 
         val updatedParams: List<ParamDescriptor> =
-            descriptor.parameters.map { param ->
+            descriptor.parameters.map { param: ParamDescriptor ->
                 val paramMeta: ParamMetadata? = methodMeta.parameters.getOrNull(param.index)
 
                 if (paramMeta == null) {

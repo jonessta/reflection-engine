@@ -1,84 +1,315 @@
 package au.clef.api
 
-import au.clef.api.model.MapEntry
 import au.clef.api.model.Value
 import au.clef.engine.ObjectConstructionException
 import kotlinx.serialization.json.JsonPrimitive
-import java.lang.reflect.*
 import java.lang.reflect.Array
+import java.lang.reflect.Constructor
+import java.lang.reflect.Field
+import java.lang.reflect.Parameter
+import java.lang.reflect.ParameterizedType
+import java.lang.reflect.Type
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
+import kotlin.reflect.jvm.javaType
 
 class TypeConverter(
-    private val scalarTypeRegistry: ScalarTypeRegistry
+    private val scalarRegistry: ScalarTypeRegistry
 ) {
+
     fun materialize(value: Value, targetType: Class<*>): Any? =
         materializeInternal(value, targetType)
 
-    fun supportsScalarTarget(targetType: Class<*>): Boolean =
-        scalarTypeRegistry.isScalarLike(targetType)
+    fun materialize(value: Value, targetType: Type): Any? =
+        materializeInternal(value, targetType)
 
-    private fun materializeInternal(value: Value, targetType: Type): Any? {
+    fun supportsScalarTarget(targetType: Class<*>): Boolean =
+        scalarRegistry.isScalarLike(targetType)
+
+    private fun materializeInternal(value: Value, target: Type): Any? {
+        val rawTarget: Class<*> = rawClassOf(target)
+
         if (value is Value.Null) {
-            val rawType = rawClassOf(targetType)
-            if (rawType.isPrimitive) {
-                throw TypeMismatchException(value, rawType)
-            }
-            return null
+            return handleNull(rawTarget)
         }
 
         return when (value) {
-            is Value.Scalar -> convertScalar(value.value, targetType)
-            is Value.Instance -> convertInstance(value, targetType)
-            is Value.Record -> convertRecord(value, targetType)
-            is Value.ListValue -> convertList(value, targetType)
-            is Value.MapValue -> convertMap(value, targetType)
-            Value.Null -> error("Null already handled")
+            is Value.Scalar ->
+                convertScalar(value.value, target)
+
+            is Value.Record ->
+                buildObject(value, rawTarget)
+
+            is Value.ListValue ->
+                convertList(value, target)
+
+            is Value.MapValue ->
+                convertMap(value, target)
+
+            is Value.Instance ->
+                convertInstance(value, target)
+
+            Value.Null ->
+                error("Value.Null handled earlier")
         }
     }
 
-    private fun convertScalar(rawValue: Any?, targetType: Type): Any? {
-        val rawTargetType = rawClassOf(targetType)
+    private fun convertScalar(rawValue: Any?, target: Type): Any? {
+        val rawTarget: Class<*> = rawClassOf(target)
+        val wrappedTarget: Class<*> = scalarRegistry.wrapPrimitive(rawTarget)
+        val normalized: Any = normalizeScalar(rawValue) ?: return handleNull(rawTarget)
 
-        if (rawValue == null) {
-            if (rawTargetType.isPrimitive) {
-                throw TypeMismatchException(Value.Scalar(null), rawTargetType)
-            }
-            return null
+        if (wrappedTarget.isInstance(normalized)) {
+            return normalized
         }
 
-        val wrappedTargetType = scalarTypeRegistry.wrapPrimitive(rawTargetType)
-        val normalizedValue = normalizeScalar(rawValue)
-
-        if (normalizedValue == null) {
-            if (rawTargetType.isPrimitive) {
-                throw TypeMismatchException(Value.Scalar(null), rawTargetType)
-            }
-            return null
+        if (wrappedTarget.isEnum) {
+            return decodeEnum(normalized.toString(), wrappedTarget)
         }
 
-        if (wrappedTargetType.isInstance(normalizedValue)) {
-            return normalizedValue
-        }
-
-        if (wrappedTargetType.isEnum) {
-            return try {
-                decodeEnum(normalizedValue.toString(), wrappedTargetType)
-            } catch (_: Exception) {
-                throw TypeMismatchException(Value.Scalar(rawValue), rawTargetType)
-            }
-        }
-
-        val converter = scalarTypeRegistry.decoderFor(wrappedTargetType)
-            ?: throw TypeMismatchException(Value.Scalar(rawValue), rawTargetType)
+        val decoder: ScalarConverter<Any> =
+            scalarRegistry.decoderFor(wrappedTarget)
+                ?: throw TypeMismatchException(Value.Scalar(rawValue), rawTarget)
 
         return try {
-            converter.decode(normalizedValue.toString())
-        } catch (_: Exception) {
-            throw TypeMismatchException(Value.Scalar(rawValue), rawTargetType)
+            decoder.decode(normalized.toString())
+        } catch (e: Exception) {
+            throw TypeMismatchException(Value.Scalar(rawValue), rawTarget)
         }
+    }
+
+    private fun convertList(value: Value.ListValue, target: Type): Any {
+        val rawTarget: Class<*> = rawClassOf(target)
+        val elementType: Type =
+            (target as? ParameterizedType)?.actualTypeArguments?.getOrNull(0)
+                ?: Any::class.java
+
+        val items: List<Any?> =
+            value.items.map { item: Value ->
+                materializeInternal(item, elementType)
+            }
+
+        return when {
+            rawTarget.isArray -> {
+                val componentType: Class<*> = rawTarget.componentType
+                val array: Any = Array.newInstance(componentType, items.size)
+                items.forEachIndexed { index: Int, item: Any? ->
+                    Array.set(array, index, item)
+                }
+                array
+            }
+
+            Set::class.java.isAssignableFrom(rawTarget) -> {
+                items.toSet()
+            }
+
+            List::class.java.isAssignableFrom(rawTarget) ||
+                    Collection::class.java.isAssignableFrom(rawTarget) -> {
+                items.toMutableList()
+            }
+
+            else -> {
+                throw TypeMismatchException(value, rawTarget)
+            }
+        }
+    }
+
+    private fun convertMap(value: Value.MapValue, target: Type): Any {
+        val rawTarget: Class<*> = rawClassOf(target)
+
+        if (!Map::class.java.isAssignableFrom(rawTarget)) {
+            throw TypeMismatchException(value, rawTarget)
+        }
+
+        val keyType: Type =
+            (target as? ParameterizedType)?.actualTypeArguments?.getOrNull(0)
+                ?: Any::class.java
+
+        val valueType: Type =
+            (target as? ParameterizedType)?.actualTypeArguments?.getOrNull(1)
+                ?: Any::class.java
+
+        return value.entries
+            .associate { entry ->
+                val key: Any? = materializeInternal(entry.key, keyType)
+                val mappedValue: Any? = materializeInternal(entry.value, valueType)
+                key to mappedValue
+            }
+            .toMutableMap()
+    }
+
+    private fun convertInstance(value: Value.Instance, target: Type): Any {
+        val rawTarget: Class<*> = scalarRegistry.wrapPrimitive(rawClassOf(target))
+
+        if (!rawTarget.isInstance(value.obj)) {
+            throw TypeMismatchException(value, rawTarget)
+        }
+
+        return value.obj
+    }
+
+    private fun buildObject(value: Value.Record, target: Class<*>): Any {
+        return tryBuildKotlinObject(value, target)
+            ?: tryBuildWithSingleJavaConstructor(value, target)
+            ?: tryBuildWithNoArgAndFields(value, target)
+            ?: throw ObjectConstructionException(
+                "No construction strategy for ${target.name}"
+            )
+    }
+
+    private fun tryBuildKotlinObject(value: Value.Record, target: Class<*>): Any? {
+        val kClass: KClass<*> = target.kotlin
+        val primaryConstructor: KFunction<Any>? =
+            kClass.primaryConstructor
+
+        if (primaryConstructor == null) {
+            return null
+        }
+
+        val constructorParameterNames: Set<String> =
+            primaryConstructor.parameters.mapNotNull { parameter: KParameter ->
+                parameter.name
+            }.toSet()
+
+        if ((value.fields.keys - constructorParameterNames).isNotEmpty()) {
+            return null
+        }
+
+        val arguments: Map<KParameter, Any?> =
+            primaryConstructor.parameters.associateWith { parameter: KParameter ->
+                val parameterName: String =
+                    parameter.name
+                        ?: throw ObjectConstructionException(
+                            "Unnamed Kotlin constructor parameter on ${target.name}"
+                        )
+
+                val fieldValue: Value? = value.fields[parameterName]
+
+                when {
+                    fieldValue != null -> {
+                        materializeInternal(fieldValue, parameter.type.javaType)
+                    }
+
+                    parameter.isOptional -> {
+                        null
+                    }
+
+                    parameter.type.isMarkedNullable -> {
+                        null
+                    }
+
+                    else -> {
+                        throw ObjectConstructionException(
+                            "Missing mandatory parameter '$parameterName' for ${target.name}"
+                        )
+                    }
+                }
+            }.filterNot { entry: Map.Entry<KParameter, Any?> ->
+                entry.key.isOptional && value.fields[entry.key.name] == null
+            }
+
+        return try {
+            primaryConstructor.callBy(arguments)
+        } catch (e: ObjectConstructionException) {
+            throw e
+        } catch (e: Exception) {
+            throw ObjectConstructionException(
+                "Failed to construct ${target.name} with Kotlin primary constructor: ${e.message}",
+                e
+            )
+        }
+    }
+
+    private fun tryBuildWithSingleJavaConstructor(
+        value: Value.Record,
+        target: Class<*>
+    ): Any? {
+        val constructors = target.declaredConstructors
+        if (constructors.size != 1) {
+            return null
+        }
+
+        val constructor: Constructor<*> = constructors[0]
+        if (constructor.parameterCount == 0) {
+            return null
+        }
+
+        val arguments: List<Any?> =
+            constructor.parameters.mapIndexed { index: Int, parameter: Parameter ->
+                val parameterName: String =
+                    if (parameter.isNamePresent) {
+                        parameter.name
+                    } else {
+                        "arg$index"
+                    }
+
+                val fieldValue: Value =
+                    value.fields[parameterName]
+                        ?: throw ObjectConstructionException(
+                            "Missing constructor argument '$parameterName' for ${target.name}"
+                        )
+
+                materializeInternal(fieldValue, parameter.parameterizedType)
+            }
+
+        return try {
+            constructor.isAccessible = true
+            constructor.newInstance(*arguments.toTypedArray())
+        } catch (e: ObjectConstructionException) {
+            throw e
+        } catch (e: Exception) {
+            throw ObjectConstructionException(
+                "Failed to construct ${target.name} with Java constructor: ${e.message}",
+                e
+            )
+        }
+    }
+
+    private fun tryBuildWithNoArgAndFields(
+        value: Value.Record,
+        target: Class<*>
+    ): Any? {
+        val constructor: Constructor<*> =
+            target.declaredConstructors.firstOrNull { ctor: Constructor<*> ->
+                ctor.parameterCount == 0
+            } ?: return null
+
+        val instance: Any =
+            try {
+                constructor.isAccessible = true
+                constructor.newInstance()
+            } catch (e: Exception) {
+                throw ObjectConstructionException(
+                    "Failed to instantiate ${target.name} with no-arg constructor: ${e.message}",
+                    e
+                )
+            }
+
+        value.fields.forEach { (fieldName: String, fieldValue: Value) ->
+            val field: Field =
+                findField(target, fieldName)
+                    ?: throw ObjectConstructionException(
+                        "Field '$fieldName' not found on ${target.name}"
+                    )
+
+            try {
+                field.isAccessible = true
+                val convertedValue: Any? =
+                    materializeInternal(fieldValue, field.genericType)
+                field.set(instance, convertedValue)
+            } catch (e: ObjectConstructionException) {
+                throw e
+            } catch (e: Exception) {
+                throw ObjectConstructionException(
+                    "Failed to set field '$fieldName' on ${target.name}: ${e.message}",
+                    e
+                )
+            }
+        }
+
+        return instance
     }
 
     private fun normalizeScalar(rawValue: Any?): Any? =
@@ -87,234 +318,38 @@ class TypeConverter(
                 if (rawValue.isString) {
                     rawValue.content
                 } else {
-                    val text = rawValue.content
-                    when {
-                        text.equals("true", ignoreCase = true) -> true
-                        text.equals("false", ignoreCase = true) -> false
-                        text.toIntOrNull() != null -> text.toInt()
-                        text.toLongOrNull() != null -> text.toLong()
-                        text.toDoubleOrNull() != null -> text.toDouble()
-                        else -> text
-                    }
+                    val text: String = rawValue.content
+                    text.toLongOrNull()
+                        ?: text.toDoubleOrNull()
+                        ?: text.toBooleanStrictOrNull()
+                        ?: text
                 }
             }
 
             else -> rawValue
         }
 
-    private fun convertInstance(value: Value.Instance, targetType: Type): Any {
-        val instance = value.obj
-        val rawTargetType = rawClassOf(targetType)
-        if (!scalarTypeRegistry.wrapPrimitive(rawTargetType).isInstance(instance)) {
-            throw TypeMismatchException(value, rawTargetType)
-        }
-        return instance
+    private fun decodeEnum(text: String, target: Class<*>): Any {
+        return target.enumConstants.firstOrNull { constant: Any ->
+            (constant as Enum<*>).name.equals(text, ignoreCase = true)
+        } ?: throw IllegalArgumentException(
+            "Invalid enum '$text' for ${target.name}"
+        )
     }
 
-    private fun convertRecord(value: Value.Record, targetType: Type): Any {
-        val rawTargetType = rawClassOf(targetType)
-        if (value.type != Any::class.java &&
-            !rawTargetType.isAssignableFrom(value.type) &&
-            !value.type.isAssignableFrom(rawTargetType)
-        ) {
-            throw TypeMismatchException(value, rawTargetType)
-        }
-
-        return buildObject(value, rawTargetType)
+    private fun findField(target: Class<*>, name: String): Field? {
+        return generateSequence(target) { current: Class<*> ->
+            current.superclass
+        }.takeWhile { current: Class<*> ->
+            current != Any::class.java
+        }.mapNotNull { current: Class<*> ->
+            runCatching { current.getDeclaredField(name) }.getOrNull()
+        }.firstOrNull()
     }
 
-    private fun convertList(value: Value.ListValue, targetType: Type): Any {
-        val rawTargetType = rawClassOf(targetType)
-        val elementType = when (targetType) {
-            is ParameterizedType -> targetType.actualTypeArguments[0]
-            else -> Any::class.java
-        }
-
-        val materializedItems = value.items.map { item ->
-            materializeInternal(item, elementType)
-        }
-
-        return when {
-            rawTargetType.isArray -> {
-                val componentType = rawTargetType.componentType
-                val array = Array.newInstance(componentType, materializedItems.size)
-                materializedItems.forEachIndexed { index, element ->
-                    Array.set(array, index, element)
-                }
-                array
-            }
-
-            Set::class.java.isAssignableFrom(rawTargetType) ->
-                LinkedHashSet(materializedItems)
-
-            List::class.java.isAssignableFrom(rawTargetType) ||
-                    Collection::class.java.isAssignableFrom(rawTargetType) ->
-                materializedItems.toMutableList()
-
-            Iterable::class.java.isAssignableFrom(rawTargetType) ->
-                materializedItems
-
-            else ->
-                throw TypeMismatchException(value, rawTargetType)
-        }
-    }
-
-    private fun convertMap(value: Value.MapValue, targetType: Type): Any {
-        val rawTargetType = rawClassOf(targetType)
-        if (!Map::class.java.isAssignableFrom(rawTargetType)) {
-            throw TypeMismatchException(value, rawTargetType)
-        }
-
-        val keyType = when (targetType) {
-            is ParameterizedType -> targetType.actualTypeArguments[0]
-            else -> Any::class.java
-        }
-
-        val valueType = when (targetType) {
-            is ParameterizedType -> targetType.actualTypeArguments[1]
-            else -> Any::class.java
-        }
-
-        val result = LinkedHashMap<Any?, Any?>()
-        value.entries.forEach { entry: MapEntry ->
-            val materializedKey = materializeInternal(entry.key, keyType)
-            val materializedValue = materializeInternal(entry.value, valueType)
-            result[materializedKey] = materializedValue
-        }
-
-        return result
-    }
-
-    private fun buildObject(value: Value.Record, targetType: Class<*>): Any {
-        buildKotlinObject(value, targetType)?.let { return it }
-        buildWithNoArgConstructor(value, targetType)?.let { return it }
-        buildWithSingleJavaConstructor(value, targetType)?.let { return it }
-        throw ObjectConstructionException("No supported construction strategy found for ${targetType.name}")
-    }
-
-    private fun buildKotlinObject(value: Value.Record, targetType: Class<*>): Any? {
-        val kClass: KClass<*> = targetType.kotlin
-        val primary: KFunction<Any> = kClass.primaryConstructor ?: return null
-
-        val valueParameters = primary.parameters.filter { it.kind == KParameter.Kind.VALUE }
-        val parameterNames = valueParameters.mapNotNull { it.name }.toSet()
-
-        val unknownFields = value.fields.keys - parameterNames
-        if (unknownFields.isNotEmpty()) {
-            return null
-        }
-
-        return try {
-            val arguments = linkedMapOf<KParameter, Any?>()
-
-            for (parameter in valueParameters) {
-                val name = parameter.name
-                    ?: throw ObjectConstructionException(
-                        "Unnamed Kotlin constructor parameter on ${targetType.name}"
-                    )
-
-                val fieldValue = value.fields[name]
-                if (fieldValue == null) {
-                    if (parameter.isOptional) continue
-                    if (parameter.type.isMarkedNullable) {
-                        arguments[parameter] = null
-                        continue
-                    }
-                    throw ObjectConstructionException(
-                        "Missing constructor argument '$name' for ${targetType.name}"
-                    )
-                }
-
-                arguments[parameter] = materializeInternal(fieldValue, rawJavaTypeOf(parameter))
-            }
-
-            primary.callBy(arguments)
-        } catch (e: ObjectConstructionException) {
-            throw e
-        } catch (e: Exception) {
-            throw ObjectConstructionException("Failed to construct ${targetType.name}: ${e.message}", e)
-        }
-    }
-
-    private fun buildWithNoArgConstructor(value: Value.Record, targetType: Class<*>): Any? {
-        val ctor: Constructor<*> = targetType.declaredConstructors
-            .firstOrNull { it.parameterCount == 0 }
-            ?: return null
-
-        return try {
-            ctor.isAccessible = true
-            val instance = ctor.newInstance()
-
-            value.fields.forEach { (fieldName, fieldValue) ->
-                val field = findField(targetType, fieldName)
-                    ?: throw ObjectConstructionException(
-                        "No field '$fieldName' found on ${targetType.name}"
-                    )
-                field.isAccessible = true
-                field.set(instance, materializeInternal(fieldValue, field.genericType))
-            }
-
-            instance
-        } catch (e: ObjectConstructionException) {
-            throw e
-        } catch (e: Exception) {
-            throw ObjectConstructionException("Failed to construct ${targetType.name}: ${e.message}", e)
-        }
-    }
-
-    private fun buildWithSingleJavaConstructor(value: Value.Record, targetType: Class<*>): Any? {
-        val constructors = targetType.declaredConstructors.toList()
-        if (constructors.size != 1) {
-            return null
-        }
-
-        val ctor = constructors[0]
-        return try {
-            val args = ArrayList<Any?>()
-
-            ctor.parameters.forEachIndexed { index, parameter ->
-                val fieldName =
-                    if (parameter.isNamePresent && parameter.name != null && value.fields.containsKey(parameter.name)) {
-                        parameter.name
-                    } else {
-                        "arg$index"
-                    }
-
-                val fieldValue = value.fields[fieldName]
-                    ?: throw ObjectConstructionException(
-                        "Missing constructor argument '$fieldName' for ${targetType.name}"
-                    )
-
-                args += materializeInternal(fieldValue, parameter.parameterizedType)
-            }
-
-            ctor.isAccessible = true
-            ctor.newInstance(*args.toTypedArray())
-        } catch (e: ObjectConstructionException) {
-            throw e
-        } catch (e: Exception) {
-            throw ObjectConstructionException("Failed to construct ${targetType.name}: ${e.message}", e)
-        }
-    }
-
-    private fun decodeEnum(text: String, targetType: Class<*>): Any {
-        val constants = targetType.enumConstants
-            ?: throw IllegalArgumentException("No enum constants for ${targetType.name}")
-
-        return constants.firstOrNull { constant ->
-            val enumName = (constant as Enum<*>).name
-            enumName == text || enumName.equals(text, ignoreCase = true)
-        } ?: throw IllegalArgumentException("Invalid enum value '$text' for ${targetType.name}")
-    }
-
-    private fun findField(targetType: Class<*>, fieldName: String): Field? {
-        var current: Class<*>? = targetType
-        while (current != null && current != Any::class.java) {
-            try {
-                return current.getDeclaredField(fieldName)
-            } catch (_: NoSuchFieldException) {
-                current = current.superclass
-            }
+    private fun handleNull(rawTarget: Class<*>): Any? {
+        if (rawTarget.isPrimitive) {
+            throw TypeMismatchException(Value.Null, rawTarget)
         }
         return null
     }
@@ -323,14 +358,6 @@ class TypeConverter(
         when (type) {
             is Class<*> -> type
             is ParameterizedType -> rawClassOf(type.rawType)
-            else -> throw ObjectConstructionException("Unsupported target type: $type")
-        }
-
-    private fun rawJavaTypeOf(parameter: KParameter): Type =
-        when (val classifier = parameter.type.classifier) {
-            is KClass<*> -> classifier.java
-            else -> throw ObjectConstructionException(
-                "Unsupported Kotlin parameter type '${parameter.name}'"
-            )
+            else -> throw IllegalArgumentException("Unsupported Type: $type")
         }
 }

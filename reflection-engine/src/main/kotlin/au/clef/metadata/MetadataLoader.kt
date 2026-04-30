@@ -6,20 +6,23 @@ import java.io.InputStream
 
 object MetadataLoader {
 
-    private val json = Json {
+    private val json: Json = Json {
         ignoreUnknownKeys = true
         prettyPrint = false
     }
 
-    fun fromResourceOrEmpty(path: String): MetadataRoot {
-        val stream: InputStream = MetadataLoader::class.java.getResourceAsStream(path)
-            ?: error("Metadata resource not found on classpath: $path")
+    fun fromResource(path: String): MetadataRoot {
+        val stream: InputStream =
+            MetadataLoader::class.java.getResourceAsStream(path)
+                ?: error("Metadata resource not found on classpath: $path")
 
-        val text: String = stream.bufferedReader().use { it.readText() }
-        println(text)
+        val text: String =
+            stream.bufferedReader().use { reader -> reader.readText() }
+
         if (text.isBlank()) {
             return MetadataRoot()
         }
+
         return json.decodeFromString(text)
     }
 }

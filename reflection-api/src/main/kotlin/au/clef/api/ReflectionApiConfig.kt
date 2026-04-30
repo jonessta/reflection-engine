@@ -5,7 +5,9 @@ import au.clef.engine.ReflectionConfig
 data class ReflectionApiConfig(
     val reflectionConfig: ReflectionConfig,
     val userDefinedScalarConverters: List<ScalarConverter<out Any>> = emptyList()
-)
+) {
+    val scalarTypeRegistry: ScalarTypeRegistry = ScalarTypeRegistry(userDefinedScalarConverters)
+}
 
 class ReflectionApiConfigBuilder(
     private val reflectionConfig: ReflectionConfig
@@ -24,6 +26,3 @@ class ReflectionApiConfigBuilder(
             userDefinedScalarConverters = userDefinedScalarConverters.toList()
         )
 }
-
-fun reflectionApiConfig(reflectionConfig: ReflectionConfig): ReflectionApiConfigBuilder =
-    ReflectionApiConfigBuilder(reflectionConfig)

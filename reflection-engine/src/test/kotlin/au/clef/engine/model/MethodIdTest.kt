@@ -1,14 +1,23 @@
 package au.clef.engine.model
 
 import java.lang.reflect.Method
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
+import kotlin.test.fail
 
 class MethodModelTest {
 
     @Test
     fun methodId_fromMethod_buildsExpectedValue_forInstanceMethod() {
-        val method: Method = SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
+        val method: Method =
+            SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
+
         val id: MethodId = MethodId.from(method)
+
         assertEquals(
             "au.clef.engine.model.SampleService#personName(au.clef.engine.model.SamplePerson)",
             id.value
@@ -22,19 +31,27 @@ class MethodModelTest {
             Int::class.javaPrimitiveType!!,
             Int::class.javaPrimitiveType!!
         )
+
         val id: MethodId = MethodId.from(method)
+
         assertEquals("java.lang.Math#max(int,int)", id.value)
     }
 
     @Test
     fun methodId_fromKClass_buildsExpectedValue() {
-        val id: MethodId = MethodId.from(SampleService::class, "personName", SamplePerson::class)
-        assertEquals("au.clef.engine.model.SampleService#personName(au.clef.engine.model.SamplePerson)", id.value)
+        val id: MethodId =
+            MethodId.from(SampleService::class, "personName", SamplePerson::class)
+
+        assertEquals(
+            "au.clef.engine.model.SampleService#personName(au.clef.engine.model.SamplePerson)",
+            id.value
+        )
     }
 
     @Test
     fun methodId_fromValue_acceptsValidMethodId_withoutParameters() {
         val id: MethodId = MethodId.fromValue("au.clef.engine.model.SampleService#ping()")
+
         assertEquals("au.clef.engine.model.SampleService#ping()", id.value)
     }
 
@@ -43,7 +60,11 @@ class MethodModelTest {
         val id: MethodId = MethodId.fromValue(
             "au.clef.engine.model.SampleService#personName(au.clef.engine.model.SamplePerson)"
         )
-        assertEquals("au.clef.engine.model.SampleService#personName(au.clef.engine.model.SamplePerson)", id.value)
+
+        assertEquals(
+            "au.clef.engine.model.SampleService#personName(au.clef.engine.model.SamplePerson)",
+            id.value
+        )
     }
 
     @Test
@@ -54,6 +75,7 @@ class MethodModelTest {
         } catch (e: IllegalMethodIdException) {
             e
         }
+
         assertTrue(ex.message!!.contains("expected <class>#<method>(<paramTypes>)"))
     }
 
@@ -65,6 +87,7 @@ class MethodModelTest {
         } catch (e: IllegalMethodIdException) {
             e
         }
+
         assertTrue(ex.message!!.contains("comma-separated with no empty entries"))
     }
 
@@ -76,13 +99,17 @@ class MethodModelTest {
         } catch (e: IllegalMethodIdException) {
             e
         }
+
         assertTrue(ex.message!!.contains("parameter type names are malformed"))
     }
 
     @Test
     fun methodDescriptor_derivesFieldsFromMethod() {
-        val method: Method = SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
+        val method: Method =
+            SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
+
         val descriptor = MethodDescriptor.from(method)
+
         assertEquals("personName", descriptor.reflectedName)
         assertEquals(String::class.java, descriptor.returnType)
         assertFalse(descriptor.isStatic)
@@ -96,19 +123,26 @@ class MethodModelTest {
             Int::class.javaPrimitiveType!!,
             Int::class.javaPrimitiveType!!
         )
+
         val descriptor = MethodDescriptor.from(method)
+
         assertTrue(descriptor.isStatic)
         assertEquals<Class<out Any>?>(Int::class.javaPrimitiveType, descriptor.returnType)
     }
 
     @Test
     fun methodDescriptor_buildsParameterDescriptors() {
-        val method: Method = SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
+        val method: Method =
+            SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
+
         val descriptor = MethodDescriptor.from(method)
+
         assertEquals(1, descriptor.parameters.size)
+
         val param: ParamDescriptor = descriptor.parameters[0]
         assertEquals(0, param.index)
-        assertEquals(SamplePerson::class.java, param.type)
+        assertEquals(SamplePerson::class.java, param.logicalType)
+        assertEquals(SamplePerson::class.java, param.runtimeType)
         assertEquals(param.reflectedName, param.name)
         assertTrue(param.nullable)
     }
@@ -120,8 +154,13 @@ class MethodModelTest {
             Int::class.javaPrimitiveType!!,
             Int::class.javaPrimitiveType!!
         )
+
         val descriptor = MethodDescriptor.from(method)
+        val intPrimitive: Class<*> = Int::class.javaPrimitiveType!!
+
         assertEquals(2, descriptor.parameters.size)
+        assertEquals(intPrimitive, descriptor.parameters[0].logicalType)
+        assertEquals(intPrimitive, descriptor.parameters[0].runtimeType)
         assertFalse(descriptor.parameters[0].nullable)
         assertFalse(descriptor.parameters[1].nullable)
     }
@@ -132,8 +171,10 @@ class MethodModelTest {
             SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
         val method2: Method =
             SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
+
         val descriptor1 = MethodDescriptor.from(method1, displayName = "First")
         val descriptor2 = MethodDescriptor.from(method2, displayName = "Second")
+
         assertEquals(descriptor1, descriptor2)
         assertEquals(descriptor1.hashCode(), descriptor2.hashCode())
     }
@@ -142,12 +183,15 @@ class MethodModelTest {
     fun methodDescriptor_equality_distinguishesDifferentOverloads() {
         val method1: Method =
             SampleOverloads::class.java.getDeclaredMethod("echo", String::class.java)
-        val method2: Method = SampleOverloads::class.java.getDeclaredMethod(
-            "echo",
-            Int::class.javaPrimitiveType!!
-        )
+        val method2: Method =
+            SampleOverloads::class.java.getDeclaredMethod(
+                "echo",
+                Int::class.javaPrimitiveType!!
+            )
+
         val descriptor1 = MethodDescriptor.from(method1)
         val descriptor2 = MethodDescriptor.from(method2)
+
         assertNotEquals(descriptor1, descriptor2)
     }
 
@@ -159,6 +203,7 @@ class MethodModelTest {
         } catch (e: Throwable) {
             e
         }
+
         assertIs<IllegalMethodIdException>(ex)
         assertIs<au.clef.engine.EngineException>(ex)
     }

@@ -12,13 +12,13 @@ import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
 
 class TypeConverter(
-    userDefinedScalarConverters: List<ScalarConverter<out Any>> = emptyList()
+    private val scalarTypeRegistry: ScalarTypeRegistry
 ) {
-    private val scalarConverters: List<ScalarConverter<out Any>> =
-        userDefinedScalarConverters + DefaultScalarConverters.all
-
     fun materialize(value: Value, targetType: Class<*>): Any? =
         materializeInternal(value, targetType)
+
+    fun supportsScalarTarget(targetType: Class<*>): Boolean =
+        scalarTypeRegistry.isScalarLike(targetType)
 
     private fun materializeInternal(value: Value, targetType: Type): Any? {
         if (value is Value.Null) {
@@ -49,7 +49,7 @@ class TypeConverter(
             return null
         }
 
-        val wrappedTargetType = wrapPrimitive(rawTargetType)
+        val wrappedTargetType = scalarTypeRegistry.wrapPrimitive(rawTargetType)
         val normalizedValue = normalizeScalar(rawValue)
 
         if (normalizedValue == null) {
@@ -66,21 +66,17 @@ class TypeConverter(
         if (wrappedTargetType.isEnum) {
             return try {
                 decodeEnum(normalizedValue.toString(), wrappedTargetType)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 throw TypeMismatchException(Value.Scalar(rawValue), rawTargetType)
             }
         }
 
-        val converter = scalarConverters.firstOrNull {
-            it.type.javaObjectType == wrappedTargetType
-        } ?: throw TypeMismatchException(Value.Scalar(rawValue), rawTargetType)
+        val converter = scalarTypeRegistry.decoderFor(wrappedTargetType)
+            ?: throw TypeMismatchException(Value.Scalar(rawValue), rawTargetType)
 
         return try {
-            @Suppress("UNCHECKED_CAST")
-            (converter as ScalarConverter<Any>).decode(normalizedValue.toString())
-        } catch (e: TypeMismatchException) {
-            throw e
-        } catch (e: Exception) {
+            converter.decode(normalizedValue.toString())
+        } catch (_: Exception) {
             throw TypeMismatchException(Value.Scalar(rawValue), rawTargetType)
         }
     }
@@ -109,7 +105,7 @@ class TypeConverter(
     private fun convertInstance(value: Value.Instance, targetType: Type): Any {
         val instance = value.obj
         val rawTargetType = rawClassOf(targetType)
-        if (!wrapPrimitive(rawTargetType).isInstance(instance)) {
+        if (!scalarTypeRegistry.wrapPrimitive(rawTargetType).isInstance(instance)) {
             throw TypeMismatchException(value, rawTargetType)
         }
         return instance
@@ -336,19 +332,5 @@ class TypeConverter(
             else -> throw ObjectConstructionException(
                 "Unsupported Kotlin parameter type '${parameter.name}'"
             )
-        }
-
-    private fun wrapPrimitive(type: Class<*>): Class<*> =
-        when (type) {
-            Int::class.javaPrimitiveType -> Int::class.javaObjectType
-            Long::class.javaPrimitiveType -> Long::class.javaObjectType
-            Double::class.javaPrimitiveType -> Double::class.javaObjectType
-            Float::class.javaPrimitiveType -> Float::class.javaObjectType
-            Short::class.javaPrimitiveType -> Short::class.javaObjectType
-            Byte::class.javaPrimitiveType -> Byte::class.javaObjectType
-            Boolean::class.javaPrimitiveType -> Boolean::class.javaObjectType
-            Char::class.javaPrimitiveType -> Char::class.javaObjectType
-            Void.TYPE -> Void::class.java
-            else -> type
         }
 }

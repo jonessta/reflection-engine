@@ -389,7 +389,7 @@
 
     const methodTitle = execution => execution.displayName || execution.reflectedName;
 
-    function sampleValueDtoForType(typeName) {
+    function sampleScalarValue(typeName) {
         switch (typeName) {
             case 'int':
             case 'java.lang.Integer':
@@ -403,28 +403,38 @@
             case 'java.lang.Short':
             case 'byte':
             case 'java.lang.Byte':
-                return {kind: 'scalar', value: 0};
+                return 0;
 
             case 'boolean':
             case 'java.lang.Boolean':
-                return {kind: 'scalar', value: false};
+                return false;
 
             case 'char':
             case 'java.lang.Character':
-                return {kind: 'scalar', value: 'a'};
+                return 'a';
 
-            case 'java.lang.String':
-            case 'String':
-                return {kind: 'scalar', value: ''};
+            default:
+                return '';
+        }
+    }
 
+    function sampleValueDtoForParam(param) {
+        if (param.scalarLike) {
+            return {
+                kind: 'scalar',
+                value: sampleScalarValue(param.type)
+            };
+        }
+
+        switch (param.type) {
             case 'au.clef.app.demo.model.Address':
                 return {
                     kind: 'record',
                     type: 'au.clef.app.demo.model.Address',
                     fields: {
-                        number: {kind: 'scalar', value: 2},
-                        street: {kind: 'scalar', value: 'Smith st'},
-                        zipCode: {kind: 'scalar', value: '2321'}
+                        number: { kind: 'scalar', value: 2 },
+                        street: { kind: 'scalar', value: 'Smith st' },
+                        zipCode: { kind: 'scalar', value: '2321' }
                     }
                 };
 
@@ -433,16 +443,24 @@
                     kind: 'record',
                     type: 'au.clef.app.demo.model.Person',
                     fields: {
-                        name: {kind: 'scalar', value: 'Alice'},
-                        age: {kind: 'scalar', value: 25},
-                        address: sampleValueDtoForType('au.clef.app.demo.model.Address')
+                        name: { kind: 'scalar', value: 'Alice' },
+                        age: { kind: 'scalar', value: 25 },
+                        address: {
+                            kind: 'record',
+                            type: 'au.clef.app.demo.model.Address',
+                            fields: {
+                                number: { kind: 'scalar', value: 2 },
+                                street: { kind: 'scalar', value: 'Smith st' },
+                                zipCode: { kind: 'scalar', value: '2321' }
+                            }
+                        }
                     }
                 };
 
             default:
                 return {
                     kind: 'record',
-                    type: typeName,
+                    type: param.type,
                     fields: {}
                 };
         }
@@ -453,7 +471,7 @@
     function createInvocationPayload(execution) {
         return {
             executionId: execution.executionId,
-            args: execution.parameters.map(param => sampleValueDtoForType(param.type))
+            args: execution.parameters.map(sampleValueDtoForParam)
         };
     }
 
@@ -612,6 +630,7 @@
                       <p class="param-type">${escapeHtml(param.type)}</p>
                     </div>
                     <span class="pill">${param.nullable ? 'nullable' : 'required'}</span>
+                    <span class="pill">${param.scalarLike ? 'scalar' : 'structured'}</span>
                   </div>
                   <div class="inline-hint">Reflected name: ${escapeHtml(param.reflectedName)}</div>
                 </div>

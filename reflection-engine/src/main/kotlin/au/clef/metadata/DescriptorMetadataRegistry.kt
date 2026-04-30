@@ -6,25 +6,30 @@ import au.clef.metadata.model.MetadataRoot
 import au.clef.metadata.model.MethodMetadata
 import au.clef.metadata.model.ParamMetadata
 
-class DescriptorMetadataRegistry(private val metadata: MetadataRoot) {
-
+class DescriptorMetadataRegistry(
+    private val metadata: MetadataRoot
+) {
     fun apply(descriptor: MethodDescriptor): MethodDescriptor {
         val methodMeta: MethodMetadata = metadata.methods[descriptor.id] ?: return descriptor
-        val updatedParams: List<ParamDescriptor> = descriptor.parameters.map { param: ParamDescriptor ->
-            val paramMeta: ParamMetadata? = methodMeta.parameters.getOrNull(param.index)
-            if (paramMeta == null) {
-                param
-            } else {
-                ParamDescriptor(
-                    index = param.index,
-                    type = param.type,
-                    reflectedName = param.reflectedName,
-                    name = paramMeta.name ?: param.name,
-                    label = paramMeta.label ?: param.label,
-                    nullable = param.nullable
-                )
+
+        val updatedParams: List<ParamDescriptor> =
+            descriptor.parameters.map { param ->
+                val paramMeta: ParamMetadata? = methodMeta.parameters.getOrNull(param.index)
+
+                if (paramMeta == null) {
+                    param
+                } else {
+                    ParamDescriptor(
+                        index = param.index,
+                        logicalType = param.logicalType,
+                        runtimeType = param.runtimeType,
+                        reflectedName = param.reflectedName,
+                        name = paramMeta.name ?: param.name,
+                        label = paramMeta.label ?: param.label,
+                        nullable = param.nullable
+                    )
+                }
             }
-        }
 
         return descriptor.withMetadata(
             displayName = methodMeta.displayName ?: descriptor.displayName,
@@ -33,5 +38,5 @@ class DescriptorMetadataRegistry(private val metadata: MetadataRoot) {
     }
 
     fun applyAll(descriptors: List<MethodDescriptor>): List<MethodDescriptor> =
-        descriptors.map { descriptor: MethodDescriptor -> apply(descriptor) }
+        descriptors.map(::apply)
 }

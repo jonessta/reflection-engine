@@ -90,10 +90,21 @@ private fun validateMetadata() {
 
 private fun showAllDescriptors() {
     val descriptors: List<MethodDescriptor> = engine.descriptors(AcmeService::class)
+
     descriptors.forEach { descriptor ->
         println("METHOD: ${descriptor.id}")
+
         descriptor.parameters.forEach { param: ParamDescriptor ->
-            println(" name=${param.name}, label=${param.label}, type=${param.type}")
+            val typeText =
+                if (param.logicalType == param.runtimeType) {
+                    param.logicalType.name
+                } else {
+                    "${param.logicalType.name} (runtime=${param.runtimeType.name})"
+                }
+
+            println(
+                " name=${param.name}, label=${param.label}, type=$typeText"
+            )
         }
     }
 }

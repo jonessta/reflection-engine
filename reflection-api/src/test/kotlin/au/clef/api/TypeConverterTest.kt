@@ -6,7 +6,7 @@ import kotlin.test.*
 
 class TypeConverterTest {
 
-    private val converter: TypeConverter = TypeConverter()
+    private val converter: TypeConverter = TypeConverter(ScalarTypeRegistry())
 
     @Test
     fun materialize_convertsStringToIntPrimitive() {

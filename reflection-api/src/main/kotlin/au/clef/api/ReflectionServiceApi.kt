@@ -16,6 +16,8 @@ class ReflectionServiceApi(
 ) {
     private val reflectionConfig: ReflectionConfig = apiConfig.reflectionConfig
 
+    private val scalarTypeRegistry = apiConfig.scalarTypeRegistry
+
     private val metadataRegistry: DescriptorMetadataRegistry? =
         reflectionConfig.metadataResourcePath
             ?.let(MetadataLoader::fromResourceOrEmpty)
@@ -26,25 +28,27 @@ class ReflectionServiceApi(
         metadataRegistry = metadataRegistry
     )
 
-    private val classResolver = DefaultClassResolver(engine)
+    private val classResolver = DefaultClassResolver(
+        methodSourceTypes = engine,
+        scalarTypeRegistry = scalarTypeRegistry
+    )
 
     private val requestValueMapper = RequestValueMapper(
         classResolver = classResolver,
-        userDefinedScalarConverters = apiConfig.userDefinedScalarConverters
+        scalarTypeRegistry = scalarTypeRegistry
     )
 
     private val responseValueMapper = ResponseValueMapper(
-        userDefinedScalarConverters = apiConfig.userDefinedScalarConverters
+        scalarTypeRegistry = scalarTypeRegistry
     )
 
     fun invoke(request: InvocationRequest): InvocationResponse {
         val executionContext = engine.executionContext(request.executionId)
         val descriptor = engine.descriptor(executionContext.methodId)
 
-        val args: List<Any?> =
-            request.args.zip(descriptor.parameters).map { (argDto, param) ->
-                requestValueMapper.materialize(argDto, param.type)
-            }
+        val args = request.args.zip(descriptor.parameters).map { (argDto, param) ->
+            requestValueMapper.materialize(argDto, param.runtimeType)
+        }
 
         val result: Any? = when (executionContext) {
             is ExecutionContext.Static ->
@@ -82,11 +86,12 @@ class ReflectionServiceApi(
             parameters = descriptor.parameters.map { param ->
                 ParamDescriptorDto(
                     index = param.index,
-                    type = param.type.name,
+                    type = param.logicalType.name,
                     reflectedName = param.reflectedName,
                     name = param.name,
                     label = param.label,
-                    nullable = param.nullable
+                    nullable = param.nullable,
+                    scalarLike = requestValueMapper.isScalarLike(param.logicalType)
                 )
             }
         )

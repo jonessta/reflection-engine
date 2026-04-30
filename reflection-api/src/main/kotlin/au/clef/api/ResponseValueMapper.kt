@@ -5,61 +5,40 @@ import au.clef.api.model.ValueDto
 import kotlinx.serialization.json.JsonPrimitive
 import java.lang.reflect.Modifier
 import java.nio.file.Path
+import kotlin.reflect.KProperty1
+import kotlin.reflect.full.declaredMemberProperties
+import kotlin.reflect.jvm.isAccessible
 
 class ResponseValueMapper(
-    userDefinedScalarConverters: List<ScalarConverter<out Any>> = emptyList()
+    private val scalarTypeRegistry: ScalarTypeRegistry
 ) {
-    private val scalarConverters: List<ScalarConverter<out Any>> =
-        userDefinedScalarConverters + DefaultScalarConverters.all
-
     fun toDtoValue(value: Any?): ValueDto =
-        when {
-            value == null ->
+        when (value) {
+            null ->
                 ValueDto.Null
 
-            value is Map<*, *> ->
-                ValueDto.MapValue(
-                    value.entries.map { (key, entryValue) ->
-                        MapEntryDto(
-                            key = toDtoValue(key),
-                            value = toDtoValue(entryValue)
-                        )
-                    }
-                )
+            is Map<*, *> -> ValueDto.MapValue(
+                value.entries.map { (key, entryValue) ->
+                    MapEntryDto(
+                        key = toDtoValue(key),
+                        value = toDtoValue(entryValue)
+                    )
+                }
+            )
 
-            value is Array<*> ->
+            is Array<*> -> ValueDto.ListValue(value.map(::toDtoValue))
+            is IntArray -> ValueDto.ListValue(value.map(::toDtoValue))
+            is LongArray -> ValueDto.ListValue(value.map(::toDtoValue))
+            is DoubleArray -> ValueDto.ListValue(value.map(::toDtoValue))
+            is FloatArray -> ValueDto.ListValue(value.map(::toDtoValue))
+            is ShortArray -> ValueDto.ListValue(value.map(::toDtoValue))
+            is ByteArray -> ValueDto.ListValue(value.map(::toDtoValue))
+            is BooleanArray -> ValueDto.ListValue(value.map(::toDtoValue))
+            is CharArray -> ValueDto.ListValue(value.map(::toDtoValue))
+            is Iterable<*> if value !is Path ->
                 ValueDto.ListValue(value.map(::toDtoValue))
 
-            value is IntArray ->
-                ValueDto.ListValue(value.map(::toDtoValue))
-
-            value is LongArray ->
-                ValueDto.ListValue(value.map(::toDtoValue))
-
-            value is DoubleArray ->
-                ValueDto.ListValue(value.map(::toDtoValue))
-
-            value is FloatArray ->
-                ValueDto.ListValue(value.map(::toDtoValue))
-
-            value is ShortArray ->
-                ValueDto.ListValue(value.map(::toDtoValue))
-
-            value is ByteArray ->
-                ValueDto.ListValue(value.map(::toDtoValue))
-
-            value is BooleanArray ->
-                ValueDto.ListValue(value.map(::toDtoValue))
-
-            value is CharArray ->
-                ValueDto.ListValue(value.map(::toDtoValue))
-
-            value is Iterable<*> && value !is Path ->
-                ValueDto.ListValue(value.map(::toDtoValue))
-
-            value is Enum<*> ->
-                ValueDto.Scalar(JsonPrimitive(value.name))
-
+            is Enum<*> -> ValueDto.Scalar(JsonPrimitive(value.name))
             else -> {
                 val scalar = encodeScalar(value)
                 if (scalar != null) {
@@ -72,14 +51,24 @@ class ResponseValueMapper(
 
     private fun toRecord(value: Any): ValueDto.Record {
         val clazz = value.javaClass
+        val kClass = clazz.kotlin
 
-        val fields: Map<String, ValueDto> = clazz.fields
-            .filterNot { field ->
-                Modifier.isStatic(field.modifiers) || field.isSynthetic
-            }
-            .associate { field ->
-                field.name to toDtoValue(field.get(value))
-            }
+        val fields: Map<String, ValueDto> =
+            kClass
+                .declaredMemberProperties
+                .associate { property ->
+                    property.isAccessible = true
+                    property.name to toDtoValue(property.getter.call(value))
+                }
+                .ifEmpty {
+                    clazz.fields
+                        .filterNot { field ->
+                            Modifier.isStatic(field.modifiers) || field.isSynthetic
+                        }
+                        .associate { field ->
+                            field.name to toDtoValue(field.get(value))
+                        }
+                }
 
         return ValueDto.Record(
             type = clazz.name,
@@ -87,9 +76,6 @@ class ResponseValueMapper(
         )
     }
 
-    private fun encodeScalar(value: Any): JsonPrimitive? {
-        val converter = scalarConverters.firstOrNull { it.type.javaObjectType.isInstance(value) } ?: return null
-        @Suppress("UNCHECKED_CAST")
-        return (converter as ScalarConverter<Any>).encode(value)
-    }
+    private fun encodeScalar(value: Any): JsonPrimitive? =
+        scalarTypeRegistry.encoderFor(value)?.encode(value)
 }

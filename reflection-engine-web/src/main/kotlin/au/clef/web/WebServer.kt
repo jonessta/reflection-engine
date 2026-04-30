@@ -4,6 +4,7 @@ import au.clef.api.ReflectionApiConfig
 import au.clef.api.ReflectionServiceApi
 import au.clef.api.model.InvocationRequest
 import au.clef.api.model.InvocationResponse
+import au.clef.engine.ReflectionConfig
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -22,14 +23,21 @@ data class WebServerConfig(
 )
 
 class WebServer(
-    apiConfig: ReflectionApiConfig,
-    private val config: WebServerConfig = WebServerConfig()
+    private val apiConfig: ReflectionApiConfig,
+    private val webConfig: WebServerConfig = WebServerConfig()
 ) {
+    constructor(
+        reflectionConfig: ReflectionConfig,
+        webConfig: WebServerConfig = WebServerConfig()
+    ) : this(
+        apiConfig = ReflectionApiConfig(reflectionConfig),
+        webConfig = webConfig
+    )
 
     private val reflectionServiceApi = ReflectionServiceApi(apiConfig)
 
     fun start() {
-        embeddedServer(Netty, host = config.host, port = config.port) {
+        embeddedServer(Netty, host = webConfig.host, port = webConfig.port) {
             install(ContentNegotiation) {
                 json(
                     Json {

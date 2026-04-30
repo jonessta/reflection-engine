@@ -4,11 +4,8 @@ import au.clef.api.model.MapEntry
 import au.clef.api.model.Value
 import au.clef.engine.ObjectConstructionException
 import kotlinx.serialization.json.JsonPrimitive
+import java.lang.reflect.*
 import java.lang.reflect.Array
-import java.lang.reflect.Constructor
-import java.lang.reflect.Field
-import java.lang.reflect.ParameterizedType
-import java.lang.reflect.Type
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
@@ -105,6 +102,7 @@ class TypeConverter(
                     }
                 }
             }
+
             else -> rawValue
         }
 

@@ -37,11 +37,3 @@ class ReflectionConfigBuilder internal constructor(firstMethodSource: MethodSour
 
 fun reflectionConfig(methodSource: MethodSource, vararg methodSources: MethodSource): ReflectionConfigBuilder =
     ReflectionConfigBuilder(methodSource).apply { methodSources(*methodSources) }
-
-// todo unused?
-fun ReflectionConfig.toMethodSourceRegistry(): MethodSourceRegistry =
-    MethodSourceRegistry(
-        methodSources = methodSources,
-        methodSupportingTypes = methodSupportingTypes,
-        inheritanceLevel = inheritanceLevel
-    )

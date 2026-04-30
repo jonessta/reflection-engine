@@ -5,14 +5,12 @@ import java.net.URI
 import java.net.URL
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.util.Currency
-import java.util.Locale
-import java.util.UUID
+import java.util.*
 import kotlin.reflect.KClass
-import java.time.Instant
 
 interface ScalarConverter<T : Any> {
     val type: KClass<T>

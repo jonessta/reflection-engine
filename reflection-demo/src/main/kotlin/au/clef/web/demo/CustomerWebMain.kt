@@ -2,11 +2,7 @@ package au.clef.web.demo
 
 import au.clef.api.ReflectionApiConfig
 import au.clef.api.scalarConverter
-import au.clef.app.demo.model.Address
-import au.clef.app.demo.model.Customer
-import au.clef.app.demo.model.CustomerId
-import au.clef.app.demo.model.CustomerService
-import au.clef.app.demo.model.EmailAddress
+import au.clef.app.demo.model.*
 import au.clef.engine.MethodSource.InstanceMethod
 import au.clef.engine.reflectionConfig
 import au.clef.web.WebServer

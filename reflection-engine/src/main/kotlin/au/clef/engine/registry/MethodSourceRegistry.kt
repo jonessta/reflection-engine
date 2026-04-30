@@ -221,7 +221,7 @@ class MethodSourceRegistry(
                     MethodDescriptor.from(
                         method = method,
                         id = methodId,
-                        logicalMethodName  = parsed.methodName
+                        logicalMethodName = parsed.methodName
                     )
                 }
 

@@ -1,7 +1,6 @@
 package au.clef.engine
 
 import au.clef.engine.model.InheritanceLevel
-import au.clef.engine.registry.MethodSourceRegistry
 import kotlin.reflect.KClass
 
 data class ReflectionConfig(

@@ -5,7 +5,6 @@ import au.clef.api.model.ValueDto
 import kotlinx.serialization.json.JsonPrimitive
 import java.lang.reflect.Modifier
 import java.nio.file.Path
-import kotlin.reflect.KProperty1
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.jvm.isAccessible
 

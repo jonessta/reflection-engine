@@ -1,8 +1,10 @@
 package au.clef.app.demo.model
 
-@JvmInline value class CustomerId(val value: String)
+@JvmInline
+value class CustomerId(val value: String)
 
-@JvmInline value class EmailAddress(val value: String)
+@JvmInline
+value class EmailAddress(val value: String)
 
 data class Customer(
     val id: CustomerId,

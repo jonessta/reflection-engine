@@ -7,19 +7,14 @@ import au.clef.api.model.ParamDescriptorDto
 import au.clef.engine.ExecutionContext
 import au.clef.engine.ReflectionConfig
 import au.clef.engine.ReflectionEngine
-import au.clef.engine.registry.MethodSourceRegistry
+import au.clef.engine.model.MethodDescriptor
 import au.clef.metadata.DescriptorMetadataRegistry
 import au.clef.metadata.MetadataLoader
 
-class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
-
+class ReflectionServiceApi(
+    apiConfig: ReflectionApiConfig
+) {
     private val reflectionConfig: ReflectionConfig = apiConfig.reflectionConfig
-
-    private val methodSourceRegistry = MethodSourceRegistry(
-        methodSources = reflectionConfig.methodSources,
-        methodSupportingTypes = reflectionConfig.methodSupportingTypes,
-        inheritanceLevel = reflectionConfig.inheritanceLevel
-    )
 
     private val metadataRegistry: DescriptorMetadataRegistry? =
         reflectionConfig.metadataResourcePath
@@ -31,8 +26,10 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
         metadataRegistry = metadataRegistry
     )
 
+    private val classResolver = DefaultClassResolver(engine)
+
     private val requestValueMapper = RequestValueMapper(
-        classResolver = DefaultClassResolver(engine.methodSourceTypes),
+        classResolver = classResolver,
         userDefinedScalarConverters = apiConfig.userDefinedScalarConverters
     )
 
@@ -41,8 +38,8 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
     )
 
     fun invoke(request: InvocationRequest): InvocationResponse {
-        val executionContext = methodSourceRegistry.executionContext(request.executionId)
-        val descriptor = executionContext.descriptor
+        val executionContext = engine.executionContext(request.executionId)
+        val descriptor = engine.descriptor(executionContext.methodId)
 
         val args: List<Any?> =
             request.args.zip(descriptor.parameters).map { (argDto, param) ->
@@ -63,14 +60,16 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
     }
 
     fun executionDescriptors(): List<ExecutionDescriptorDto> =
-        methodSourceRegistry.allExecutionContexts().map(::toExecutionDescriptorDto)
+        engine.executionContexts().map { executionContext ->
+            val descriptor = engine.descriptor(executionContext.methodId)
+            toExecutionDescriptorDto(executionContext, descriptor)
+        }
 
     private fun toExecutionDescriptorDto(
-        executionContext: ExecutionContext
-    ): ExecutionDescriptorDto {
-        val descriptor = executionContext.descriptor
-
-        return ExecutionDescriptorDto(
+        executionContext: ExecutionContext,
+        descriptor: MethodDescriptor
+    ): ExecutionDescriptorDto =
+        ExecutionDescriptorDto(
             executionId = executionContext.executionId,
             instanceDescription = when (executionContext) {
                 is ExecutionContext.Static -> null
@@ -91,5 +90,4 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
                 )
             }
         )
-    }
 }

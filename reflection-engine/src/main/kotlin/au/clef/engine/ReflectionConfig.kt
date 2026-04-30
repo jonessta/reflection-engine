@@ -1,6 +1,7 @@
 package au.clef.engine
 
 import au.clef.engine.model.InheritanceLevel
+import au.clef.engine.registry.MethodSourceRegistry
 import kotlin.reflect.KClass
 
 data class ReflectionConfig(
@@ -36,3 +37,11 @@ class ReflectionConfigBuilder internal constructor(firstMethodSource: MethodSour
 
 fun reflectionConfig(methodSource: MethodSource, vararg methodSources: MethodSource): ReflectionConfigBuilder =
     ReflectionConfigBuilder(methodSource).apply { methodSources(*methodSources) }
+
+// todo unused?
+fun ReflectionConfig.toMethodSourceRegistry(): MethodSourceRegistry =
+    MethodSourceRegistry(
+        methodSources = methodSources,
+        methodSupportingTypes = methodSupportingTypes,
+        inheritanceLevel = inheritanceLevel
+    )

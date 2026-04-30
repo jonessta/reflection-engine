@@ -10,8 +10,8 @@ import au.clef.engine.MethodSource.StaticMethod
 import au.clef.engine.ReflectionConfig
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.InheritanceLevel
+import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.reflectionConfig
-import au.clef.engine.registry.MethodSourceRegistry
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Test
 import java.net.URI
@@ -35,25 +35,19 @@ class JavaInteropJsonTest {
         .inheritanceLevel(InheritanceLevel.DeclaredOnly)
         .build()
 
-    private val registry = MethodSourceRegistry(
-        methodSources = reflectionConfig.methodSources,
-        methodSupportingTypes = reflectionConfig.methodSupportingTypes,
-        inheritanceLevel = reflectionConfig.inheritanceLevel
-    )
-
     private val engine = ReflectionEngine(
         reflectionConfig = reflectionConfig
     )
 
     private val requestValueMapper = RequestValueMapper(
-        classResolver = DefaultClassResolver(engine.methodSourceTypes)
+        classResolver = DefaultClassResolver(engine)
     )
 
     private val responseValueMapper = ResponseValueMapper()
 
     @Test
     fun `generate descriptors and invoke JDK methods with JSON`() {
-        val descriptors = registry.allExecutionContexts().map(::toExecutionDescriptorDto)
+        val descriptors = executionDescriptors()
 
         val localDateDescriptor =
             descriptors.first { it.reflectedName == "of" && it.returnType == "java.time.LocalDate" }
@@ -129,20 +123,14 @@ class JavaInteropJsonTest {
             StaticMethod(Month::class, "valueOf", String::class)
         ).build()
 
-        val localRegistry = MethodSourceRegistry(
-            methodSources = localConfig.methodSources,
-            methodSupportingTypes = localConfig.methodSupportingTypes,
-            inheritanceLevel = localConfig.inheritanceLevel
-        )
-
         val localEngine = ReflectionEngine(reflectionConfig = localConfig)
 
         val localRequestValueMapper = RequestValueMapper(
-            classResolver = DefaultClassResolver(localEngine.methodSourceTypes)
+            classResolver = DefaultClassResolver(localEngine)
         )
 
-        val execution = localRegistry.allExecutionContexts().single() as ExecutionContext.Static
-        val descriptor = execution.descriptor
+        val execution = localEngine.executionContexts().single() as ExecutionContext.Static
+        val descriptor = localEngine.descriptor(execution.methodId)
 
         val request = InvocationRequest(
             executionId = execution.executionId,
@@ -207,8 +195,8 @@ class JavaInteropJsonTest {
     }
 
     private fun invoke(request: InvocationRequest): InvocationResponse {
-        val executionContext = registry.executionContext(request.executionId)
-        val descriptor = executionContext.descriptor
+        val executionContext = engine.executionContext(request.executionId)
+        val descriptor = engine.descriptor(executionContext.methodId)
 
         val args: List<Any?> = request.args.zip(descriptor.parameters).map { (argDto, param) ->
             requestValueMapper.materialize(argDto, param.type)
@@ -237,20 +225,14 @@ class JavaInteropJsonTest {
             reflectionConfig = localConfig
         )
 
-        val localRegistry = MethodSourceRegistry(
-            methodSources = localConfig.methodSources,
-            methodSupportingTypes = localConfig.methodSupportingTypes,
-            inheritanceLevel = localConfig.inheritanceLevel
-        )
-
         val localRequestValueMapper = RequestValueMapper(
-            classResolver = DefaultClassResolver(localEngine.methodSourceTypes)
+            classResolver = DefaultClassResolver(localEngine)
         )
 
         val localResponseValueMapper = ResponseValueMapper()
 
-        val execution = localRegistry.allExecutionContexts().single() as ExecutionContext.Static
-        val descriptor = execution.descriptor
+        val execution = localEngine.executionContexts().single() as ExecutionContext.Static
+        val descriptor = localEngine.descriptor(execution.methodId)
 
         val materializedArgs: List<Any?> = args.zip(descriptor.parameters).map { (argDto, param) ->
             localRequestValueMapper.materialize(argDto, param.type)
@@ -261,15 +243,22 @@ class JavaInteropJsonTest {
         return InvocationResponse(localResponseValueMapper.toDtoValue(result))
     }
 
+    private fun executionDescriptors(): List<ExecutionDescriptorDto> =
+        engine.executionContexts().map { executionContext ->
+            val descriptor = engine.descriptor(executionContext.methodId)
+            toExecutionDescriptorDto(executionContext, descriptor)
+        }
+
     private fun assertScalarString(response: InvocationResponse, expected: String) {
         val scalar = assertIs<ValueDto.Scalar>(response.result)
         assertEquals(JsonPrimitive(expected), scalar.value)
     }
 
-    private fun toExecutionDescriptorDto(executionContext: ExecutionContext): ExecutionDescriptorDto {
-        val descriptor = executionContext.descriptor
-
-        return ExecutionDescriptorDto(
+    private fun toExecutionDescriptorDto(
+        executionContext: ExecutionContext,
+        descriptor: MethodDescriptor
+    ): ExecutionDescriptorDto =
+        ExecutionDescriptorDto(
             executionId = executionContext.executionId,
             instanceDescription = when (executionContext) {
                 is ExecutionContext.Static -> null
@@ -290,5 +279,4 @@ class JavaInteropJsonTest {
                 )
             }
         )
-    }
 }

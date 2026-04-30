@@ -1,6 +1,6 @@
 package au.clef.web.demo
 
-import au.clef.api.reflectionApiConfig
+import au.clef.api.ReflectionApiConfig
 import au.clef.app.demo.model.AcmeService
 import au.clef.app.demo.model.Address
 import au.clef.app.demo.model.Person
@@ -12,7 +12,7 @@ import au.clef.web.WebServerConfig
 
 private val acmeService = AcmeService()
 
-private val reflectionConfig1 = reflectionConfig(
+internal val acmeConfig = reflectionConfig(
     InstanceMethod(acmeService, "ACME Service", "personName", Person::class),
     StaticMethod(::add),
     StaticMethod(Math::class, "min", Int::class, Int::class),
@@ -22,19 +22,10 @@ private val reflectionConfig1 = reflectionConfig(
     .metadataResourcePath("/config/acme-metadata.json")
     .build()
 
-private val reflectionConfig = reflectionConfig(
-    Instance(instance = acmeService, instanceDescription = "myService")
-)
-    .supportingTypes(Person::class, Address::class)
-    .metadataResourcePath("/config/acme-metadata.json")
-    .build()
-
-private val apiConfig = reflectionApiConfig(reflectionConfig)
-//    .scalarConverter()
-    .build()
-
+val apiConfig: ReflectionApiConfig = ReflectionApiConfig(acmeConfig)
 val webConfig = WebServerConfig(port = 8080, host = "0.0.0.0")
 
 fun main() {
+    // todo provide a constructor which just takes ReflectionCOnfig ie without user mappings if not needed
     WebServer(apiConfig, webConfig).start()
 }

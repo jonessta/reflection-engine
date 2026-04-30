@@ -51,12 +51,15 @@ private val reflectionRegistry = MethodSourceRegistry(
     inheritanceLevel = reflectionConfig.inheritanceLevel
 )
 
-private val metadataRegistry = DescriptorMetadataRegistry(MetadataLoader.fromResourceOrEmpty(METADATA_RESOURCE_PATH))
+private val metadataRegistry =
+    runCatching { MetadataLoader.fromResourceOrEmpty(METADATA_RESOURCE_PATH) }
+        .getOrNull()
+        ?.let(::DescriptorMetadataRegistry)
 
 private val engine = ReflectionEngine(reflectionConfig = reflectionConfig, metadataRegistry = metadataRegistry)
 
 fun main() {
-    generateMetadata()
+//    generateMetadata()
 //    validateMetadata()
     showAllDescriptors()
     runInstanceMethodOnServiceInstance()

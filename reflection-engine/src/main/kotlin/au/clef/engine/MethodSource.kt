@@ -30,8 +30,7 @@ sealed class MethodSource(val declaringClass: KClass<*>) {
 
         constructor(function: KFunction<*>)
                 : super(declaringClass = requireNotNull(function.javaMethod) { "Function ${function.name} does not have a Java method" }.declaringClass.kotlin) {
-            this.methodId =
-                MethodId.from(requireNotNull(function.javaMethod) { "Function ${function.name} does not have a Java method" })
+            this.methodId = MethodId.from(function.javaMethod!!)
         }
     }
 

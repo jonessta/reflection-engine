@@ -10,34 +10,34 @@ import kotlin.reflect.KClass
 class ReflectionEngine(
     reflectionConfig: ReflectionConfig,
     private val metadataRegistry: DescriptorMetadataRegistry? = null
-) {
+) : MethodSourceTypes {
+
     private val reflectionRegistry = MethodSourceRegistry(
         methodSources = reflectionConfig.methodSources,
         methodSupportingTypes = reflectionConfig.methodSupportingTypes,
         inheritanceLevel = reflectionConfig.inheritanceLevel
     )
 
-    val methodSourceTypes: MethodSourceTypes get() = reflectionRegistry
+    override val declaringClasses: List<Class<*>>
+        get() = reflectionRegistry.declaringClasses
 
-    fun descriptors(clazz: KClass<*>): List<MethodDescriptor> = descriptors(clazz.java)
+    override val knownClasses: List<Class<*>>
+        get() = reflectionRegistry.knownClasses
 
-    fun descriptors(clazz: Class<*>): List<MethodDescriptor> {
-        val descriptors: List<MethodDescriptor> = reflectionRegistry.descriptors(clazz)
-        return metadataRegistry?.applyAll(descriptors) ?: descriptors
-    }
+    fun executionContext(executionId: ExecutionId): ExecutionContext =
+        reflectionRegistry.executionContext(executionId)
 
-    /**
-     * Returns the descriptor without metadata decoration.
-     */
-    private fun rawDescriptor(id: MethodId): MethodDescriptor = reflectionRegistry.descriptor(id)
+    fun executionContexts(): List<ExecutionContext> =
+        reflectionRegistry.allExecutionContexts()
 
-    /**
-     * Returns the descriptor with metadata decoration applied when available.
-     */
-    fun descriptor(id: MethodId): MethodDescriptor {
-        val descriptor: MethodDescriptor = rawDescriptor(id)
-        return metadataRegistry?.apply(descriptor) ?: descriptor
-    }
+    fun descriptors(clazz: KClass<*>): List<MethodDescriptor> =
+        descriptors(clazz.java)
+
+    fun descriptors(clazz: Class<*>): List<MethodDescriptor> =
+        decorate(reflectionRegistry.descriptors(clazz))
+
+    fun descriptor(methodId: MethodId): MethodDescriptor =
+        decorate(reflectionRegistry.descriptor(methodId))
 
     fun invokeStatic(methodId: MethodId, vararg args: Any?): Any? =
         invokeStatic(methodId, args.toList())
@@ -69,7 +69,9 @@ class ReflectionEngine(
         }
 
         if (descriptor.isStatic && instance != null) {
-            throw IllegalArgumentException("Static method ${descriptor.id} must not receive an instance")
+            throw IllegalArgumentException(
+                "Static method ${descriptor.id} must not receive an instance"
+            )
         }
 
         require(args.size == method.parameterCount) {
@@ -79,4 +81,10 @@ class ReflectionEngine(
         val target = if (descriptor.isStatic) null else instance
         return method.invoke(target, *args.toTypedArray())
     }
+
+    private fun decorate(descriptor: MethodDescriptor): MethodDescriptor =
+        metadataRegistry?.applyAll(listOf(descriptor))?.single() ?: descriptor
+
+    private fun decorate(descriptors: List<MethodDescriptor>): List<MethodDescriptor> =
+        metadataRegistry?.applyAll(descriptors) ?: descriptors
 }

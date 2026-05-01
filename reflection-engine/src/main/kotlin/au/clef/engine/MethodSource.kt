@@ -61,5 +61,19 @@ sealed class MethodSource(val declaringClass: KClass<*>) {
             instanceDescription = instanceDescription,
             methodId = MethodId.from(instance::class, methodName, *parameterTypes)
         )
+
+        constructor(
+            instance: Any,
+            instanceDescription: String,
+            function: KFunction<*>
+        ) : this(
+            instance = instance,
+            instanceDescription = instanceDescription,
+            methodId = MethodId.from(
+                requireNotNull(function.javaMethod) {
+                    "Function ${function.name} does not have a Java method"
+                }
+            )
+        )
     }
 }

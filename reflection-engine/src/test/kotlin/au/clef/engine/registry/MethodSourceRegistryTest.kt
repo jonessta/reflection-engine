@@ -49,8 +49,7 @@ class MethodSourceRegistryTest {
                 MethodSource.InstanceMethod(
                     instance = service,
                     instanceDescription = "Customer Service",
-                    methodName = "findCustomer",
-                    CustomerId::class
+                    function = CustomerService::findCustomer
                 )
             )
         )

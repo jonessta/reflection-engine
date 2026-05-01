@@ -375,13 +375,14 @@ class MethodSourceRegistry(
 
     private fun valueParameterTypeNames(
         function: KFunction<*>
-    ): List<String> =
-        function.parameters
-            .filter { parameter: KParameter -> parameter.kind == KParameter.Kind.VALUE }
-            .map { parameter: KParameter ->
-                val classifier: KClass<*> = parameter.type.classifier as KClass<*>
-                classifier.java.name
-            }
+    ): List<String> {
+        val javaMethod: Method = function.javaMethod
+            ?: error("Function ${function.name} does not have a Java method")
+
+        return javaMethod.parameterTypes.map { parameterType: Class<*> ->
+            parameterType.name
+        }
+    }
 
     private fun throwMethodNotFound(methodId: MethodId): Nothing =
         throw MethodNotFoundException(

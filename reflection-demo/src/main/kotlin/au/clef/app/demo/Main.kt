@@ -52,7 +52,7 @@ private val reflectionRegistry = MethodSourceRegistry(
 )
 
 private val metadataRegistry =
-    runCatching { MetadataLoader.fromResourceOrEmpty(METADATA_RESOURCE_PATH) }
+    runCatching { MetadataLoader.fromResource(METADATA_RESOURCE_PATH) }
         .getOrNull()
         ?.let(::DescriptorMetadataRegistry)
 
@@ -76,7 +76,7 @@ private fun generateMetadata() {
 
 // todo fix it should check per method not whole class
 private fun validateMetadata() {
-    val metadata: MetadataRoot = MetadataLoader.fromResourceOrEmpty(METADATA_RESOURCE_PATH)
+    val metadata: MetadataRoot = MetadataLoader.fromResource(METADATA_RESOURCE_PATH)
     val issues: List<ValidationIssue> = MetadataValidator(reflectionRegistry).validate(metadata)
     if (issues.isEmpty()) {
         println("Metadata valid")

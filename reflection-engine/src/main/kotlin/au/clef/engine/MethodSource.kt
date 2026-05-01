@@ -59,7 +59,11 @@ sealed class MethodSource(val declaringClass: KClass<*>) {
         ) : this(
             instance = instance,
             instanceDescription = instanceDescription,
-            methodId = MethodId.from(instance::class, methodName, *parameterTypes)
+            methodId = validatedMethodId(
+                declaringClass = instance::class,
+                methodName = methodName,
+                parameterTypes = parameterTypes
+            )
         )
 
         constructor(
@@ -75,5 +79,41 @@ sealed class MethodSource(val declaringClass: KClass<*>) {
                 }
             )
         )
+
+        private companion object {
+            fun validatedMethodId(
+                declaringClass: KClass<*>,
+                methodName: String,
+                parameterTypes: Array<out KClass<*>>
+            ): MethodId {
+                val requestedId: MethodId =
+                    MethodId.from(declaringClass, methodName, *parameterTypes)
+
+                val matchingFunction: KFunction<*>? =
+                    declaringClass.members
+                        .filterIsInstance<KFunction<*>>()
+                        .firstOrNull { function: KFunction<*> ->
+                            function.name == methodName &&
+                                    function.parameters
+                                        .filter { it.kind == kotlin.reflect.KParameter.Kind.VALUE }
+                                        .mapNotNull { it.type.classifier as? KClass<*> } == parameterTypes.toList()
+                        }
+
+                if (matchingFunction != null) {
+                    val javaMethod = requireNotNull(matchingFunction.javaMethod) {
+                        "Function $methodName does not have a Java method"
+                    }
+
+                    val actualId: MethodId = MethodId.from(javaMethod)
+
+                    require(requestedId == actualId) {
+                        "Kotlin function '$methodName' must be registered using the KFunction-based constructor. " +
+                                "The source-level signature resolves to JVM method '${actualId.value}', not '${requestedId.value}'."
+                    }
+                }
+
+                return requestedId
+            }
+        }
     }
 }

@@ -357,7 +357,24 @@ class TypeConverter(
     private fun rawClassOf(type: Type): Class<*> =
         when (type) {
             is Class<*> -> type
+
             is ParameterizedType -> rawClassOf(type.rawType)
+
+            is java.lang.reflect.WildcardType -> {
+                val upperBound: Type = type.upperBounds.firstOrNull() ?: Any::class.java
+                rawClassOf(upperBound)
+            }
+
+            is java.lang.reflect.GenericArrayType -> {
+                val componentType: Class<*> = rawClassOf(type.genericComponentType)
+                java.lang.reflect.Array.newInstance(componentType, 0).javaClass
+            }
+
+            is java.lang.reflect.TypeVariable<*> -> {
+                val upperBound: Type = type.bounds.firstOrNull() ?: Any::class.java
+                rawClassOf(upperBound)
+            }
+
             else -> throw IllegalArgumentException("Unsupported Type: $type")
         }
 }

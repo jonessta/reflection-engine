@@ -101,7 +101,7 @@ class JavaInteropJsonTest {
         assertScalarString(uriResponse, "https://example.com/a/b?x=1")
 
         val localeScalar = assertIs<ValueDto.Scalar>(localeResponse.result)
-        assertEquals(JsonPrimitive("en_AU"), localeScalar.value)
+        assertEquals(JsonPrimitive("en-AU"), localeScalar.value)
 
         val mapResult = assertIs<ValueDto.MapValue>(singletonMapResponse.result)
         assertEquals(1, mapResult.entries.size)

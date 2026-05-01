@@ -7,21 +7,28 @@ import au.clef.engine.MethodSource
 import au.clef.engine.reflectionConfig
 import au.clef.web.WebServer
 import au.clef.web.WebServerConfig
+import kotlinx.serialization.json.JsonPrimitive
 
 private val customerService = CustomerService()
 
 internal val customerReflectionConfig = reflectionConfig(
-//    InstanceMethod(customerService, "Customer Service", "findCustomer", CustomerId::class),
-//    InstanceMethod(customerService, "Customer Service", "normalizeEmail", EmailAddress::class)
-    MethodSource.Instance(customerService, "Customer Service")
+    MethodSource.InstanceMethod(customerService, "Customer Service", CustomerService::findCustomer),
+    MethodSource.InstanceMethod(customerService, "Customer Service", CustomerService::normalizeEmail)
+//    MethodSource.Instance(customerService, "Customer Service")
 )
     .supportingTypes(Customer::class, Address::class)
     .build()
 
 val customerReflectionApiConfig = reflectionApiConfig(customerReflectionConfig)
     .scalarConverters(
-        scalarConverter<CustomerId> { CustomerId(it) },
-        scalarConverter<EmailAddress> { EmailAddress(it) }
+        scalarConverter<CustomerId>(
+            encode = { value: CustomerId -> JsonPrimitive(value.value) },
+            decode = { text: String -> CustomerId(text) }
+        ),
+        scalarConverter<EmailAddress>(
+            encode = { value: EmailAddress -> JsonPrimitive(value.value) },
+            decode = { text: String -> EmailAddress(text) }
+        )
     )
     .build()
 

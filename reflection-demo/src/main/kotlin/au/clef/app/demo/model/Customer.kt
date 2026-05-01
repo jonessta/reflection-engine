@@ -13,7 +13,9 @@ data class Customer(
     val address: Address
 )
 
+@Suppress("unused")
 class CustomerService {
+
     fun findCustomer(id: CustomerId): Customer =
         Customer(
             id = id,

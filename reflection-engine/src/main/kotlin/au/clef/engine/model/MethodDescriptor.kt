@@ -129,19 +129,22 @@ private fun buildKotlinParamDescriptors(
     javaMethod: Method
 ): List<ParamDescriptor> {
     val valueParameters: List<KParameter> =
-        kotlinFunction.parameters.filter { it.kind == KParameter.Kind.VALUE }
+        kotlinFunction.parameters.filter { parameter: KParameter ->
+            parameter.kind == KParameter.Kind.VALUE
+        }
 
     val runtimeParameterTypes: Array<Class<*>> = javaMethod.parameterTypes
 
-    return valueParameters.mapIndexed { index, parameter ->
-        val classifier = parameter.type.classifier as? KClass<*>
-            ?: error("Unsupported parameter type in function '${kotlinFunction.name}'")
+    return valueParameters.mapIndexed { index: Int, parameter: KParameter ->
+        val classifier: Any? = parameter.type.classifier
+        val logicalType: Class<*> =
+            (classifier as? KClass<*>)?.java ?: runtimeParameterTypes[index]
 
-        val parameterName = parameter.name ?: "arg$index"
+        val parameterName: String = parameter.name ?: "arg$index"
 
         ParamDescriptor(
             index = index,
-            logicalType = classifier.java,
+            logicalType = logicalType,
             runtimeType = runtimeParameterTypes[index],
             reflectedName = parameterName,
             name = parameterName,

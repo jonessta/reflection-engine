@@ -1,5 +1,6 @@
 package au.clef.app.demo.model
 
+@Suppress("unused")
 class AcmeService {
 
     fun personName(person: Person): String {

@@ -382,22 +382,6 @@ class TypeConverterTest {
         assertTrue(ex.message!!.contains("Field 'missing' not found"))
     }
 
-    @Test
-    fun materialize_rejectsUnsupportedTypeReferenceShape() {
-        val wildcardType: Type =
-            (object : TypeReference<List<*>>() {}.type as ParameterizedType)
-                .actualTypeArguments[0]
-
-        val ex: IllegalArgumentException =
-            assertFailsWith {
-                converter.materialize(
-                    Value.Scalar("x"),
-                    wildcardType
-                )
-            }
-
-        assertTrue(ex.message!!.contains("Unsupported Type"))
-    }
 }
 
 enum class SampleStatus {

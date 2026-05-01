@@ -82,9 +82,13 @@ class TypeConverter(
 
     private fun convertList(value: Value.ListValue, target: Type): Any {
         val rawTarget: Class<*> = rawClassOf(target)
+
         val elementType: Type =
-            (target as? ParameterizedType)?.actualTypeArguments?.getOrNull(0)
-                ?: Any::class.java
+            when {
+                rawTarget.isArray -> rawTarget.componentType
+                target is ParameterizedType -> target.actualTypeArguments.getOrNull(0) ?: Any::class.java
+                else -> Any::class.java
+            }
 
         val items: List<Any?> =
             value.items.map { item: Value ->

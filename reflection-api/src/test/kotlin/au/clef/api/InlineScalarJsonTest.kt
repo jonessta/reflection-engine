@@ -29,7 +29,7 @@ data class Address(
 data class Customer(
     val id: CustomerId,
     val name: String,
-    val email: EmailAddress,
+    val email: EmailAddress1,
     val address: Address
 )
 
@@ -38,7 +38,7 @@ class CustomerService {
         Customer(
             id = id,
             name = "Alice",
-            email = EmailAddress("alice@example.com"),
+            email = EmailAddress1("alice@example.com"),
             address = Address(
                 number = 2,
                 street = "Smith St",
@@ -46,8 +46,8 @@ class CustomerService {
             )
         )
 
-    fun normalizeEmail(email: EmailAddress): EmailAddress =
-        EmailAddress(email.value.trim().lowercase())
+    fun normalizeEmail(email: EmailAddress1): EmailAddress1 =
+        EmailAddress1(email.value.trim().lowercase())
 }
 
 class InlineScalarJsonTest {
@@ -55,8 +55,8 @@ class InlineScalarJsonTest {
     private val customerService = CustomerService()
 
     private val reflectionConfig: ReflectionConfig = reflectionConfig(
-        InstanceMethod(customerService, "Customer Service", "findCustomer", CustomerId::class),
-        InstanceMethod(customerService, "Customer Service", "normalizeEmail", EmailAddress::class)
+        InstanceMethod(customerService, "Customer Service", CustomerService::findCustomer),
+        InstanceMethod(customerService, "Customer Service", CustomerService::normalizeEmail)
     )
         .supportingTypes(Customer::class, Address::class)
         .build()
@@ -64,7 +64,7 @@ class InlineScalarJsonTest {
     private val scalarTypeRegistry = ScalarTypeRegistry(
         userDefinedConverters = listOf(
             scalarConverter<CustomerId>({ JsonPrimitive(it.value) }, { CustomerId(it) }),
-            scalarConverter<EmailAddress>({ JsonPrimitive(it.value) }, { EmailAddress(it) })
+            scalarConverter<EmailAddress1>({ JsonPrimitive(it.value) }, { EmailAddress1(it) })
         )
     )
 
@@ -83,10 +83,12 @@ class InlineScalarJsonTest {
 
     @Test
     fun `customerId parameter is exposed as scalar like`() {
-        val execution = engine.executionContexts()
-            .filterIsInstance<ExecutionContext.Instance>()
-            .first { it.methodId.toString().contains("#findCustomer(") }
-
+        val execution: ExecutionContext.Instance =
+            engine.executionContexts()
+                .filterIsInstance<ExecutionContext.Instance>()
+                .first { context: ExecutionContext.Instance ->
+                    engine.descriptor(context.methodId).reflectedName == "findCustomer"
+                }
         val descriptor = engine.descriptor(execution.methodId)
         val param = descriptor.parameters.single()
 
@@ -96,10 +98,12 @@ class InlineScalarJsonTest {
 
     @Test
     fun `findCustomer accepts scalar CustomerId and returns nested scalar wrappers`() {
-        val execution = engine.executionContexts()
-            .filterIsInstance<ExecutionContext.Instance>()
-            .first { it.methodId.toString().contains("#findCustomer(") }
-
+        val execution: ExecutionContext.Instance =
+            engine.executionContexts()
+                .filterIsInstance<ExecutionContext.Instance>()
+                .first { context: ExecutionContext.Instance ->
+                    engine.descriptor(context.methodId).reflectedName == "findCustomer"
+                }
         val response = invoke(
             InvocationRequest(
                 executionId = execution.executionId,
@@ -126,9 +130,12 @@ class InlineScalarJsonTest {
 
     @Test
     fun `normalizeEmail accepts and returns scalar EmailAddress`() {
-        val execution = engine.executionContexts()
-            .filterIsInstance<ExecutionContext.Instance>()
-            .first { it.methodId.toString().contains("#normalizeEmail(") }
+        val execution: ExecutionContext.Instance =
+            engine.executionContexts()
+                .filterIsInstance<ExecutionContext.Instance>()
+                .first { context: ExecutionContext.Instance ->
+                    engine.descriptor(context.methodId).reflectedName == "normalizeEmail"
+                }
 
         val response = invoke(
             InvocationRequest(
@@ -150,7 +157,9 @@ class InlineScalarJsonTest {
         val args: List<Any?> = request.args.zip(descriptor.parameters).map { (argDto, param) ->
             requestValueMapper.materialize(argDto, param.runtimeType)
         }
-
+        require(request.args.size == descriptor.parameters.size) {
+            "Expected ${descriptor.parameters.size} args for ${descriptor.id}, got ${request.args.size}"
+        }
         val result = when (executionContext) {
             is ExecutionContext.Static ->
                 engine.invokeStatic(descriptor, args)

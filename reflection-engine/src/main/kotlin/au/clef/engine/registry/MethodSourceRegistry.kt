@@ -10,10 +10,8 @@ import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
-import kotlin.reflect.KParameter
 import kotlin.reflect.jvm.javaMethod
 
 private data class RegistryEntry(
@@ -63,16 +61,18 @@ class MethodSourceRegistry(
 ) : MethodSourceTypes {
 
     private val descriptorsByClass: MutableMap<Class<*>, MutableList<MethodDescriptor>> =
-        ConcurrentHashMap()
+        LinkedHashMap()
 
     private val entriesById: MutableMap<MethodId, RegistryEntry> =
-        ConcurrentHashMap()
+        LinkedHashMap()
 
     private val executionContextsById: MutableMap<ExecutionId, ExecutionContext> =
-        ConcurrentHashMap()
+        LinkedHashMap()
 
     override val declaringClasses: List<Class<*>> =
-        methodSources.map { source: MethodSource -> source.declaringClass.java }.distinct()
+        methodSources
+            .map { source: MethodSource -> source.declaringClass.java }
+            .distinct()
 
     override val knownClasses: List<Class<*>> =
         (methodSources.map { source: MethodSource -> source.declaringClass } + methodSupportingTypes)
@@ -81,6 +81,7 @@ class MethodSourceRegistry(
 
     init {
         require(methodSources.isNotEmpty()) { "methodSources must not be empty" }
+
         methodSources.forEach { source: MethodSource ->
             registerMethodSource(source)
         }
@@ -165,12 +166,15 @@ class MethodSourceRegistry(
         clazz: Class<*>,
         requireStatic: Boolean,
         executionContextFor: (MethodId) -> ExecutionContext
-    ) {
+    ): Unit {
         val descriptors: MutableList<MethodDescriptor> =
             descriptorsByClass.getOrPut(clazz) { mutableListOf() }
 
-        val kotlinFunctionsByJavaMethod: Map<Method, KFunction<*>> =
+        val kotlinFunctions: List<KFunction<*>> =
             collectHierarchyFunctions(clazz.kotlin, inheritanceLevel)
+
+        val kotlinFunctionsByJavaMethod: Map<Method, KFunction<*>> =
+            kotlinFunctions
                 .mapNotNull { function: KFunction<*> ->
                     function.javaMethod?.let { javaMethod: Method ->
                         javaMethod to function
@@ -178,7 +182,10 @@ class MethodSourceRegistry(
                 }
                 .toMap()
 
-        for (javaMethod: Method in collectHierarchyMethods(clazz, inheritanceLevel)) {
+        val javaMethods: List<Method> =
+            collectHierarchyMethods(clazz, inheritanceLevel)
+
+        for (javaMethod: Method in javaMethods) {
             val isStaticMethod: Boolean = Modifier.isStatic(javaMethod.modifiers)
             if (isStaticMethod != requireStatic) {
                 continue
@@ -212,7 +219,7 @@ class MethodSourceRegistry(
         methodId: MethodId,
         requireStatic: Boolean,
         executionContextFor: (MethodId) -> ExecutionContext
-    ) {
+    ): Unit {
         val resolved: ResolvedMethod = resolveMethod(clazz, methodId)
         val javaMethod: Method = resolved.javaMethod
 
@@ -280,7 +287,9 @@ class MethodSourceRegistry(
         methodId: MethodId
     ): Method? =
         collectHierarchyMethods(clazz, inheritanceLevel)
-            .firstOrNull { javaMethod: Method -> MethodId.from(javaMethod) == methodId }
+            .firstOrNull { javaMethod: Method ->
+                MethodId.from(javaMethod) == methodId
+            }
 
     private fun resolveKotlinMethod(
         kClass: KClass<*>,
@@ -340,6 +349,11 @@ class MethodSourceRegistry(
             .distinctBy { function: KFunction<*> ->
                 "${function.name}(${valueParameterTypeNames(function).joinToString(",")})"
             }
+            .sortedBy { function: KFunction<*> ->
+                val javaMethod: Method = function.javaMethod
+                    ?: error("Function ${function.name} does not have a Java method")
+                MethodId.from(javaMethod).value
+            }
             .toList()
     }
 
@@ -360,7 +374,9 @@ class MethodSourceRegistry(
             }
 
         return limitedHierarchy
-            .filter { current: Class<*> -> current != Any::class.java }
+            .filter { current: Class<*> ->
+                current != Any::class.java
+            }
             .flatMap { current: Class<*> ->
                 current.declaredMethods.asSequence()
             }
@@ -369,7 +385,12 @@ class MethodSourceRegistry(
                         !javaMethod.isSynthetic &&
                         !javaMethod.isBridge
             }
-            .distinctBy { javaMethod: Method -> MethodId.from(javaMethod) }
+            .distinctBy { javaMethod: Method ->
+                MethodId.from(javaMethod)
+            }
+            .sortedBy { javaMethod: Method ->
+                MethodId.from(javaMethod).value
+            }
             .toList()
     }
 

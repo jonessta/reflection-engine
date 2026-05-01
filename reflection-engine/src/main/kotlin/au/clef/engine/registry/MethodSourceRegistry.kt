@@ -320,7 +320,7 @@ class MethodSourceRegistry(
             when (level) {
                 InheritanceLevel.DeclaredOnly -> hierarchy.take(1)
                 InheritanceLevel.All -> hierarchy
-                is InheritanceLevel.Depth -> hierarchy.take(level.depth + 1)
+                is InheritanceLevel.Depth -> hierarchy.take(level.value + 1)
             }
 
         return limitedHierarchy
@@ -356,7 +356,7 @@ class MethodSourceRegistry(
             when (level) {
                 InheritanceLevel.DeclaredOnly -> hierarchy.take(1)
                 InheritanceLevel.All -> hierarchy
-                is InheritanceLevel.Depth -> hierarchy.take(level.depth + 1)
+                is InheritanceLevel.Depth -> hierarchy.take(level.value + 1)
             }
 
         return limitedHierarchy

@@ -112,7 +112,7 @@ class MethodModelTest {
 
     @Test
     fun methodDescriptor_detectsStaticMethod() {
-        val method: Method = SampleStatics::class.java.getDeclaredMethod(
+        val method: Method = SampleStatics1::class.java.getDeclaredMethod(
             "sum",
             Int::class.javaPrimitiveType!!,
             Int::class.javaPrimitiveType!!
@@ -143,7 +143,7 @@ class MethodModelTest {
 
     @Test
     fun methodDescriptor_marksPrimitiveParameters_asNotNullable() {
-        val method: Method = SampleStatics::class.java.getDeclaredMethod(
+        val method: Method = SampleStatics1::class.java.getDeclaredMethod(
             "sum",
             Int::class.javaPrimitiveType!!,
             Int::class.javaPrimitiveType!!

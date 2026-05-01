@@ -310,11 +310,20 @@ class MethodSourceRegistry(
     private fun collectHierarchyFunctions(
         kClass: KClass<*>,
         level: InheritanceLevel
-    ): List<KFunction<*>> =
-        generateSequence(kClass) { current: KClass<*> ->
-            current.java.superclass?.kotlin
-        }
-            .take(level.depth + 1)
+    ): List<KFunction<*>> {
+        val hierarchy: Sequence<KClass<*>> =
+            generateSequence(kClass) { current: KClass<*> ->
+                current.java.superclass?.kotlin
+            }
+
+        val limitedHierarchy: Sequence<KClass<*>> =
+            when (level) {
+                InheritanceLevel.DeclaredOnly -> hierarchy.take(1)
+                InheritanceLevel.All -> hierarchy
+                is InheritanceLevel.Depth -> hierarchy.take(level.depth + 1)
+            }
+
+        return limitedHierarchy
             .flatMap { current: KClass<*> ->
                 current.members
                     .filterIsInstance<KFunction<*>>()
@@ -332,15 +341,25 @@ class MethodSourceRegistry(
                 "${function.name}(${valueParameterTypeNames(function).joinToString(",")})"
             }
             .toList()
+    }
 
     private fun collectHierarchyMethods(
         clazz: Class<*>,
         level: InheritanceLevel
-    ): List<Method> =
-        generateSequence(clazz) { current: Class<*> ->
-            current.superclass
-        }
-            .take(level.depth + 1)
+    ): List<Method> {
+        val hierarchy: Sequence<Class<*>> =
+            generateSequence(clazz) { current: Class<*> ->
+                current.superclass
+            }
+
+        val limitedHierarchy: Sequence<Class<*>> =
+            when (level) {
+                InheritanceLevel.DeclaredOnly -> hierarchy.take(1)
+                InheritanceLevel.All -> hierarchy
+                is InheritanceLevel.Depth -> hierarchy.take(level.depth + 1)
+            }
+
+        return limitedHierarchy
             .filter { current: Class<*> -> current != Any::class.java }
             .flatMap { current: Class<*> ->
                 current.declaredMethods.asSequence()
@@ -352,6 +371,7 @@ class MethodSourceRegistry(
             }
             .distinctBy { javaMethod: Method -> MethodId.from(javaMethod) }
             .toList()
+    }
 
     private fun valueParameterTypeNames(
         function: KFunction<*>

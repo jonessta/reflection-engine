@@ -4,7 +4,6 @@ import au.clef.api.reflectionApiConfig
 import au.clef.api.scalarConverter
 import au.clef.app.demo.model.*
 import au.clef.engine.MethodSource
-import au.clef.engine.MethodSource.InstanceMethod
 import au.clef.engine.reflectionConfig
 import au.clef.web.WebServer
 import au.clef.web.WebServerConfig

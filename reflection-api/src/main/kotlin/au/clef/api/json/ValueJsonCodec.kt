@@ -2,7 +2,6 @@ package au.clef.api.json
 
 import au.clef.api.ClassResolver
 import au.clef.api.ResolvedType
-import au.clef.api.ScalarTypeRegistry
 import au.clef.api.model.MapEntry
 import au.clef.api.model.ScalarValue
 import au.clef.api.model.Value

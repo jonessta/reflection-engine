@@ -1,8 +1,7 @@
 package au.clef.api
 
 import au.clef.api.model.InvocationRequest
-import au.clef.api.model.InvocationResponse
-import au.clef.api.model.ValueDto
+import au.clef.api.model.Value
 import au.clef.engine.ExecutionContext
 import au.clef.engine.MethodSource.InstanceMethod
 import au.clef.engine.ReflectionConfig
@@ -27,14 +26,14 @@ data class Address(
 )
 
 data class Customer(
-    val id: CustomerId,
+    val id: CustomerId1,
     val name: String,
     val email: EmailAddress1,
     val address: Address
 )
 
 class CustomerService {
-    fun findCustomer(id: CustomerId): Customer =
+    fun findCustomer(id: CustomerId1): Customer =
         Customer(
             id = id,
             name = "Alice",
@@ -63,7 +62,7 @@ class InlineScalarJsonTest {
 
     private val scalarTypeRegistry = ScalarTypeRegistry(
         userDefinedConverters = listOf(
-            scalarConverter<CustomerId>({ JsonPrimitive(it.value) }, { CustomerId(it) }),
+            scalarConverter<CustomerId1>({ JsonPrimitive(it.value) }, { CustomerId1(it) }),
             scalarConverter<EmailAddress1>({ JsonPrimitive(it.value) }, { EmailAddress1(it) })
         )
     )
@@ -73,7 +72,6 @@ class InlineScalarJsonTest {
     )
 
     private val requestValueMapper = RequestValueMapper(
-        classResolver = DefaultClassResolver(engine, scalarTypeRegistry),
         scalarTypeRegistry = scalarTypeRegistry
     )
 
@@ -92,7 +90,7 @@ class InlineScalarJsonTest {
         val descriptor = engine.descriptor(execution.methodId)
         val param = descriptor.parameters.single()
 
-        assertEquals(CustomerId::class.java, param.logicalType)
+        assertEquals(CustomerId1::class.java, param.logicalType)
         assertTrue(requestValueMapper.isScalarLike(param.logicalType))
     }
 
@@ -108,24 +106,24 @@ class InlineScalarJsonTest {
             InvocationRequest(
                 executionId = execution.executionId,
                 args = listOf(
-                    ValueDto.Scalar(JsonPrimitive("cust-123"))
+                    Value.Scalar(JsonPrimitive("cust-123"))
                 )
             )
         )
 
-        val result = assertIs<ValueDto.Record>(response.result)
+        val result = assertIs<Value.Record>(response)
 
-        val id = assertIs<ValueDto.Scalar>(result.fields.getValue("id"))
-        val name = assertIs<ValueDto.Scalar>(result.fields.getValue("name"))
-        val email = assertIs<ValueDto.Scalar>(result.fields.getValue("email"))
-        val address = assertIs<ValueDto.Record>(result.fields.getValue("address"))
+        val id = assertIs<Value.Scalar>(result.fields.getValue("id"))
+        val name = assertIs<Value.Scalar>(result.fields.getValue("name"))
+        val email = assertIs<Value.Scalar>(result.fields.getValue("email"))
+        val address = assertIs<Value.Record>(result.fields.getValue("address"))
 
-        assertEquals(JsonPrimitive("cust-123"), id.value)
-        assertEquals(JsonPrimitive("Alice"), name.value)
-        assertEquals(JsonPrimitive("alice@example.com"), email.value)
+        assertEquals("cust-123", id.value)
+        assertEquals("Alice", name.value)
+        assertEquals("alice@example.com", email.value)
 
-        val street = assertIs<ValueDto.Scalar>(address.fields.getValue("street"))
-        assertEquals(JsonPrimitive("Smith St"), street.value)
+        val street = assertIs<Value.Scalar>(address.fields.getValue("street"))
+        assertEquals("Smith St", street.value)
     }
 
     @Test
@@ -141,16 +139,16 @@ class InlineScalarJsonTest {
             InvocationRequest(
                 executionId = execution.executionId,
                 args = listOf(
-                    ValueDto.Scalar(JsonPrimitive("  Alice@Example.COM "))
+                    Value.Scalar("  Alice@Example.COM ")
                 )
             )
         )
 
-        val result = assertIs<ValueDto.Scalar>(response.result)
-        assertEquals(JsonPrimitive("alice@example.com"), result.value)
+        val result = assertIs<Value.Scalar>(response)
+        assertEquals("alice@example.com", result.value)
     }
 
-    private fun invoke(request: InvocationRequest): InvocationResponse {
+    private fun invoke(request: InvocationRequest): Value {
         val executionContext = engine.executionContext(request.executionId)
         val descriptor = engine.descriptor(executionContext.methodId)
 
@@ -168,8 +166,6 @@ class InlineScalarJsonTest {
                 engine.invokeInstance(descriptor, executionContext.instance, args)
         }
 
-        return InvocationResponse(
-            result = responseValueMapper.toDtoValue(result)
-        )
+        return responseValueMapper.toValue(result)
     }
 }

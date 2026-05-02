@@ -3,7 +3,6 @@ package au.clef.api
 import au.clef.api.model.MapEntry
 import au.clef.api.model.Value
 import au.clef.engine.ObjectConstructionException
-import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import kotlin.test.Test
 import kotlin.test.assertEquals

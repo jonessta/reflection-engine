@@ -2,8 +2,7 @@ package au.clef.api
 
 import au.clef.api.model.ExecutionDescriptorDto
 import au.clef.api.model.InvocationRequest
-import au.clef.api.model.InvocationResponse
-import au.clef.api.model.ValueDto
+import au.clef.api.model.Value
 import au.clef.engine.ExecutionId
 import au.clef.engine.MethodSource
 import au.clef.engine.reflectionConfig
@@ -105,19 +104,19 @@ class ReflectionServiceApiTest {
                 descriptor.reflectedName == "sum"
             }
 
-        val response: InvocationResponse =
+        val response =
             api.invoke(
                 InvocationRequest(
                     executionId = execution.executionId,
                     args = listOf(
-                        ValueDto.Scalar(JsonPrimitive("2")),
-                        ValueDto.Scalar(JsonPrimitive("3"))
+                        Value.Scalar("2"),
+                        Value.Scalar("3")
                     )
                 )
             )
 
-        val result: ValueDto.Scalar = assertIs(response.result)
-        assertEquals(JsonPrimitive(5), result.value)
+        val result: Value.Scalar = assertIs(response)
+        assertEquals(5L, result.value)
     }
 
     @Test
@@ -127,18 +126,18 @@ class ReflectionServiceApiTest {
                 descriptor.reflectedName == "greet"
             }
 
-        val response: InvocationResponse =
+        val response =
             api.invoke(
                 InvocationRequest(
                     executionId = execution.executionId,
                     args = listOf(
-                        ValueDto.Scalar(JsonPrimitive("Alice"))
+                        Value.Scalar("Alice")
                     )
                 )
             )
 
-        val result: ValueDto.Scalar = assertIs(response.result)
-        assertEquals(JsonPrimitive("Hello Alice"), result.value)
+        val result: Value.Scalar = assertIs(response)
+        assertEquals("Hello Alice", result.value)
     }
 
     @Test
@@ -148,18 +147,18 @@ class ReflectionServiceApiTest {
                 descriptor.reflectedName == "normalizeEmail"
             }
 
-        val response: InvocationResponse =
+        val response =
             api.invoke(
                 InvocationRequest(
                     executionId = execution.executionId,
                     args = listOf(
-                        ValueDto.Scalar(JsonPrimitive("  Alice@Example.COM "))
+                        Value.Scalar("  Alice@Example.COM ")
                     )
                 )
             )
 
-        val result: ValueDto.Scalar = assertIs(response.result)
-        assertEquals(JsonPrimitive("alice@example.com"), result.value)
+        val result: Value.Scalar = assertIs(response)
+        assertEquals("alice@example.com", result.value)
     }
 
     @Test
@@ -169,28 +168,28 @@ class ReflectionServiceApiTest {
                 descriptor.reflectedName == "echoRecord"
             }
 
-        val response: InvocationResponse =
+        val response =
             api.invoke(
                 InvocationRequest(
                     executionId = execution.executionId,
                     args = listOf(
-                        ValueDto.Record(
-                            type = SampleRecord::class.java.name,
+                        Value.Record(
+                            type = SampleRecord::class.java,
                             fields = mapOf(
-                                "name" to ValueDto.Scalar(JsonPrimitive("Bob")),
-                                "age" to ValueDto.Scalar(JsonPrimitive("41"))
+                                "name" to Value.Scalar("Bob"),
+                                "age" to Value.Scalar("41")
                             )
                         )
                     )
                 )
             )
 
-        val result: ValueDto.Record = assertIs(response.result)
-        val name: ValueDto.Scalar = assertIs(result.fields.getValue("name"))
-        val age: ValueDto.Scalar = assertIs(result.fields.getValue("age"))
+        val result: Value.Record = assertIs(response)
+        val name: Value.Scalar = assertIs(result.fields.getValue("name"))
+        val age: Value.Scalar = assertIs(result.fields.getValue("age"))
 
-        assertEquals(JsonPrimitive("Bob"), name.value)
-        assertEquals(JsonPrimitive(41), age.value)
+        assertEquals("Bob", name.value)
+        assertEquals(41L, age.value)
     }
 
     @Test
@@ -206,7 +205,7 @@ class ReflectionServiceApiTest {
                     InvocationRequest(
                         executionId = execution.executionId,
                         args = listOf(
-                            ValueDto.Scalar(JsonPrimitive("2"))
+                            Value.Scalar("2")
                         )
                     )
                 )

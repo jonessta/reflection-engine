@@ -8,7 +8,6 @@ import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.InheritanceLevel
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.reflectionConfig
-import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Test
 import java.net.URI
 import java.nio.file.Paths
@@ -37,8 +36,7 @@ class JavaInteropJsonTest {
     )
 
     private val requestValueMapper = RequestValueMapper(
-        classResolver = DefaultClassResolver(engine, scalarTypeRegistry),
-        scalarTypeRegistry = scalarTypeRegistry
+        scalarTypeRegistry = scalarTypeRegistry,
     )
 
     private val responseValueMapper = ResponseValueMapper(
@@ -62,9 +60,9 @@ class JavaInteropJsonTest {
             InvocationRequest(
                 executionId = localDateDescriptor.executionId,
                 args = listOf(
-                    ValueDto.Scalar(JsonPrimitive(2026)),
-                    ValueDto.Scalar(JsonPrimitive(4)),
-                    ValueDto.Scalar(JsonPrimitive(28))
+                    Value.Scalar(2026),
+                    Value.Scalar(4),
+                    Value.Scalar(28)
                 )
             )
         )
@@ -73,7 +71,7 @@ class JavaInteropJsonTest {
             InvocationRequest(
                 executionId = uriDescriptor.executionId,
                 args = listOf(
-                    ValueDto.Scalar(JsonPrimitive("https://example.com/a/b?x=1"))
+                    Value.Scalar("https://example.com/a/b?x=1")
                 )
             )
         )
@@ -82,7 +80,7 @@ class JavaInteropJsonTest {
             InvocationRequest(
                 executionId = localeDescriptor.executionId,
                 args = listOf(
-                    ValueDto.Scalar(JsonPrimitive("en-AU"))
+                    Value.Scalar("en-AU")
                 )
             )
         )
@@ -91,8 +89,8 @@ class JavaInteropJsonTest {
             InvocationRequest(
                 executionId = singletonMapDescriptor.executionId,
                 args = listOf(
-                    ValueDto.Scalar(JsonPrimitive("key1")),
-                    ValueDto.Scalar(JsonPrimitive("value1"))
+                    Value.Scalar("key1"),
+                    Value.Scalar("value1")
                 )
             )
         )
@@ -100,10 +98,10 @@ class JavaInteropJsonTest {
         assertScalarString(localDateResponse, "2026-04-28")
         assertScalarString(uriResponse, "https://example.com/a/b?x=1")
 
-        val localeScalar = assertIs<ValueDto.Scalar>(localeResponse.result)
-        assertEquals(JsonPrimitive("en-AU"), localeScalar.value)
+        val localeScalar = assertIs<Value.Scalar>(localeResponse)
+        assertEquals("en-AU", localeScalar.value)
 
-        val mapResult = assertIs<ValueDto.MapValue>(singletonMapResponse.result)
+        val mapResult = assertIs<Value.MapValue>(singletonMapResponse)
         assertEquals(1, mapResult.entries.size)
     }
 
@@ -111,7 +109,7 @@ class JavaInteropJsonTest {
     fun `invokes enum factory method from JSON`() {
         val response = invokeSingleStatic(
             methodSource = StaticMethod(Month::class, "valueOf", String::class),
-            args = listOf(ValueDto.Scalar(JsonPrimitive("APRIL")))
+            args = listOf(Value.Scalar("APRIL"))
         )
 
         assertScalarString(response, "APRIL")
@@ -128,7 +126,6 @@ class JavaInteropJsonTest {
         val localEngine = ReflectionEngine(reflectionConfig = localConfig)
 
         val localRequestValueMapper = RequestValueMapper(
-            classResolver = DefaultClassResolver(localEngine, localScalarTypeRegistry),
             scalarTypeRegistry = localScalarTypeRegistry
         )
 
@@ -137,7 +134,7 @@ class JavaInteropJsonTest {
 
         val request = InvocationRequest(
             executionId = execution.executionId,
-            args = listOf(ValueDto.Scalar(JsonPrimitive("NOT_A_MONTH")))
+            args = listOf(Value.Scalar("NOT_A_MONTH"))
         )
 
         assertFailsWith<Exception> {
@@ -158,13 +155,8 @@ class JavaInteropJsonTest {
                 Array<String>::class
             ),
             args = listOf(
-                ValueDto.Scalar(JsonPrimitive("root")),
-                ValueDto.ListValue(
-                    listOf(
-                        ValueDto.Scalar(JsonPrimitive("child")),
-                        ValueDto.Scalar(JsonPrimitive("leaf.txt"))
-                    )
-                )
+                Value.Scalar("root"),
+                Value.ListValue(listOf(Value.Scalar("child"), Value.Scalar("leaf.txt")))
             )
         )
 
@@ -181,23 +173,23 @@ class JavaInteropJsonTest {
                 Any::class
             ),
             args = listOf(
-                ValueDto.Scalar(JsonPrimitive(123)),
-                ValueDto.Scalar(JsonPrimitive("value-123"))
+                Value.Scalar(123),
+                Value.Scalar("value-123")
             )
         )
 
-        val mapValue = assertIs<ValueDto.MapValue>(response.result)
+        val mapValue = assertIs<Value.MapValue>(response)
         assertEquals(1, mapValue.entries.size)
 
         val entry = mapValue.entries.single()
-        val key = assertIs<ValueDto.Scalar>(entry.key)
-        val value = assertIs<ValueDto.Scalar>(entry.value)
+        val key = assertIs<Value.Scalar>(entry.key)
+        val value = assertIs<Value.Scalar>(entry.value)
 
-        assertEquals(JsonPrimitive(123), key.value)
-        assertEquals(JsonPrimitive("value-123"), value.value)
+        assertEquals(123L, key.value)
+        assertEquals("value-123", value.value)
     }
 
-    private fun invoke(request: InvocationRequest): InvocationResponse {
+    private fun invoke(request: InvocationRequest): Value {
         val executionContext = engine.executionContext(request.executionId)
         val descriptor = engine.descriptor(executionContext.methodId)
 
@@ -213,15 +205,13 @@ class JavaInteropJsonTest {
                 engine.invokeInstance(descriptor, executionContext.instance, args)
         }
 
-        return InvocationResponse(
-            result = responseValueMapper.toDtoValue(result)
-        )
+        return responseValueMapper.toValue(result)
     }
 
     private fun invokeSingleStatic(
         methodSource: StaticMethod,
-        args: List<ValueDto>
-    ): InvocationResponse {
+        args: List<Value>
+    ): Value {
         val localConfig = reflectionConfig(methodSource).build()
         val localScalarTypeRegistry = ScalarTypeRegistry()
 
@@ -230,7 +220,6 @@ class JavaInteropJsonTest {
         )
 
         val localRequestValueMapper = RequestValueMapper(
-            classResolver = DefaultClassResolver(localEngine, localScalarTypeRegistry),
             scalarTypeRegistry = localScalarTypeRegistry
         )
 
@@ -247,7 +236,7 @@ class JavaInteropJsonTest {
 
         val result = localEngine.invokeStatic(descriptor, materializedArgs)
 
-        return InvocationResponse(localResponseValueMapper.toDtoValue(result))
+        return localResponseValueMapper.toValue(result)
     }
 
     private fun executionDescriptors(): List<ExecutionDescriptorDto> =
@@ -256,9 +245,9 @@ class JavaInteropJsonTest {
             toExecutionDescriptorDto(executionContext, descriptor)
         }
 
-    private fun assertScalarString(response: InvocationResponse, expected: String) {
-        val scalar = assertIs<ValueDto.Scalar>(response.result)
-        assertEquals(JsonPrimitive(expected), scalar.value)
+    private fun assertScalarString(response: Value, expected: String) {
+        val scalar = assertIs<Value.Scalar>(response)
+        assertEquals(expected, scalar.value)
     }
 
     private fun toExecutionDescriptorDto(

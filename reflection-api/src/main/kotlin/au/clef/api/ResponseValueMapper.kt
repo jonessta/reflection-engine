@@ -1,8 +1,11 @@
 package au.clef.api
 
-import au.clef.api.model.MapEntryDto
-import au.clef.api.model.ValueDto
+import au.clef.api.model.MapEntry
+import au.clef.api.model.Value
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.longOrNull
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import java.nio.file.Path
@@ -10,39 +13,48 @@ import kotlin.reflect.KProperty1
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
 
+// todo Cleaner next step - Once this works, I’d tighten Value.Scalar so it represents scalar data more explicitly, not arbitrary Any?.
 class ResponseValueMapper(
     private val scalarRegistry: ScalarTypeRegistry
 ) {
 
-    fun toDtoValue(value: Any?): ValueDto =
+    fun toValue(value: Any?): Value =
         when {
             value == null -> {
-                ValueDto.Null
+                Value.Null
+            }
+
+            value is Value -> {
+                value
             }
 
             value is Map<*, *> -> {
-                ValueDto.MapValue(
-                    value.entries.map { entry: Map.Entry<*, *> ->
-                        MapEntryDto(
-                            key = toDtoValue(entry.key),
-                            value = toDtoValue(entry.value)
+                Value.MapValue(
+                    entries = value.entries.map { entry: Map.Entry<*, *> ->
+                        MapEntry(
+                            key = toValue(entry.key),
+                            value = toValue(entry.value)
                         )
                     }
                 )
             }
 
             value is Iterable<*> && value !is Path -> {
-                ValueDto.ListValue(
-                    value.map { item: Any? -> toDtoValue(item) }
+                Value.ListValue(
+                    items = value.map { item: Any? ->
+                        toValue(item)
+                    }
                 )
             }
 
             value::class.java.isArray -> {
-                ValueDto.ListValue(reflectArray(value))
+                Value.ListValue(
+                    items = reflectArray(value)
+                )
             }
 
             value is Enum<*> -> {
-                ValueDto.Scalar(JsonPrimitive(value.name))
+                Value.Scalar(value.name)
             }
 
             else -> {
@@ -50,49 +62,69 @@ class ResponseValueMapper(
             }
         }
 
-    private fun toRecord(value: Any): ValueDto.Record {
+    private fun toRecord(value: Any): Value.Record {
         val clazz: Class<*> = value::class.java
 
-        val kotlinFields: Map<String, ValueDto> =
+        val kotlinFields: Map<String, Value> =
             clazz.kotlin.memberProperties
                 .associate { property: KProperty1<out Any, *> ->
                     property.isAccessible = true
-                    property.name to toDtoValue(property.getter.call(value))
+                    property.name to toValue(property.getter.call(value))
                 }
 
-        val fields: Map<String, ValueDto> =
+        val fields: Map<String, Value> =
             if (kotlinFields.isNotEmpty()) {
                 kotlinFields
             } else {
                 allFields(clazz).associate { field: Field ->
-                    field.name to toDtoValue(field.get(value))
+                    field.name to toValue(field.get(value))
                 }
             }
 
-        return ValueDto.Record(
-            type = clazz.name,
+        return Value.Record(
+            type = clazz,
             fields = fields
         )
     }
 
-    private fun reflectArray(array: Any): List<ValueDto> {
+    private fun reflectArray(array: Any): List<Value> {
         val length: Int = java.lang.reflect.Array.getLength(array)
 
         return (0 until length).map { index: Int ->
-            toDtoValue(java.lang.reflect.Array.get(array, index))
+            toValue(java.lang.reflect.Array.get(array, index))
         }
     }
 
-    private fun encodeScalar(value: Any): ValueDto.Scalar? =
+    private fun encodeScalar(value: Any): Value.Scalar? =
         scalarRegistry.encoderFor(value)?.let { converter: ScalarConverter<Any> ->
-            ValueDto.Scalar(converter.encode(value))
+            Value.Scalar(jsonPrimitiveToScalar(converter.encode(value)))
+        }
+
+    private fun jsonPrimitiveToScalar(primitive: JsonPrimitive): Any? =
+        if (primitive.isString) {
+            primitive.content
+        } else {
+            primitive.booleanOrNull
+                ?: primitive.longOrNull
+                ?: primitive.doubleOrNull
+                ?: primitive.content
         }
 
     private fun allFields(clazz: Class<*>): List<Field> =
-        generateSequence(clazz) { current: Class<*> -> current.superclass }
-            .takeWhile { current: Class<*> -> current != Any::class.java }
-            .flatMap { current: Class<*> -> current.declaredFields.asSequence() }
-            .filter { field: Field -> !Modifier.isStatic(field.modifiers) && !field.isSynthetic }
-            .onEach { field: Field -> field.isAccessible = true }
+        generateSequence(clazz) { current: Class<*> ->
+            current.superclass
+        }
+            .takeWhile { current: Class<*> ->
+                current != Any::class.java
+            }
+            .flatMap { current: Class<*> ->
+                current.declaredFields.asSequence()
+            }
+            .filter { field: Field ->
+                !Modifier.isStatic(field.modifiers) && !field.isSynthetic
+            }
+            .onEach { field: Field ->
+                field.isAccessible = true
+            }
             .toList()
 }

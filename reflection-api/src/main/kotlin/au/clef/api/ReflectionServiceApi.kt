@@ -2,11 +2,12 @@ package au.clef.api
 
 import au.clef.api.model.ExecutionDescriptorDto
 import au.clef.api.model.InvocationRequest
-import au.clef.api.model.InvocationResponse
 import au.clef.api.model.ParamDescriptorDto
+import au.clef.api.model.Value
 import au.clef.engine.ExecutionContext
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.MethodDescriptor
+import au.clef.engine.model.ParamDescriptor
 import au.clef.metadata.DescriptorMetadataRegistry
 import au.clef.metadata.MetadataLoader
 
@@ -25,15 +26,12 @@ class ReflectionServiceApi(
         ReflectionEngine(apiConfig.reflectionConfig, metadataRegistry)
 
     private val requestMapper: RequestValueMapper =
-        RequestValueMapper(
-            DefaultClassResolver(engine, scalarRegistry),
-            scalarRegistry
-        )
+        RequestValueMapper(scalarRegistry)
 
     private val responseMapper: ResponseValueMapper =
         ResponseValueMapper(scalarRegistry)
 
-    fun invoke(request: InvocationRequest): InvocationResponse {
+    fun invoke(request: InvocationRequest): Value {
         val context: ExecutionContext = engine.executionContext(request.executionId)
         val descriptor: MethodDescriptor = engine.descriptor(context.methodId)
 
@@ -42,8 +40,8 @@ class ReflectionServiceApi(
         }
 
         val args: List<Any?> =
-            request.args.zip(descriptor.parameters) { dto, param ->
-                requestMapper.materialize(dto, param.runtimeType)
+            request.args.zip(descriptor.parameters) { value: Value, param: ParamDescriptor ->
+                requestMapper.materialize(value, param.runtimeType)
             }
 
         val result: Any? =
@@ -55,13 +53,14 @@ class ReflectionServiceApi(
                     engine.invokeInstance(descriptor, context.instance, args)
             }
 
-        return InvocationResponse(responseMapper.toDtoValue(result))
+        return responseMapper.toValue(result)
     }
 
     fun executionDescriptors(): List<ExecutionDescriptorDto> =
-        engine.executionContexts().map { ctx: ExecutionContext ->
-            toExecutionDescriptorDto(ctx, engine.descriptor(ctx.methodId))
-        }
+        engine.executionContexts()
+            .map { ctx: ExecutionContext ->
+                toExecutionDescriptorDto(ctx, engine.descriptor(ctx.methodId))
+            }
 
     private fun toExecutionDescriptorDto(
         ctx: ExecutionContext,
@@ -74,7 +73,7 @@ class ReflectionServiceApi(
             displayName = desc.displayName,
             returnType = desc.returnType.name,
             isStatic = desc.isStatic,
-            parameters = desc.parameters.map { p ->
+            parameters = desc.parameters.map { p: ParamDescriptor ->
                 ParamDescriptorDto(
                     index = p.index,
                     type = p.logicalType.name,

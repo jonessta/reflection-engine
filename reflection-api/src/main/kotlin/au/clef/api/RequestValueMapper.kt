@@ -1,16 +1,14 @@
 package au.clef.api
 
-import au.clef.api.model.ValueDto
+import au.clef.api.model.Value
 
 class RequestValueMapper(
-    classResolver: ClassResolver,
     scalarTypeRegistry: ScalarTypeRegistry
 ) {
-    private val requestDtoMapper = ValueMapper(classResolver)
-    private val typeConverter = TypeConverter(scalarTypeRegistry)
+    private val typeConverter: TypeConverter = TypeConverter(scalarTypeRegistry)
 
-    fun materialize(dto: ValueDto, targetType: Class<*>): Any? =
-        typeConverter.materialize(requestDtoMapper.toEngineValue(dto), targetType)
+    fun materialize(value: Value, targetType: Class<*>): Any? =
+        typeConverter.materialize(value, targetType)
 
     fun isScalarLike(targetType: Class<*>): Boolean =
         typeConverter.supportsScalarTarget(targetType)

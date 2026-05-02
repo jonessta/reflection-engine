@@ -1,13 +1,6 @@
 package au.clef.engine.model
 
 import au.clef.engine.EngineException
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 import java.lang.reflect.Method
 import kotlin.reflect.KClass
 
@@ -29,8 +22,7 @@ private fun formatMethodId(
         append(")")
     }
 
-@Serializable(with = MethodIdSerializer::class)
-class MethodId private constructor(internal val value: String) {
+class MethodId private constructor(val value: String) {
 
     override fun toString(): String = value
 
@@ -82,7 +74,7 @@ class MethodId private constructor(internal val value: String) {
                 )
             )
 
-        internal fun fromValue(value: String): MethodId {
+        fun fromValue(value: String): MethodId {
             val match = METHOD_ID_OUTER_REGEX.matchEntire(value)
                 ?: throw IllegalMethodIdException("expected <class>#<method>(<paramTypes>)")
 
@@ -117,14 +109,3 @@ class MethodId private constructor(internal val value: String) {
     }
 }
 
-object MethodIdSerializer : KSerializer<MethodId> {
-    override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor("MethodId", PrimitiveKind.STRING)
-
-    override fun serialize(encoder: Encoder, value: MethodId) {
-        encoder.encodeString(value.value)
-    }
-
-    override fun deserialize(decoder: Decoder): MethodId =
-        MethodId.fromValue(decoder.decodeString())
-}

@@ -3,7 +3,6 @@ package au.clef.web
 import au.clef.api.ReflectionApiConfig
 import au.clef.api.ReflectionServiceApi
 import au.clef.api.model.InvocationRequest
-import au.clef.engine.ReflectionConfig
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -71,14 +70,7 @@ data class WebServerConfig(
     val host: String = "0.0.0.0"
 )
 
-class WebServer(
-    private val apiConfig: ReflectionApiConfig,
-    private val webConfig: WebServerConfig = WebServerConfig()
-) {
-    constructor(reflectionConfig: ReflectionConfig, webConfig: WebServerConfig = WebServerConfig()) : this(
-        apiConfig = ReflectionApiConfig(reflectionConfig),
-        webConfig = webConfig
-    )
+class WebServer(apiConfig: ReflectionApiConfig, private val webConfig: WebServerConfig = WebServerConfig()) {
 
     private val reflectionServiceApi: ReflectionServiceApi = ReflectionServiceApi(apiConfig)
 

@@ -1,5 +1,6 @@
 package au.clef.web.demo
 
+import au.clef.api.ReflectionApiConfig
 import au.clef.app.demo.model.AcmeService
 import au.clef.app.demo.model.Address
 import au.clef.app.demo.model.Person
@@ -23,7 +24,7 @@ internal val acmeConfig = reflectionConfig(
     .build()
 
 val webConfig = WebServerConfig()
-
+val config = ReflectionApiConfig(acmeConfig)
 fun main() {
-    WebServer(acmeConfig, webConfig).start()
+    WebServer(config, webConfig).start()
 }

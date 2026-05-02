@@ -6,7 +6,6 @@ plugins {
 
 dependencies {
     implementation(project(":reflection-api"))
-    implementation(project(":reflection-engine"))
 
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)

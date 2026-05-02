@@ -4,6 +4,7 @@ import au.clef.api.model.ExecutionDescriptorDto
 import au.clef.api.model.InvocationRequest
 import au.clef.api.model.ParamDescriptorDto
 import au.clef.api.model.Value
+import au.clef.api.model.valueSerializersModule
 import au.clef.engine.ExecutionContext
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.MethodDescriptor
@@ -30,6 +31,11 @@ class ReflectionServiceApi(
 
     private val responseMapper: ResponseValueMapper =
         ResponseValueMapper(scalarRegistry)
+
+    fun serializersModule() = valueSerializersModule(
+        classResolver = DefaultClassResolver(engine, scalarRegistry),
+        scalarTypeRegistry = scalarRegistry
+    )
 
     fun invoke(request: InvocationRequest): Value {
         val context: ExecutionContext = engine.executionContext(request.executionId)

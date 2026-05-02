@@ -1,14 +1,9 @@
 package au.clef.web
 
-import au.clef.api.DefaultClassResolver
 import au.clef.api.ReflectionApiConfig
 import au.clef.api.ReflectionServiceApi
-import au.clef.api.ScalarTypeRegistry
 import au.clef.api.model.InvocationRequest
-import au.clef.api.model.valueSerializersModule
 import au.clef.engine.ReflectionConfig
-import au.clef.engine.ReflectionEngine
-import au.clef.engine.registry.MethodSourceTypes
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -24,26 +19,15 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 fun Application.configureJson(
-    methodSourceTypes: MethodSourceTypes,
-    scalarTypeRegistry: ScalarTypeRegistry
+    reflectionServiceApi: ReflectionServiceApi
 ) {
-    val classResolver = DefaultClassResolver(
-        methodSourceTypes = methodSourceTypes,
-        scalarRegistry = scalarTypeRegistry
-    )
-
-    val valueModule = valueSerializersModule(
-        classResolver = classResolver,
-        scalarTypeRegistry = scalarTypeRegistry
-    )
-
     install(ContentNegotiation) {
         json(
             Json {
                 ignoreUnknownKeys = false
                 prettyPrint = true
                 classDiscriminator = "kind"
-                serializersModule = valueModule
+                serializersModule = reflectionServiceApi.serializersModule()
             }
         )
     }
@@ -98,15 +82,13 @@ class WebServer(
 
     private val reflectionServiceApi: ReflectionServiceApi = ReflectionServiceApi(apiConfig)
 
-    private val methodSourceTypes: MethodSourceTypes = ReflectionEngine(apiConfig.reflectionConfig)
-
     fun start() {
         embeddedServer(
             Netty,
             host = webConfig.host,
             port = webConfig.port
         ) {
-            configureJson(methodSourceTypes = methodSourceTypes, scalarTypeRegistry = apiConfig.scalarTypeRegistry)
+            configureJson(reflectionServiceApi)
 
             configureErrorHandling()
 

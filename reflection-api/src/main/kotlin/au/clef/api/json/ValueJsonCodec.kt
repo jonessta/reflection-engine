@@ -1,9 +1,20 @@
-package au.clef.api
+package au.clef.api.json
 
+import au.clef.api.ClassResolver
+import au.clef.api.ResolvedType
+import au.clef.api.ScalarTypeRegistry
 import au.clef.api.model.MapEntry
 import au.clef.api.model.ScalarValue
 import au.clef.api.model.Value
-import kotlinx.serialization.json.*
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 
 class ValueJsonCodec(
     private val classResolver: ClassResolver,

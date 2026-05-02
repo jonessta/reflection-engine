@@ -81,9 +81,7 @@ class WebServer(apiConfig: ReflectionApiConfig, private val webConfig: WebServer
             port = webConfig.port
         ) {
             configureJson(reflectionServiceApi)
-
             configureErrorHandling()
-
             install(CORS) {
                 anyHost()
                 allowHeader(HttpHeaders.ContentType)
@@ -92,17 +90,13 @@ class WebServer(apiConfig: ReflectionApiConfig, private val webConfig: WebServer
                 allowNonSimpleContentTypes = true
             }
 
-            routing {
-                reflectionRoutes(reflectionServiceApi)
-            }
+            routing { reflectionRoutes(reflectionServiceApi) }
         }.start(wait = true)
     }
 }
 
 @Serializable
-private data class ErrorResponse(
-    val error: String
-)
+private data class ErrorResponse(val error: String)
 
 fun Route.reflectionRoutes(
     reflectionService: ReflectionServiceApi

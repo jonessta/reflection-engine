@@ -1,11 +1,12 @@
 package au.clef.api.model
 
 import au.clef.engine.ExecutionId
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class ExecutionDescriptorDto(
-    val executionId: ExecutionId,
+    @Contextual val executionId: ExecutionId,
     val instanceDescription: String? = null,
     val reflectedName: String,
     val displayName: String? = null,

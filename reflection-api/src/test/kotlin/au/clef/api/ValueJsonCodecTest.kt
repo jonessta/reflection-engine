@@ -1,11 +1,15 @@
 package au.clef.api
 
 import au.clef.api.model.MapEntry
+import au.clef.api.model.ScalarValue
 import au.clef.api.model.Value
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class ValueJsonCodecTest {
 
@@ -17,8 +21,15 @@ class ValueJsonCodecTest {
         scalarRegistry = ScalarTypeRegistry(
             userDefinedConverters = listOf(
                 scalarConverter<CustomerId1>(
-                    encode = { JsonPrimitive(it.value) },
-                    decode = { CustomerId1(it) }
+                    encode = { value: CustomerId1 ->
+                        ScalarValue.StringValue(value.value)
+                    },
+                    decode = { value: ScalarValue ->
+                        when (value) {
+                            is ScalarValue.StringValue -> CustomerId1(value.value)
+                            else -> throw IllegalArgumentException("Expected string scalar for CustomerId")
+                        }
+                    }
                 )
             )
         )
@@ -26,18 +37,18 @@ class ValueJsonCodecTest {
 
     @Test
     fun encodeDecode_stringScalar_roundTrips() {
-        val value: Value = Value.Scalar("abc")
+        val value: Value = Value.Scalar(ScalarValue.StringValue("abc"))
 
         val json = codec.encode(value)
         val decoded: Value = codec.decode(json)
 
         val scalar: Value.Scalar = assertIs(decoded)
-        assertEquals("abc", scalar.value)
+        assertEquals(ScalarValue.StringValue("abc"), scalar.value)
     }
 
     @Test
     fun encodeDecode_intScalar_roundTripsAsNumber() {
-        val value: Value = Value.Scalar(123)
+        val value: Value = Value.Scalar(ScalarValue.NumberValue("123"))
 
         val json = codec.encode(value)
         val obj: JsonObject = assertIs(json)
@@ -46,37 +57,23 @@ class ValueJsonCodecTest {
 
         val decoded: Value = codec.decode(json)
         val scalar: Value.Scalar = assertIs(decoded)
-        assertEquals(123L, scalar.value)
+        assertEquals(ScalarValue.NumberValue("123"), scalar.value)
     }
 
     @Test
     fun encodeDecode_booleanScalar_roundTrips() {
-        val value: Value = Value.Scalar(true)
+        val value: Value = Value.Scalar(ScalarValue.BooleanValue(true))
 
         val json = codec.encode(value)
         val decoded: Value = codec.decode(json)
 
         val scalar: Value.Scalar = assertIs(decoded)
-        assertEquals(true, scalar.value)
-    }
-
-    @Test
-    fun encodeDecode_nullScalar_roundTrips() {
-        val value: Value = Value.Scalar(null)
-
-        val json = codec.encode(value)
-        val obj: JsonObject = assertIs(json)
-        assertEquals(JsonPrimitive("scalar"), obj["kind"])
-        assertEquals(JsonNull, obj["value"])
-
-        val decoded: Value = codec.decode(json)
-        val scalar: Value.Scalar = assertIs(decoded)
-        assertNull(scalar.value)
+        assertEquals(ScalarValue.BooleanValue(true), scalar.value)
     }
 
     @Test
     fun encodeDecode_customScalar_roundTrips() {
-        val value: Value = Value.Scalar(CustomerId1("cust-123"))
+        val value: Value = Value.Scalar(ScalarValue.StringValue("cust-123"))
 
         val json = codec.encode(value)
         val obj: JsonObject = assertIs(json)
@@ -85,7 +82,7 @@ class ValueJsonCodecTest {
 
         val decoded: Value = codec.decode(json)
         val scalar: Value.Scalar = assertIs(decoded)
-        assertEquals("cust-123", scalar.value)
+        assertEquals(ScalarValue.StringValue("cust-123"), scalar.value)
     }
 
     @Test
@@ -100,8 +97,8 @@ class ValueJsonCodecTest {
     fun encodeDecode_list_roundTrips() {
         val value: Value = Value.ListValue(
             items = listOf(
-                Value.Scalar("a"),
-                Value.Scalar(2),
+                Value.Scalar(ScalarValue.StringValue("a")),
+                Value.Scalar(ScalarValue.NumberValue("2")),
                 Value.Null
             )
         )
@@ -111,8 +108,8 @@ class ValueJsonCodecTest {
 
         val list: Value.ListValue = assertIs(decoded)
         assertEquals(3, list.items.size)
-        assertEquals("a", assertIs<Value.Scalar>(list.items[0]).value)
-        assertEquals(2L, assertIs<Value.Scalar>(list.items[1]).value)
+        assertEquals(ScalarValue.StringValue("a"), assertIs<Value.Scalar>(list.items[0]).value)
+        assertEquals(ScalarValue.NumberValue("2"), assertIs<Value.Scalar>(list.items[1]).value)
         assertEquals(Value.Null, list.items[2])
     }
 
@@ -121,12 +118,12 @@ class ValueJsonCodecTest {
         val value: Value = Value.Record(
             type = Person::class.java,
             fields = mapOf(
-                "name" to Value.Scalar("Alice"),
-                "age" to Value.Scalar(41),
+                "name" to Value.Scalar(ScalarValue.StringValue("Alice")),
+                "age" to Value.Scalar(ScalarValue.NumberValue("41")),
                 "address" to Value.Record(
                     type = Address3::class.java,
                     fields = mapOf(
-                        "street" to Value.Scalar("Smith St")
+                        "street" to Value.Scalar(ScalarValue.StringValue("Smith St"))
                     )
                 )
             )
@@ -137,12 +134,21 @@ class ValueJsonCodecTest {
 
         val record: Value.Record = assertIs(decoded)
         assertEquals(Person::class.java, record.type)
-        assertEquals("Alice", assertIs<Value.Scalar>(record.fields.getValue("name")).value)
-        assertEquals(41L, assertIs<Value.Scalar>(record.fields.getValue("age")).value)
+        assertEquals(
+            ScalarValue.StringValue("Alice"),
+            assertIs<Value.Scalar>(record.fields.getValue("name")).value
+        )
+        assertEquals(
+            ScalarValue.NumberValue("41"),
+            assertIs<Value.Scalar>(record.fields.getValue("age")).value
+        )
 
         val address: Value.Record = assertIs(record.fields.getValue("address"))
         assertEquals(Address3::class.java, address.type)
-        assertEquals("Smith St", assertIs<Value.Scalar>(address.fields.getValue("street")).value)
+        assertEquals(
+            ScalarValue.StringValue("Smith St"),
+            assertIs<Value.Scalar>(address.fields.getValue("street")).value
+        )
     }
 
     @Test
@@ -150,13 +156,15 @@ class ValueJsonCodecTest {
         val value: Value = Value.MapValue(
             entries = listOf(
                 MapEntry(
-                    key = Value.Scalar("one"),
-                    value = Value.Scalar(1)
+                    key = Value.Scalar(ScalarValue.StringValue("one")),
+                    value = Value.Scalar(ScalarValue.NumberValue("1"))
                 ),
                 MapEntry(
-                    key = Value.Scalar(2),
+                    key = Value.Scalar(ScalarValue.NumberValue("2")),
                     value = Value.ListValue(
-                        items = listOf(Value.Scalar("two"))
+                        items = listOf(
+                            Value.Scalar(ScalarValue.StringValue("two"))
+                        )
                     )
                 )
             )
@@ -169,22 +177,25 @@ class ValueJsonCodecTest {
         assertEquals(2, map.entries.size)
 
         val first: MapEntry = map.entries[0]
-        assertEquals("one", assertIs<Value.Scalar>(first.key).value)
-        assertEquals(1L, assertIs<Value.Scalar>(first.value).value)
+        assertEquals(
+            ScalarValue.StringValue("one"),
+            assertIs<Value.Scalar>(first.key).value
+        )
+        assertEquals(
+            ScalarValue.NumberValue("1"),
+            assertIs<Value.Scalar>(first.value).value
+        )
 
         val second: MapEntry = map.entries[1]
-        assertEquals(2L, assertIs<Value.Scalar>(second.key).value)
+        assertEquals(
+            ScalarValue.NumberValue("2"),
+            assertIs<Value.Scalar>(second.key).value
+        )
         val nestedList: Value.ListValue = assertIs(second.value)
-        assertEquals("two", assertIs<Value.Scalar>(nestedList.items[0]).value)
-    }
-
-    @Test
-    fun encode_rejects_instanceValue() {
-        val ex: IllegalArgumentException = assertFailsWith {
-            codec.encode(Value.Instance(Any()))
-        }
-
-        assertTrue(ex.message!!.contains("runtime-only"))
+        assertEquals(
+            ScalarValue.StringValue("two"),
+            assertIs<Value.Scalar>(nestedList.items[0]).value
+        )
     }
 
     @Test
@@ -258,9 +269,8 @@ private class FakeClassResolver : ClassResolver {
         values[typeName] ?: throw IllegalArgumentException("Unknown type: $typeName")
 }
 
-// todo get rid of suffix numbers on names put in separate model package that is shared
 @JvmInline
-value class CustomerId1(val value: String)
+value class CustomerId(val value: String)
 
 class Person
-class Address3
+class Address

@@ -1,14 +1,17 @@
 package au.clef.api
 
+import au.clef.api.model.ScalarValue
 import au.clef.api.model.Value
 import au.clef.engine.ObjectConstructionException
-import kotlinx.serialization.json.JsonPrimitive
-import java.lang.reflect.Array
+import java.lang.reflect.Array.*
 import java.lang.reflect.Constructor
 import java.lang.reflect.Field
+import java.lang.reflect.GenericArrayType
 import java.lang.reflect.Parameter
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
+import java.lang.reflect.TypeVariable
+import java.lang.reflect.WildcardType
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
@@ -48,35 +51,52 @@ class TypeConverter(
             is Value.MapValue ->
                 convertMap(value, target)
 
-            is Value.Instance ->
-                convertInstance(value, target)
-
             Value.Null ->
                 error("Value.Null handled earlier")
         }
     }
 
-    private fun convertScalar(rawValue: Any?, target: Type): Any? {
+    private fun convertScalar(value: ScalarValue, target: Type): Any? {
         val rawTarget: Class<*> = rawClassOf(target)
         val wrappedTarget: Class<*> = scalarRegistry.wrapPrimitive(rawTarget)
-        val normalized: Any = normalizeScalar(rawValue) ?: return handleNull(rawTarget)
 
-        if (wrappedTarget.isInstance(normalized)) {
-            return normalized
+        if (wrappedTarget == Any::class.java || wrappedTarget == Object::class.java) {
+            return when (value) {
+                is ScalarValue.StringValue -> value.value
+                is ScalarValue.BooleanValue -> value.value
+                is ScalarValue.NumberValue -> {
+                    value.value.toLongOrNull()
+                        ?: value.value.toDoubleOrNull()
+                        ?: value.value
+                }
+            }
         }
 
         if (wrappedTarget.isEnum) {
-            return decodeEnum(normalized.toString(), wrappedTarget)
+            val text: String =
+                when (value) {
+                    is ScalarValue.StringValue -> value.value
+                    else -> throw TypeMismatchException(Value.Scalar(value), rawTarget)
+                }
+
+            return decodeEnum(text, wrappedTarget)
+        }
+
+        if (wrappedTarget == String::class.java) {
+            return when (value) {
+                is ScalarValue.StringValue -> value.value
+                else -> throw TypeMismatchException(Value.Scalar(value), rawTarget)
+            }
         }
 
         val decoder: ScalarConverter<Any> =
             scalarRegistry.decoderFor(wrappedTarget)
-                ?: throw TypeMismatchException(Value.Scalar(rawValue), rawTarget)
+                ?: throw TypeMismatchException(Value.Scalar(value), rawTarget)
 
         return try {
-            decoder.decode(normalized.toString())
+            decoder.decode(value)
         } catch (e: Exception) {
-            throw TypeMismatchException(Value.Scalar(rawValue), rawTarget)
+            throw TypeMismatchException(Value.Scalar(value), rawTarget)
         }
     }
 
@@ -98,9 +118,9 @@ class TypeConverter(
         return when {
             rawTarget.isArray -> {
                 val componentType: Class<*> = rawTarget.componentType
-                val array: Any = Array.newInstance(componentType, items.size)
+                val array: Any = newInstance(componentType, items.size)
                 items.forEachIndexed { index: Int, item: Any? ->
-                    Array.set(array, index, item)
+                    set(array, index, item)
                 }
                 array
             }
@@ -144,29 +164,16 @@ class TypeConverter(
             .toMutableMap()
     }
 
-    private fun convertInstance(value: Value.Instance, target: Type): Any {
-        val rawTarget: Class<*> = scalarRegistry.wrapPrimitive(rawClassOf(target))
-
-        if (!rawTarget.isInstance(value.obj)) {
-            throw TypeMismatchException(value, rawTarget)
-        }
-
-        return value.obj
-    }
-
     private fun buildObject(value: Value.Record, target: Class<*>): Any {
         return tryBuildKotlinObject(value, target)
             ?: tryBuildWithSingleJavaConstructor(value, target)
             ?: tryBuildWithNoArgAndFields(value, target)
-            ?: throw ObjectConstructionException(
-                "No construction strategy for ${target.name}"
-            )
+            ?: throw ObjectConstructionException("No construction strategy for ${target.name}")
     }
 
     private fun tryBuildKotlinObject(value: Value.Record, target: Class<*>): Any? {
         val kClass: KClass<*> = target.kotlin
-        val primaryConstructor: KFunction<Any>? =
-            kClass.primaryConstructor
+        val primaryConstructor: KFunction<Any>? = kClass.primaryConstructor
 
         if (primaryConstructor == null) {
             return null
@@ -182,37 +189,28 @@ class TypeConverter(
         }
 
         val arguments: Map<KParameter, Any?> =
-            primaryConstructor.parameters.associateWith { parameter: KParameter ->
-                val parameterName: String =
-                    parameter.name
-                        ?: throw ObjectConstructionException(
-                            "Unnamed Kotlin constructor parameter on ${target.name}"
-                        )
+            primaryConstructor.parameters
+                .associateWith { parameter: KParameter ->
+                    val parameterName: String =
+                        parameter.name
+                            ?: throw ObjectConstructionException(
+                                "Unnamed Kotlin constructor parameter on ${target.name}"
+                            )
 
-                val fieldValue: Value? = value.fields[parameterName]
+                    val fieldValue: Value? = value.fields[parameterName]
 
-                when {
-                    fieldValue != null -> {
-                        materializeInternal(fieldValue, parameter.type.javaType)
-                    }
-
-                    parameter.isOptional -> {
-                        null
-                    }
-
-                    parameter.type.isMarkedNullable -> {
-                        null
-                    }
-
-                    else -> {
-                        throw ObjectConstructionException(
+                    when {
+                        fieldValue != null -> materializeInternal(fieldValue, parameter.type.javaType)
+                        parameter.isOptional -> null
+                        parameter.type.isMarkedNullable -> null
+                        else -> throw ObjectConstructionException(
                             "Missing mandatory parameter '$parameterName' for ${target.name}"
                         )
                     }
                 }
-            }.filterNot { entry: Map.Entry<KParameter, Any?> ->
-                entry.key.isOptional && value.fields[entry.key.name] == null
-            }
+                .filterNot { entry: Map.Entry<KParameter, Any?> ->
+                    entry.key.isOptional && value.fields[entry.key.name] == null
+                }
 
         return try {
             primaryConstructor.callBy(arguments)
@@ -230,12 +228,9 @@ class TypeConverter(
         value: Value.Record,
         target: Class<*>
     ): Any? {
-        val constructors = target.declaredConstructors
-        if (constructors.size != 1) {
-            return null
-        }
+        val constructor: Constructor<*> =
+            target.declaredConstructors.singleOrNull() ?: return null
 
-        val constructor: Constructor<*> = constructors[0]
         if (constructor.parameterCount == 0) {
             return null
         }
@@ -243,11 +238,7 @@ class TypeConverter(
         val arguments: List<Any?> =
             constructor.parameters.mapIndexed { index: Int, parameter: Parameter ->
                 val parameterName: String =
-                    if (parameter.isNamePresent) {
-                        parameter.name
-                    } else {
-                        "arg$index"
-                    }
+                    if (parameter.isNamePresent) parameter.name else "arg$index"
 
                 val fieldValue: Value =
                     value.fields[parameterName]
@@ -300,8 +291,7 @@ class TypeConverter(
 
             try {
                 field.isAccessible = true
-                val convertedValue: Any? =
-                    materializeInternal(fieldValue, field.genericType)
+                val convertedValue: Any? = materializeInternal(fieldValue, field.genericType)
                 field.set(instance, convertedValue)
             } catch (e: ObjectConstructionException) {
                 throw e
@@ -316,40 +306,20 @@ class TypeConverter(
         return instance
     }
 
-    private fun normalizeScalar(rawValue: Any?): Any? =
-        when (rawValue) {
-            is JsonPrimitive -> {
-                if (rawValue.isString) {
-                    rawValue.content
-                } else {
-                    val text: String = rawValue.content
-                    text.toLongOrNull()
-                        ?: text.toDoubleOrNull()
-                        ?: text.toBooleanStrictOrNull()
-                        ?: text
-                }
-            }
-
-            else -> rawValue
-        }
-
-    private fun decodeEnum(text: String, target: Class<*>): Any {
-        return target.enumConstants.firstOrNull { constant: Any ->
+    private fun decodeEnum(text: String, target: Class<*>): Any =
+        target.enumConstants.firstOrNull { constant: Any ->
             (constant as Enum<*>).name.equals(text, ignoreCase = true)
-        } ?: throw IllegalArgumentException(
-            "Invalid enum '$text' for ${target.name}"
-        )
-    }
+        } ?: throw IllegalArgumentException("Invalid enum '$text' for ${target.name}")
 
-    private fun findField(target: Class<*>, name: String): Field? {
-        return generateSequence(target) { current: Class<*> ->
+    private fun findField(target: Class<*>, name: String): Field? =
+        generateSequence(target) { current: Class<*> ->
             current.superclass
-        }.takeWhile { current: Class<*> ->
-            current != Any::class.java
-        }.mapNotNull { current: Class<*> ->
-            runCatching { current.getDeclaredField(name) }.getOrNull()
-        }.firstOrNull()
-    }
+        }
+            .takeWhile { current: Class<*> -> current != Any::class.java }
+            .mapNotNull { current: Class<*> ->
+                runCatching { current.getDeclaredField(name) }.getOrNull()
+            }
+            .firstOrNull()
 
     private fun handleNull(rawTarget: Class<*>): Any? {
         if (rawTarget.isPrimitive) {
@@ -361,24 +331,13 @@ class TypeConverter(
     private fun rawClassOf(type: Type): Class<*> =
         when (type) {
             is Class<*> -> type
-
             is ParameterizedType -> rawClassOf(type.rawType)
-
-            is java.lang.reflect.WildcardType -> {
-                val upperBound: Type = type.upperBounds.firstOrNull() ?: Any::class.java
-                rawClassOf(upperBound)
-            }
-
-            is java.lang.reflect.GenericArrayType -> {
+            is WildcardType -> rawClassOf(type.upperBounds.firstOrNull() ?: Any::class.java)
+            is GenericArrayType -> {
                 val componentType: Class<*> = rawClassOf(type.genericComponentType)
-                java.lang.reflect.Array.newInstance(componentType, 0).javaClass
+                newInstance(componentType, 0).javaClass
             }
-
-            is java.lang.reflect.TypeVariable<*> -> {
-                val upperBound: Type = type.bounds.firstOrNull() ?: Any::class.java
-                rawClassOf(upperBound)
-            }
-
+            is TypeVariable<*> -> rawClassOf(type.bounds.firstOrNull() ?: Any::class.java)
             else -> throw IllegalArgumentException("Unsupported Type: $type")
         }
 }

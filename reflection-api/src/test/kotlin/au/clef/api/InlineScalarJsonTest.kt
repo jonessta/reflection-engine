@@ -1,25 +1,25 @@
 package au.clef.api
 
 import au.clef.api.model.InvocationRequest
+import au.clef.api.model.ScalarValue
 import au.clef.api.model.Value
 import au.clef.engine.ExecutionContext
 import au.clef.engine.MethodSource.InstanceMethod
 import au.clef.engine.ReflectionConfig
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.reflectionConfig
-import kotlinx.serialization.json.JsonPrimitive
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @JvmInline
-value class CustomerId(val value: String)
+value class CustomerId1(val value: String)
 
 @JvmInline
 value class EmailAddress(val value: String)
 
-data class Address(
+data class Address3(
     val number: Int,
     val street: String,
     val zipCode: String
@@ -29,7 +29,7 @@ data class Customer(
     val id: CustomerId1,
     val name: String,
     val email: EmailAddress1,
-    val address: Address
+    val address: Address3
 )
 
 class CustomerService {
@@ -38,7 +38,7 @@ class CustomerService {
             id = id,
             name = "Alice",
             email = EmailAddress1("alice@example.com"),
-            address = Address(
+            address = Address3(
                 number = 2,
                 street = "Smith St",
                 zipCode = "2321"
@@ -51,31 +51,59 @@ class CustomerService {
 
 class InlineScalarJsonTest {
 
-    private val customerService = CustomerService()
+    private val customerService: CustomerService = CustomerService()
 
     private val reflectionConfig: ReflectionConfig = reflectionConfig(
-        InstanceMethod(customerService, "Customer Service", CustomerService::findCustomer),
-        InstanceMethod(customerService, "Customer Service", CustomerService::normalizeEmail)
+        InstanceMethod(
+            instance = customerService,
+            instanceDescription = "Customer Service",
+            function = CustomerService::findCustomer
+        ),
+        InstanceMethod(
+            instance = customerService,
+            instanceDescription = "Customer Service",
+            function = CustomerService::normalizeEmail
+        )
     )
-        .supportingTypes(Customer::class, Address::class)
+        .supportingTypes(Customer::class, Address3::class)
         .build()
 
-    private val scalarTypeRegistry = ScalarTypeRegistry(
+    private val scalarTypeRegistry: ScalarTypeRegistry = ScalarTypeRegistry(
         userDefinedConverters = listOf(
-            scalarConverter<CustomerId1>({ JsonPrimitive(it.value) }, { CustomerId1(it) }),
-            scalarConverter<EmailAddress1>({ JsonPrimitive(it.value) }, { EmailAddress1(it) })
+            scalarConverter<CustomerId1>(
+                encode = { value: CustomerId1 ->
+                    ScalarValue.StringValue(value.value)
+                },
+                decode = { value: ScalarValue ->
+                    when (value) {
+                        is ScalarValue.StringValue -> CustomerId1(value.value)
+                        else -> throw IllegalArgumentException("Expected string scalar for CustomerId")
+                    }
+                }
+            ),
+            scalarConverter<EmailAddress1>(
+                encode = { value: EmailAddress1 ->
+                    ScalarValue.StringValue(value.value)
+                },
+                decode = { value: ScalarValue ->
+                    when (value) {
+                        is ScalarValue.StringValue -> EmailAddress1(value.value)
+                        else -> throw IllegalArgumentException("Expected string scalar for EmailAddress")
+                    }
+                }
+            )
         )
     )
 
-    private val engine = ReflectionEngine(
+    private val engine: ReflectionEngine = ReflectionEngine(
         reflectionConfig = reflectionConfig
     )
 
-    private val requestValueMapper = RequestValueMapper(
+    private val requestValueMapper: RequestValueMapper = RequestValueMapper(
         scalarTypeRegistry = scalarTypeRegistry
     )
 
-    private val responseValueMapper = ResponseValueMapper(
+    private val responseValueMapper: ResponseValueMapper = ResponseValueMapper(
         scalarRegistry = scalarTypeRegistry
     )
 
@@ -87,6 +115,7 @@ class InlineScalarJsonTest {
                 .first { context: ExecutionContext.Instance ->
                     engine.descriptor(context.methodId).reflectedName == "findCustomer"
                 }
+
         val descriptor = engine.descriptor(execution.methodId)
         val param = descriptor.parameters.single()
 
@@ -102,28 +131,29 @@ class InlineScalarJsonTest {
                 .first { context: ExecutionContext.Instance ->
                     engine.descriptor(context.methodId).reflectedName == "findCustomer"
                 }
-        val response = invoke(
+
+        val response: Value = invoke(
             InvocationRequest(
                 executionId = execution.executionId,
                 args = listOf(
-                    Value.Scalar(JsonPrimitive("cust-123"))
+                    Value.Scalar(ScalarValue.StringValue("cust-123"))
                 )
             )
         )
 
-        val result = assertIs<Value.Record>(response)
+        val result: Value.Record = assertIs(response)
 
-        val id = assertIs<Value.Scalar>(result.fields.getValue("id"))
-        val name = assertIs<Value.Scalar>(result.fields.getValue("name"))
-        val email = assertIs<Value.Scalar>(result.fields.getValue("email"))
-        val address = assertIs<Value.Record>(result.fields.getValue("address"))
+        val id: Value.Scalar = assertIs(result.fields.getValue("id"))
+        val name: Value.Scalar = assertIs(result.fields.getValue("name"))
+        val email: Value.Scalar = assertIs(result.fields.getValue("email"))
+        val address: Value.Record = assertIs(result.fields.getValue("address"))
 
-        assertEquals("cust-123", id.value)
-        assertEquals("Alice", name.value)
-        assertEquals("alice@example.com", email.value)
+        assertEquals(ScalarValue.StringValue("cust-123"), id.value)
+        assertEquals(ScalarValue.StringValue("Alice"), name.value)
+        assertEquals(ScalarValue.StringValue("alice@example.com"), email.value)
 
-        val street = assertIs<Value.Scalar>(address.fields.getValue("street"))
-        assertEquals("Smith St", street.value)
+        val street: Value.Scalar = assertIs(address.fields.getValue("street"))
+        assertEquals(ScalarValue.StringValue("Smith St"), street.value)
     }
 
     @Test
@@ -135,36 +165,40 @@ class InlineScalarJsonTest {
                     engine.descriptor(context.methodId).reflectedName == "normalizeEmail"
                 }
 
-        val response = invoke(
+        val response: Value = invoke(
             InvocationRequest(
                 executionId = execution.executionId,
                 args = listOf(
-                    Value.Scalar("  Alice@Example.COM ")
+                    Value.Scalar(ScalarValue.StringValue("  Alice@Example.COM "))
                 )
             )
         )
 
-        val result = assertIs<Value.Scalar>(response)
-        assertEquals("alice@example.com", result.value)
+        val result: Value.Scalar = assertIs(response)
+        assertEquals(ScalarValue.StringValue("alice@example.com"), result.value)
     }
 
     private fun invoke(request: InvocationRequest): Value {
-        val executionContext = engine.executionContext(request.executionId)
+        val executionContext: ExecutionContext = engine.executionContext(request.executionId)
         val descriptor = engine.descriptor(executionContext.methodId)
 
-        val args: List<Any?> = request.args.zip(descriptor.parameters).map { (argDto, param) ->
-            requestValueMapper.materialize(argDto, param.runtimeType)
-        }
         require(request.args.size == descriptor.parameters.size) {
             "Expected ${descriptor.parameters.size} args for ${descriptor.id}, got ${request.args.size}"
         }
-        val result = when (executionContext) {
-            is ExecutionContext.Static ->
-                engine.invokeStatic(descriptor, args)
 
-            is ExecutionContext.Instance ->
-                engine.invokeInstance(descriptor, executionContext.instance, args)
-        }
+        val args: List<Any?> =
+            request.args.zip(descriptor.parameters).map { (argValue, param) ->
+                requestValueMapper.materialize(argValue, param.runtimeType)
+            }
+
+        val result: Any? =
+            when (executionContext) {
+                is ExecutionContext.Static ->
+                    engine.invokeStatic(descriptor, args)
+
+                is ExecutionContext.Instance ->
+                    engine.invokeInstance(descriptor, executionContext.instance, args)
+            }
 
         return responseValueMapper.toValue(result)
     }

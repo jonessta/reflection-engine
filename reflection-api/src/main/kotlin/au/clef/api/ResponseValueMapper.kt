@@ -1,11 +1,8 @@
 package au.clef.api
 
 import au.clef.api.model.MapEntry
+import au.clef.api.model.ScalarValue
 import au.clef.api.model.Value
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.longOrNull
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 import java.nio.file.Path
@@ -13,20 +10,14 @@ import kotlin.reflect.KProperty1
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
 
-// todo Cleaner next step - Once this works, I’d tighten Value.Scalar so it represents scalar data more explicitly, not arbitrary Any?.
 class ResponseValueMapper(
     private val scalarRegistry: ScalarTypeRegistry
 ) {
 
     fun toValue(value: Any?): Value =
         when {
-            value == null -> {
-                Value.Null
-            }
-
-            value is Value -> {
-                value
-            }
+            value == null -> Value.Null
+            value is Value -> value
 
             value is Map<*, *> -> {
                 Value.MapValue(
@@ -41,9 +32,7 @@ class ResponseValueMapper(
 
             value is Iterable<*> && value !is Path -> {
                 Value.ListValue(
-                    items = value.map { item: Any? ->
-                        toValue(item)
-                    }
+                    items = value.map { item: Any? -> toValue(item) }
                 )
             }
 
@@ -54,7 +43,7 @@ class ResponseValueMapper(
             }
 
             value is Enum<*> -> {
-                Value.Scalar(value.name)
+                Value.Scalar(ScalarValue.StringValue(value.name))
             }
 
             else -> {
@@ -66,11 +55,10 @@ class ResponseValueMapper(
         val clazz: Class<*> = value::class.java
 
         val kotlinFields: Map<String, Value> =
-            clazz.kotlin.memberProperties
-                .associate { property: KProperty1<out Any, *> ->
-                    property.isAccessible = true
-                    property.name to toValue(property.getter.call(value))
-                }
+            clazz.kotlin.memberProperties.associate { property: KProperty1<out Any, *> ->
+                property.isAccessible = true
+                property.name to toValue(property.getter.call(value))
+            }
 
         val fields: Map<String, Value> =
             if (kotlinFields.isNotEmpty()) {
@@ -97,29 +85,15 @@ class ResponseValueMapper(
 
     private fun encodeScalar(value: Any): Value.Scalar? =
         scalarRegistry.encoderFor(value)?.let { converter: ScalarConverter<Any> ->
-            Value.Scalar(jsonPrimitiveToScalar(converter.encode(value)))
-        }
-
-    private fun jsonPrimitiveToScalar(primitive: JsonPrimitive): Any? =
-        if (primitive.isString) {
-            primitive.content
-        } else {
-            primitive.booleanOrNull
-                ?: primitive.longOrNull
-                ?: primitive.doubleOrNull
-                ?: primitive.content
+            Value.Scalar(converter.encode(value))
         }
 
     private fun allFields(clazz: Class<*>): List<Field> =
         generateSequence(clazz) { current: Class<*> ->
             current.superclass
         }
-            .takeWhile { current: Class<*> ->
-                current != Any::class.java
-            }
-            .flatMap { current: Class<*> ->
-                current.declaredFields.asSequence()
-            }
+            .takeWhile { current: Class<*> -> current != Any::class.java }
+            .flatMap { current: Class<*> -> current.declaredFields.asSequence() }
             .filter { field: Field ->
                 !Modifier.isStatic(field.modifiers) && !field.isSynthetic
             }

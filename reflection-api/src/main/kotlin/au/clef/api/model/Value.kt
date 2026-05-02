@@ -4,7 +4,6 @@ import au.clef.api.ClassResolver
 import au.clef.api.ScalarTypeRegistry
 import au.clef.api.ValueJsonCodec
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -59,9 +58,9 @@ fun valueSerializersModule(
 
 sealed class Value {
 
-    data class Scalar(val value: Any?) : Value()
-
-    data class Instance(val obj: Any) : Value()
+    data class Scalar(
+        val value: ScalarValue
+    ) : Value()
 
     data class Record(
         val type: Class<*>,
@@ -83,3 +82,23 @@ data class MapEntry(
     val key: Value,
     val value: Value
 )
+
+sealed class ScalarValue {
+
+    data class StringValue(
+        val value: String
+    ) : ScalarValue()
+
+    data class BooleanValue(
+        val value: Boolean
+    ) : ScalarValue()
+
+    /**
+     * Canonical numeric scalar representation.
+     * Keep the lexical form so later conversion can decide whether
+     * the target should be Int, Long, Double, Float, etc.
+     */
+    data class NumberValue(
+        val value: String
+    ) : ScalarValue()
+}

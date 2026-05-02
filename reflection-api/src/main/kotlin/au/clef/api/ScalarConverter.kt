@@ -1,6 +1,6 @@
 package au.clef.api
 
-import kotlinx.serialization.json.JsonPrimitive
+import au.clef.api.model.ScalarValue
 import java.net.URI
 import java.net.URL
 import java.nio.file.Path
@@ -16,105 +16,238 @@ import kotlin.reflect.KClass
 
 interface ScalarConverter<T : Any> {
     val type: KClass<T>
-    fun encode(value: T): JsonPrimitive
-    fun decode(text: String): T
+    fun encode(value: T): ScalarValue
+    fun decode(value: ScalarValue): T
 }
 
 inline fun <reified T : Any> scalarConverter(
-    noinline encode: (T) -> JsonPrimitive,
-    noinline decode: (String) -> T
+    noinline encode: (T) -> ScalarValue,
+    noinline decode: (ScalarValue) -> T
 ): ScalarConverter<T> =
     object : ScalarConverter<T> {
         override val type: KClass<T> = T::class
 
-        override fun encode(value: T): JsonPrimitive =
+        override fun encode(value: T): ScalarValue =
             encode(value)
 
-        override fun decode(text: String): T =
-            decode(text)
+        override fun decode(value: ScalarValue): T =
+            decode(value)
     }
 
 object DefaultScalarConverters {
 
     val all: List<ScalarConverter<out Any>> = listOf(
         scalarConverter<String>(
-            encode = { value: String -> JsonPrimitive(value) },
-            decode = { text: String -> text }
+            encode = { value: String ->
+                ScalarValue.StringValue(value)
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.StringValue -> value.value
+                    else -> throw IllegalArgumentException("Expected string scalar")
+                }
+            }
         ),
         scalarConverter<Int>(
-            encode = { value: Int -> JsonPrimitive(value) },
-            decode = { text: String -> text.toInt() }
+            encode = { value: Int ->
+                ScalarValue.NumberValue(value.toString())
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.NumberValue -> value.value.toInt()
+                    else -> throw IllegalArgumentException("Expected numeric scalar")
+                }
+            }
         ),
         scalarConverter<Long>(
-            encode = { value: Long -> JsonPrimitive(value) },
-            decode = { text: String -> text.toLong() }
+            encode = { value: Long ->
+                ScalarValue.NumberValue(value.toString())
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.NumberValue -> value.value.toLong()
+                    else -> throw IllegalArgumentException("Expected numeric scalar")
+                }
+            }
         ),
         scalarConverter<Double>(
-            encode = { value: Double -> JsonPrimitive(value) },
-            decode = { text: String -> text.toDouble() }
+            encode = { value: Double ->
+                ScalarValue.NumberValue(value.toString())
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.NumberValue -> value.value.toDouble()
+                    else -> throw IllegalArgumentException("Expected numeric scalar")
+                }
+            }
         ),
         scalarConverter<Float>(
-            encode = { value: Float -> JsonPrimitive(value) },
-            decode = { text: String -> text.toFloat() }
+            encode = { value: Float ->
+                ScalarValue.NumberValue(value.toString())
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.NumberValue -> value.value.toFloat()
+                    else -> throw IllegalArgumentException("Expected numeric scalar")
+                }
+            }
         ),
         scalarConverter<Short>(
-            encode = { value: Short -> JsonPrimitive(value.toInt()) },
-            decode = { text: String -> text.toShort() }
+            encode = { value: Short ->
+                ScalarValue.NumberValue(value.toString())
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.NumberValue -> value.value.toShort()
+                    else -> throw IllegalArgumentException("Expected numeric scalar")
+                }
+            }
         ),
         scalarConverter<Byte>(
-            encode = { value: Byte -> JsonPrimitive(value.toInt()) },
-            decode = { text: String -> text.toByte() }
+            encode = { value: Byte ->
+                ScalarValue.NumberValue(value.toString())
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.NumberValue -> value.value.toByte()
+                    else -> throw IllegalArgumentException("Expected numeric scalar")
+                }
+            }
         ),
         scalarConverter<Boolean>(
-            encode = { value: Boolean -> JsonPrimitive(value) },
-            decode = { text: String -> text.toBooleanStrict() }
+            encode = { value: Boolean ->
+                ScalarValue.BooleanValue(value)
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.BooleanValue -> value.value
+                    else -> throw IllegalArgumentException("Expected boolean scalar")
+                }
+            }
         ),
         scalarConverter<Char>(
-            encode = { value: Char -> JsonPrimitive(value.toString()) },
-            decode = { text: String ->
-                require(text.length == 1) { "Invalid char: $text" }
-                text[0]
+            encode = { value: Char ->
+                ScalarValue.StringValue(value.toString())
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.StringValue -> {
+                        require(value.value.length == 1) { "Invalid char: ${value.value}" }
+                        value.value[0]
+                    }
+                    else -> throw IllegalArgumentException("Expected string scalar")
+                }
             }
         ),
         scalarConverter<UUID>(
-            encode = { value: UUID -> JsonPrimitive(value.toString()) },
-            decode = { text: String -> UUID.fromString(text) }
+            encode = { value: UUID ->
+                ScalarValue.StringValue(value.toString())
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.StringValue -> UUID.fromString(value.value)
+                    else -> throw IllegalArgumentException("Expected string scalar")
+                }
+            }
         ),
         scalarConverter<URI>(
-            encode = { value: URI -> JsonPrimitive(value.toString()) },
-            decode = { text: String -> URI.create(text) }
+            encode = { value: URI ->
+                ScalarValue.StringValue(value.toString())
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.StringValue -> URI.create(value.value)
+                    else -> throw IllegalArgumentException("Expected string scalar")
+                }
+            }
         ),
         scalarConverter<URL>(
-            encode = { value: URL -> JsonPrimitive(value.toString()) },
-            decode = { text: String -> URI.create(text).toURL() }
+            encode = { value: URL ->
+                ScalarValue.StringValue(value.toString())
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.StringValue -> URI.create(value.value).toURL()
+                    else -> throw IllegalArgumentException("Expected string scalar")
+                }
+            }
         ),
         scalarConverter<Instant>(
-            encode = { value: Instant -> JsonPrimitive(value.toString()) },
-            decode = { text: String -> Instant.parse(text) }
+            encode = { value: Instant ->
+                ScalarValue.StringValue(value.toString())
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.StringValue -> Instant.parse(value.value)
+                    else -> throw IllegalArgumentException("Expected string scalar")
+                }
+            }
         ),
         scalarConverter<LocalDate>(
-            encode = { value: LocalDate -> JsonPrimitive(value.toString()) },
-            decode = { text: String -> LocalDate.parse(text) }
+            encode = { value: LocalDate ->
+                ScalarValue.StringValue(value.toString())
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.StringValue -> LocalDate.parse(value.value)
+                    else -> throw IllegalArgumentException("Expected string scalar")
+                }
+            }
         ),
         scalarConverter<LocalDateTime>(
-            encode = { value: LocalDateTime -> JsonPrimitive(value.toString()) },
-            decode = { text: String -> LocalDateTime.parse(text) }
+            encode = { value: LocalDateTime ->
+                ScalarValue.StringValue(value.toString())
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.StringValue -> LocalDateTime.parse(value.value)
+                    else -> throw IllegalArgumentException("Expected string scalar")
+                }
+            }
         ),
         scalarConverter<LocalTime>(
-            encode = { value: LocalTime -> JsonPrimitive(value.toString()) },
-            decode = { text: String -> LocalTime.parse(text) }
+            encode = { value: LocalTime ->
+                ScalarValue.StringValue(value.toString())
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.StringValue -> LocalTime.parse(value.value)
+                    else -> throw IllegalArgumentException("Expected string scalar")
+                }
+            }
         ),
         scalarConverter<Path>(
-            encode = { value: Path -> JsonPrimitive(value.toString()) },
-            decode = { text: String -> Paths.get(text) }
+            encode = { value: Path ->
+                ScalarValue.StringValue(value.toString())
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.StringValue -> Paths.get(value.value)
+                    else -> throw IllegalArgumentException("Expected string scalar")
+                }
+            }
         ),
         scalarConverter<Locale>(
-            encode = { value: Locale -> JsonPrimitive(value.toLanguageTag()) },
-            decode = { text: String -> Locale.forLanguageTag(text) }
+            encode = { value: Locale ->
+                ScalarValue.StringValue(value.toLanguageTag())
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.StringValue -> Locale.forLanguageTag(value.value)
+                    else -> throw IllegalArgumentException("Expected string scalar")
+                }
+            }
         ),
         scalarConverter<Currency>(
-            encode = { value: Currency -> JsonPrimitive(value.currencyCode) },
-            decode = { text: String -> Currency.getInstance(text) }
+            encode = { value: Currency ->
+                ScalarValue.StringValue(value.currencyCode)
+            },
+            decode = { value: ScalarValue ->
+                when (value) {
+                    is ScalarValue.StringValue -> Currency.getInstance(value.value)
+                    else -> throw IllegalArgumentException("Expected string scalar")
+                }
+            }
         )
     )
 }

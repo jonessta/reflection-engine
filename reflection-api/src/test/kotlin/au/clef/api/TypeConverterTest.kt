@@ -1,6 +1,7 @@
 package au.clef.api
 
 import au.clef.api.model.MapEntry
+import au.clef.api.model.ScalarValue
 import au.clef.api.model.Value
 import au.clef.engine.ObjectConstructionException
 import java.lang.reflect.Type
@@ -22,7 +23,7 @@ class TypeConverterTest {
     fun materialize_convertsScalarToIntPrimitive() {
         val result: Any? =
             converter.materialize(
-                Value.Scalar("42"),
+                Value.Scalar(ScalarValue.NumberValue("42")),
                 Int::class.javaPrimitiveType!!
             )
 
@@ -33,7 +34,7 @@ class TypeConverterTest {
     fun materialize_convertsScalarToBoxedInt() {
         val result: Any? =
             converter.materialize(
-                Value.Scalar("42"),
+                Value.Scalar(ScalarValue.NumberValue("42")),
                 Int::class.javaObjectType
             )
 
@@ -44,13 +45,12 @@ class TypeConverterTest {
     fun materialize_convertsScalarToBoolean() {
         val result: Any? =
             converter.materialize(
-                Value.Scalar("true"),
+                Value.Scalar(ScalarValue.BooleanValue(true)),
                 Boolean::class.javaObjectType
             )
 
         assertEquals(true, result)
     }
-
 
     @Test
     fun materialize_convertsListWithWildcardElementType() {
@@ -61,8 +61,8 @@ class TypeConverterTest {
             converter.materialize(
                 Value.ListValue(
                     items = listOf(
-                        Value.Scalar("a"),
-                        Value.Scalar("b")
+                        Value.Scalar(ScalarValue.StringValue("a")),
+                        Value.Scalar(ScalarValue.StringValue("b"))
                     )
                 ),
                 listType
@@ -76,7 +76,7 @@ class TypeConverterTest {
     fun materialize_convertsScalarToEnumIgnoringCase() {
         val result: Any? =
             converter.materialize(
-                Value.Scalar("active"),
+                Value.Scalar(ScalarValue.StringValue("active")),
                 SampleStatus::class.java
             )
 
@@ -87,7 +87,7 @@ class TypeConverterTest {
     fun materialize_rejectsInvalidEnumValue() {
         assertFailsWith<IllegalArgumentException> {
             converter.materialize(
-                Value.Scalar("missing"),
+                Value.Scalar(ScalarValue.StringValue("missing")),
                 SampleStatus::class.java
             )
         }
@@ -131,8 +131,8 @@ class TypeConverterTest {
             converter.materialize(
                 Value.ListValue(
                     items = listOf(
-                        Value.Scalar("a"),
-                        Value.Scalar("b")
+                        Value.Scalar(ScalarValue.StringValue("a")),
+                        Value.Scalar(ScalarValue.StringValue("b"))
                     )
                 ),
                 object : TypeReference<List<String>>() {}.type
@@ -148,9 +148,9 @@ class TypeConverterTest {
             converter.materialize(
                 Value.ListValue(
                     items = listOf(
-                        Value.Scalar("a"),
-                        Value.Scalar("a"),
-                        Value.Scalar("b")
+                        Value.Scalar(ScalarValue.StringValue("a")),
+                        Value.Scalar(ScalarValue.StringValue("a")),
+                        Value.Scalar(ScalarValue.StringValue("b"))
                     )
                 ),
                 object : TypeReference<Set<String>>() {}.type
@@ -166,9 +166,9 @@ class TypeConverterTest {
             converter.materialize(
                 Value.ListValue(
                     items = listOf(
-                        Value.Scalar("1"),
-                        Value.Scalar("2"),
-                        Value.Scalar("3")
+                        Value.Scalar(ScalarValue.NumberValue("1")),
+                        Value.Scalar(ScalarValue.NumberValue("2")),
+                        Value.Scalar(ScalarValue.NumberValue("3"))
                     )
                 ),
                 Array<Int>::class.java
@@ -182,7 +182,11 @@ class TypeConverterTest {
     fun materialize_rejectsListForNonCollectionTarget() {
         assertFailsWith<TypeMismatchException> {
             converter.materialize(
-                Value.ListValue(items = listOf(Value.Scalar("a"))),
+                Value.ListValue(
+                    items = listOf(
+                        Value.Scalar(ScalarValue.StringValue("a"))
+                    )
+                ),
                 String::class.java
             )
         }
@@ -195,12 +199,12 @@ class TypeConverterTest {
                 Value.MapValue(
                     entries = listOf(
                         MapEntry(
-                            key = Value.Scalar("a"),
-                            value = Value.Scalar("1")
+                            key = Value.Scalar(ScalarValue.StringValue("a")),
+                            value = Value.Scalar(ScalarValue.NumberValue("1"))
                         ),
                         MapEntry(
-                            key = Value.Scalar("b"),
-                            value = Value.Scalar("2")
+                            key = Value.Scalar(ScalarValue.StringValue("b")),
+                            value = Value.Scalar(ScalarValue.NumberValue("2"))
                         )
                     )
                 ),
@@ -219,35 +223,12 @@ class TypeConverterTest {
                 Value.MapValue(
                     entries = listOf(
                         MapEntry(
-                            key = Value.Scalar("a"),
-                            value = Value.Scalar("1")
+                            key = Value.Scalar(ScalarValue.StringValue("a")),
+                            value = Value.Scalar(ScalarValue.NumberValue("1"))
                         )
                     )
                 ),
                 String::class.java
-            )
-        }
-    }
-
-    @Test
-    fun materialize_returnsInstanceWhenCompatible() {
-        val person: SamplePerson = SamplePerson("Alice", 25)
-
-        val result: Any? =
-            converter.materialize(
-                Value.Instance(person),
-                SamplePerson::class.java
-            )
-
-        assertEquals(person, result)
-    }
-
-    @Test
-    fun materialize_rejectsInstanceWhenIncompatible() {
-        assertFailsWith<TypeMismatchException> {
-            converter.materialize(
-                Value.Instance("wrong"),
-                SamplePerson::class.java
             )
         }
     }
@@ -259,8 +240,8 @@ class TypeConverterTest {
                 Value.Record(
                     type = SamplePerson::class.java,
                     fields = mapOf(
-                        "name" to Value.Scalar("Alice"),
-                        "age" to Value.Scalar("25")
+                        "name" to Value.Scalar(ScalarValue.StringValue("Alice")),
+                        "age" to Value.Scalar(ScalarValue.NumberValue("25"))
                     )
                 ),
                 SamplePerson::class.java
@@ -278,7 +259,7 @@ class TypeConverterTest {
                 Value.Record(
                     type = SampleWithDefault::class.java,
                     fields = mapOf(
-                        "name" to Value.Scalar("Alice")
+                        "name" to Value.Scalar(ScalarValue.StringValue("Alice"))
                     )
                 ),
                 SampleWithDefault::class.java
@@ -297,7 +278,7 @@ class TypeConverterTest {
                     Value.Record(
                         type = SamplePerson::class.java,
                         fields = mapOf(
-                            "name" to Value.Scalar("Alice")
+                            "name" to Value.Scalar(ScalarValue.StringValue("Alice"))
                         )
                     ),
                     SamplePerson::class.java
@@ -314,8 +295,8 @@ class TypeConverterTest {
                 Value.Record(
                     type = JavaOnlyCtor::class.java,
                     fields = mapOf(
-                        "arg0" to Value.Scalar("Bob"),
-                        "arg1" to Value.Scalar("41")
+                        "arg0" to Value.Scalar(ScalarValue.StringValue("Bob")),
+                        "arg1" to Value.Scalar(ScalarValue.NumberValue("41"))
                     )
                 ),
                 JavaOnlyCtor::class.java
@@ -334,7 +315,7 @@ class TypeConverterTest {
                     Value.Record(
                         type = JavaOnlyCtor::class.java,
                         fields = mapOf(
-                            "arg0" to Value.Scalar("Bob")
+                            "arg0" to Value.Scalar(ScalarValue.StringValue("Bob"))
                         )
                     ),
                     JavaOnlyCtor::class.java
@@ -351,8 +332,8 @@ class TypeConverterTest {
                 Value.Record(
                     type = MutableBean::class.java,
                     fields = mapOf(
-                        "name" to Value.Scalar("Chris"),
-                        "age" to Value.Scalar("50")
+                        "name" to Value.Scalar(ScalarValue.StringValue("Chris")),
+                        "age" to Value.Scalar(ScalarValue.NumberValue("50"))
                     )
                 ),
                 MutableBean::class.java
@@ -371,7 +352,7 @@ class TypeConverterTest {
                     Value.Record(
                         type = MutableBean::class.java,
                         fields = mapOf(
-                            "missing" to Value.Scalar("x")
+                            "missing" to Value.Scalar(ScalarValue.StringValue("x"))
                         )
                     ),
                     MutableBean::class.java
@@ -380,7 +361,6 @@ class TypeConverterTest {
 
         assertTrue(ex.message!!.contains("Field 'missing' not found"))
     }
-
 }
 
 enum class SampleStatus {

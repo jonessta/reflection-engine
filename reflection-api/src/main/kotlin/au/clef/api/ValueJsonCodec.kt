@@ -1,6 +1,7 @@
 package au.clef.api
 
 import au.clef.api.model.MapEntry
+import au.clef.api.model.ScalarValue
 import au.clef.api.model.Value
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -11,10 +12,6 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
-
-//
-// todo Important caveat
-// todo Your current Value.Scalar(val value: Any?) is still broad. That is okay short term, but the codec will become much easier to reason about if you later narrow what scalar payloads are allowed.
 
 class ValueJsonCodec(
     private val classResolver: ClassResolver,
@@ -27,15 +24,7 @@ class ValueJsonCodec(
             is Value.Record -> encodeRecord(value)
             is Value.ListValue -> encodeList(value)
             is Value.MapValue -> encodeMap(value)
-            is Value.Null -> JsonObject(
-                mapOf("kind" to JsonPrimitive("null"))
-            )
-
-            is Value.Instance -> {
-                throw IllegalArgumentException(
-                    "Value.Instance is runtime-only and cannot be encoded to JSON"
-                )
-            }
+            is Value.Null -> JsonObject(mapOf("kind" to JsonPrimitive("null")))
         }
 
     fun decode(json: JsonElement): Value {
@@ -63,49 +52,38 @@ class ValueJsonCodec(
             )
         )
 
-    private fun encodeScalarValue(raw: Any?): JsonElement =
-        when (raw) {
-            null -> JsonNull
-            is JsonElement -> raw
-            is String -> JsonPrimitive(raw)
-            is Int -> JsonPrimitive(raw)
-            is Long -> JsonPrimitive(raw)
-            is Double -> JsonPrimitive(raw)
-            is Float -> JsonPrimitive(raw)
-            is Short -> JsonPrimitive(raw.toInt())
-            is Byte -> JsonPrimitive(raw.toInt())
-            is Boolean -> JsonPrimitive(raw)
-            is Char -> JsonPrimitive(raw.toString())
-            is Enum<*> -> JsonPrimitive(raw.name)
-            else -> {
-                val converter: ScalarConverter<Any> =
-                    scalarRegistry.encoderFor(raw)
-                        ?: throw IllegalArgumentException("No scalar encoder for ${raw::class.java.name}")
-
-                converter.encode(raw)
+    private fun encodeScalarValue(value: ScalarValue): JsonElement =
+        when (value) {
+            is ScalarValue.StringValue -> JsonPrimitive(value.value)
+            is ScalarValue.BooleanValue -> JsonPrimitive(value.value)
+            is ScalarValue.NumberValue -> {
+                value.value.toLongOrNull()?.let { JsonPrimitive(it) }
+                    ?: value.value.toDoubleOrNull()?.let { JsonPrimitive(it) }
+                    ?: throw IllegalArgumentException("Invalid numeric scalar: ${value.value}")
             }
         }
 
     private fun decodeScalar(obj: JsonObject): Value.Scalar {
-        val jsonValue: JsonElement = obj["value"]
-            ?: throw IllegalArgumentException("Missing 'value' for scalar")
+        val jsonValue: JsonElement =
+            obj["value"] ?: throw IllegalArgumentException("Missing 'value' for scalar")
 
-        return Value.Scalar(
+        val scalarValue: ScalarValue =
             when (jsonValue) {
-                JsonNull -> null
+                JsonNull -> throw IllegalArgumentException("Scalar value must not be null; use Value.Null")
                 is JsonPrimitive -> {
                     if (jsonValue.isString) {
-                        jsonValue.content
+                        ScalarValue.StringValue(jsonValue.content)
                     } else {
-                        jsonValue.booleanOrNull
-                            ?: jsonValue.longOrNull
-                            ?: jsonValue.doubleOrNull
-                            ?: jsonValue.content
+                        jsonValue.booleanOrNull?.let { ScalarValue.BooleanValue(it) }
+                            ?: jsonValue.longOrNull?.let { ScalarValue.NumberValue(it.toString()) }
+                            ?: jsonValue.doubleOrNull?.let { ScalarValue.NumberValue(it.toString()) }
+                            ?: ScalarValue.StringValue(jsonValue.content)
                     }
                 }
-                else -> throw IllegalArgumentException("Scalar value must be a JSON primitive or null")
+                else -> throw IllegalArgumentException("Scalar value must be a JSON primitive")
             }
-        )
+
+        return Value.Scalar(scalarValue)
     }
 
     private fun encodeRecord(value: Value.Record): JsonElement =
@@ -114,16 +92,15 @@ class ValueJsonCodec(
                 "kind" to JsonPrimitive("record"),
                 "type" to JsonPrimitive(value.type.name),
                 "fields" to JsonObject(
-                    value.fields.mapValues { (_, nested: Value) ->
-                        encode(nested)
-                    }
+                    value.fields.mapValues { (_, nested: Value) -> encode(nested) }
                 )
             )
         )
 
     private fun decodeRecord(obj: JsonObject): Value.Record {
-        val typeName: String = obj["type"]?.jsonPrimitive?.content
-            ?: throw IllegalArgumentException("Missing 'type' for record")
+        val typeName: String =
+            obj["type"]?.jsonPrimitive?.content
+                ?: throw IllegalArgumentException("Missing 'type' for record")
 
         val resolved: ResolvedType = classResolver.resolve(typeName)
         require(resolved is ResolvedType.Structured) {
@@ -135,9 +112,7 @@ class ValueJsonCodec(
 
         return Value.Record(
             type = resolved.type,
-            fields = fieldsObject.mapValues { (_, nested: JsonElement) ->
-                decode(nested)
-            }
+            fields = fieldsObject.mapValues { (_, nested: JsonElement) -> decode(nested) }
         )
     }
 
@@ -146,9 +121,7 @@ class ValueJsonCodec(
             mapOf(
                 "kind" to JsonPrimitive("list"),
                 "items" to JsonArray(
-                    value.items.map { item: Value ->
-                        encode(item)
-                    }
+                    value.items.map { item: Value -> encode(item) }
                 )
             )
         )
@@ -158,9 +131,7 @@ class ValueJsonCodec(
             ?: throw IllegalArgumentException("Missing or invalid 'items' for list")
 
         return Value.ListValue(
-            items = itemsArray.map { item: JsonElement ->
-                decode(item)
-            }
+            items = itemsArray.map { item: JsonElement -> decode(item) }
         )
     }
 
@@ -190,11 +161,11 @@ class ValueJsonCodec(
                 val entryObject: JsonObject = entryElement as? JsonObject
                     ?: throw IllegalArgumentException("Map entry must be an object")
 
-                val keyJson: JsonElement = entryObject["key"]
-                    ?: throw IllegalArgumentException("Map entry missing 'key'")
+                val keyJson: JsonElement =
+                    entryObject["key"] ?: throw IllegalArgumentException("Map entry missing 'key'")
 
-                val valueJson: JsonElement = entryObject["value"]
-                    ?: throw IllegalArgumentException("Map entry missing 'value'")
+                val valueJson: JsonElement =
+                    entryObject["value"] ?: throw IllegalArgumentException("Map entry missing 'value'")
 
                 MapEntry(
                     key = decode(keyJson),
@@ -204,4 +175,3 @@ class ValueJsonCodec(
         )
     }
 }
-

@@ -2,11 +2,11 @@ package au.clef.api
 
 import au.clef.api.model.ExecutionDescriptorDto
 import au.clef.api.model.InvocationRequest
+import au.clef.api.model.ScalarValue
 import au.clef.api.model.Value
 import au.clef.engine.ExecutionId
 import au.clef.engine.MethodSource
 import au.clef.engine.reflectionConfig
-import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -29,8 +29,15 @@ class ReflectionServiceApiTest {
         )
             .scalarConverters(
                 scalarConverter<EmailAddress1>(
-                    encode = { JsonPrimitive(it.value) },
-                    decode = { EmailAddress1(it) }
+                    encode = { value: EmailAddress1 ->
+                        ScalarValue.StringValue(value.value)
+                    },
+                    decode = { value: ScalarValue ->
+                        when (value) {
+                            is ScalarValue.StringValue -> EmailAddress1(value.value)
+                            else -> throw IllegalArgumentException("Expected string scalar for EmailAddress")
+                        }
+                    }
                 )
             )
             .build()
@@ -104,19 +111,19 @@ class ReflectionServiceApiTest {
                 descriptor.reflectedName == "sum"
             }
 
-        val response =
+        val response: Value =
             api.invoke(
                 InvocationRequest(
                     executionId = execution.executionId,
                     args = listOf(
-                        Value.Scalar("2"),
-                        Value.Scalar("3")
+                        Value.Scalar(ScalarValue.NumberValue("2")),
+                        Value.Scalar(ScalarValue.NumberValue("3"))
                     )
                 )
             )
 
         val result: Value.Scalar = assertIs(response)
-        assertEquals(5L, result.value)
+        assertEquals(ScalarValue.NumberValue("5"), result.value)
     }
 
     @Test
@@ -126,18 +133,18 @@ class ReflectionServiceApiTest {
                 descriptor.reflectedName == "greet"
             }
 
-        val response =
+        val response: Value =
             api.invoke(
                 InvocationRequest(
                     executionId = execution.executionId,
                     args = listOf(
-                        Value.Scalar("Alice")
+                        Value.Scalar(ScalarValue.StringValue("Alice"))
                     )
                 )
             )
 
         val result: Value.Scalar = assertIs(response)
-        assertEquals("Hello Alice", result.value)
+        assertEquals(ScalarValue.StringValue("Hello Alice"), result.value)
     }
 
     @Test
@@ -147,18 +154,18 @@ class ReflectionServiceApiTest {
                 descriptor.reflectedName == "normalizeEmail"
             }
 
-        val response =
+        val response: Value =
             api.invoke(
                 InvocationRequest(
                     executionId = execution.executionId,
                     args = listOf(
-                        Value.Scalar("  Alice@Example.COM ")
+                        Value.Scalar(ScalarValue.StringValue("  Alice@Example.COM "))
                     )
                 )
             )
 
         val result: Value.Scalar = assertIs(response)
-        assertEquals("alice@example.com", result.value)
+        assertEquals(ScalarValue.StringValue("alice@example.com"), result.value)
     }
 
     @Test
@@ -168,7 +175,7 @@ class ReflectionServiceApiTest {
                 descriptor.reflectedName == "echoRecord"
             }
 
-        val response =
+        val response: Value =
             api.invoke(
                 InvocationRequest(
                     executionId = execution.executionId,
@@ -176,8 +183,8 @@ class ReflectionServiceApiTest {
                         Value.Record(
                             type = SampleRecord::class.java,
                             fields = mapOf(
-                                "name" to Value.Scalar("Bob"),
-                                "age" to Value.Scalar("41")
+                                "name" to Value.Scalar(ScalarValue.StringValue("Bob")),
+                                "age" to Value.Scalar(ScalarValue.NumberValue("41"))
                             )
                         )
                     )
@@ -188,8 +195,8 @@ class ReflectionServiceApiTest {
         val name: Value.Scalar = assertIs(result.fields.getValue("name"))
         val age: Value.Scalar = assertIs(result.fields.getValue("age"))
 
-        assertEquals("Bob", name.value)
-        assertEquals(41L, age.value)
+        assertEquals(ScalarValue.StringValue("Bob"), name.value)
+        assertEquals(ScalarValue.NumberValue("41"), age.value)
     }
 
     @Test
@@ -205,7 +212,7 @@ class ReflectionServiceApiTest {
                     InvocationRequest(
                         executionId = execution.executionId,
                         args = listOf(
-                            Value.Scalar("2")
+                            Value.Scalar(ScalarValue.NumberValue("2"))
                         )
                     )
                 )

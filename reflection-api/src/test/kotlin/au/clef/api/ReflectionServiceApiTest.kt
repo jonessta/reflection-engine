@@ -7,14 +7,7 @@ import au.clef.api.model.Value
 import au.clef.engine.ExecutionId
 import au.clef.engine.MethodSource
 import au.clef.engine.reflectionConfig
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class ReflectionServiceApiTest {
 

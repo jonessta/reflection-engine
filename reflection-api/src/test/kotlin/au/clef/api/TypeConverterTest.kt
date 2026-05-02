@@ -5,13 +5,7 @@ import au.clef.api.model.ScalarValue
 import au.clef.api.model.Value
 import au.clef.engine.ObjectConstructionException
 import java.lang.reflect.Type
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertIs
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class TypeConverterTest {
 

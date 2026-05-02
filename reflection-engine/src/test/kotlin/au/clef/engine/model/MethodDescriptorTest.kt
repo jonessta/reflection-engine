@@ -1,13 +1,8 @@
 package au.clef.engine.model
 
-import kotlin.reflect.jvm.javaMethod
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertNotEquals
-import kotlin.test.assertTrue
-import kotlin.test.fail
 import java.lang.reflect.Method
+import kotlin.reflect.jvm.javaMethod
+import kotlin.test.*
 
 class MethodDescriptorTest {
 

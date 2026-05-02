@@ -3,15 +3,9 @@ package au.clef.api
 import au.clef.api.model.ScalarValue
 import au.clef.api.model.Value
 import au.clef.engine.ObjectConstructionException
-import java.lang.reflect.Array.*
-import java.lang.reflect.Constructor
-import java.lang.reflect.Field
-import java.lang.reflect.GenericArrayType
-import java.lang.reflect.Parameter
-import java.lang.reflect.ParameterizedType
-import java.lang.reflect.Type
-import java.lang.reflect.TypeVariable
-import java.lang.reflect.WildcardType
+import java.lang.reflect.*
+import java.lang.reflect.Array.newInstance
+import java.lang.reflect.Array.set
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
@@ -337,6 +331,7 @@ class TypeConverter(
                 val componentType: Class<*> = rawClassOf(type.genericComponentType)
                 newInstance(componentType, 0).javaClass
             }
+
             is TypeVariable<*> -> rawClassOf(type.bounds.firstOrNull() ?: Any::class.java)
             else -> throw IllegalArgumentException("Unsupported Type: $type")
         }

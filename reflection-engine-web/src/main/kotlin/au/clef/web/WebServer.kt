@@ -9,23 +9,17 @@ import au.clef.api.model.valueSerializersModule
 import au.clef.engine.ReflectionConfig
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.registry.MethodSourceTypes
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.application.Application
-import io.ktor.server.application.install
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.netty.Netty
-import io.ktor.server.plugins.statuspages.StatusPages
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.server.plugins.cors.routing.CORS
-import io.ktor.server.request.receive
-import io.ktor.server.response.respond
-import io.ktor.server.routing.Route
-import io.ktor.server.routing.get
-import io.ktor.server.routing.post
-import io.ktor.server.routing.routing
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.application.*
+import io.ktor.server.engine.*
+import io.ktor.server.netty.*
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -61,13 +55,9 @@ fun Application.configureErrorHandling() {
             cause.printStackTrace()
 
             val response = when (cause) {
-                is IllegalArgumentException -> ErrorResponse(
-                    error = buildErrorMessage(cause)
-                )
+                is IllegalArgumentException -> ErrorResponse(error = buildErrorMessage(cause))
 
-                else -> ErrorResponse(
-                    error = buildErrorMessage(cause)
-                )
+                else -> ErrorResponse(error = buildErrorMessage(cause))
             }
 
             val status = when (cause) {
@@ -101,19 +91,14 @@ class WebServer(
     private val apiConfig: ReflectionApiConfig,
     private val webConfig: WebServerConfig = WebServerConfig()
 ) {
-    constructor(
-        reflectionConfig: ReflectionConfig,
-        webConfig: WebServerConfig = WebServerConfig()
-    ) : this(
+    constructor(reflectionConfig: ReflectionConfig, webConfig: WebServerConfig = WebServerConfig()) : this(
         apiConfig = ReflectionApiConfig(reflectionConfig),
         webConfig = webConfig
     )
 
-    private val reflectionServiceApi: ReflectionServiceApi =
-        ReflectionServiceApi(apiConfig)
+    private val reflectionServiceApi: ReflectionServiceApi = ReflectionServiceApi(apiConfig)
 
-    private val methodSourceTypes: MethodSourceTypes =
-        ReflectionEngine(apiConfig.reflectionConfig)
+    private val methodSourceTypes: MethodSourceTypes = ReflectionEngine(apiConfig.reflectionConfig)
 
     fun start() {
         embeddedServer(
@@ -121,10 +106,7 @@ class WebServer(
             host = webConfig.host,
             port = webConfig.port
         ) {
-            configureJson(
-                methodSourceTypes = methodSourceTypes,
-                scalarTypeRegistry = apiConfig.scalarTypeRegistry
-            )
+            configureJson(methodSourceTypes = methodSourceTypes, scalarTypeRegistry = apiConfig.scalarTypeRegistry)
 
             configureErrorHandling()
 

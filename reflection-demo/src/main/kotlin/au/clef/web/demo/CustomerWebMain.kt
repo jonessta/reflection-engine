@@ -3,9 +3,7 @@ package au.clef.web.demo
 import au.clef.api.reflectionApiConfig
 import au.clef.api.stringScalarConverter
 import au.clef.app.demo.model.*
-import au.clef.engine.MethodSource.Instance
-import au.clef.engine.MethodSource.InstanceMethod
-import au.clef.engine.MethodSource.StaticMethod
+import au.clef.engine.MethodSource.*
 import au.clef.engine.reflectionConfig
 import au.clef.web.WebServer
 import au.clef.web.WebServerConfig

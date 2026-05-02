@@ -5,11 +5,7 @@ import au.clef.api.model.ScalarValue
 import au.clef.api.model.Value
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
+import kotlin.test.*
 
 class ValueJsonCodecTest {
 

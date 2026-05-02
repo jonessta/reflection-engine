@@ -1,5 +1,6 @@
 package au.clef.api
 
+import au.clef.api.json.ValueJsonCodec
 import au.clef.api.model.MapEntry
 import au.clef.api.model.ScalarValue
 import au.clef.api.model.Value
@@ -13,22 +14,7 @@ class ValueJsonCodecTest {
         classResolver = FakeClassResolver().apply {
             putStructured(Person::class.java.name, Person::class.java)
             putStructured(Address3::class.java.name, Address3::class.java)
-        },
-        scalarRegistry = ScalarTypeRegistry(
-            userDefinedConverters = listOf(
-                scalarConverter<CustomerId1>(
-                    encode = { value: CustomerId1 ->
-                        ScalarValue.StringValue(value.value)
-                    },
-                    decode = { value: ScalarValue ->
-                        when (value) {
-                            is ScalarValue.StringValue -> CustomerId1(value.value)
-                            else -> throw IllegalArgumentException("Expected string scalar for CustomerId")
-                        }
-                    }
-                )
-            )
-        )
+        }
     )
 
     @Test
@@ -199,8 +185,7 @@ class ValueJsonCodecTest {
         val scalarResolvingCodec: ValueJsonCodec = ValueJsonCodec(
             classResolver = FakeClassResolver().apply {
                 putScalar(String::class.java.name, String::class.java)
-            },
-            scalarRegistry = ScalarTypeRegistry()
+            }
         )
 
         val json = JsonObject(

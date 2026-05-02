@@ -38,14 +38,8 @@ class ValueKSerializer(
     }
 }
 
-fun valueSerializersModule(
-    classResolver: ClassResolver,
-    scalarTypeRegistry: ScalarTypeRegistry
-): SerializersModule {
-    val codec = ValueJsonCodec(
-        classResolver = classResolver,
-        scalarRegistry = scalarTypeRegistry
-    )
+fun valueSerializersModule(classResolver: ClassResolver): SerializersModule {
+    val codec = ValueJsonCodec(classResolver)
 
     return SerializersModule {
         contextual(ExecutionId::class, ExecutionIdSerializer)

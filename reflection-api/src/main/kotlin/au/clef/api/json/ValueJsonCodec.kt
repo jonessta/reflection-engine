@@ -16,10 +16,7 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 
-class ValueJsonCodec(
-    private val classResolver: ClassResolver,
-    private val scalarRegistry: ScalarTypeRegistry
-) {
+class ValueJsonCodec(private val classResolver: ClassResolver) {
 
     fun encode(value: Value): JsonElement =
         when (value) {

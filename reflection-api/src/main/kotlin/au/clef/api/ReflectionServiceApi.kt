@@ -33,8 +33,7 @@ class ReflectionServiceApi(
         ResponseValueMapper(scalarRegistry)
 
     fun serializersModule() = valueSerializersModule(
-        classResolver = DefaultClassResolver(engine, scalarRegistry),
-        scalarTypeRegistry = scalarRegistry
+        DefaultClassResolver(engine, scalarRegistry)
     )
 
     fun invoke(request: InvocationRequest): Value {

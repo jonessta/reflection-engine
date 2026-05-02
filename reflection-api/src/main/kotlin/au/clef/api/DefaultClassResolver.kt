@@ -28,9 +28,17 @@ class DefaultClassResolver(
     }
 
     override fun resolve(typeName: String): ResolvedType {
-        val clazz: Class<*> =
-            classesByName[typeName]
-                ?: throw IllegalArgumentException("Unknown type: $typeName")
+        val clazz: Class<*> = classesByName[typeName]
+            ?: throw IllegalArgumentException(
+                buildString {
+                    append("Unknown type: ")
+                    append(typeName)
+                    append(". ")
+                    append("If this is a structured request/response type, add it to reflectionConfig(...).supportingTypes(...). ")
+                    append("Known types: ")
+                    append(classesByName.keys.sorted().joinToString(", "))
+                }
+            )
 
         return if (scalarRegistry.isScalarLike(clazz)) {
             ResolvedType.Scalar(clazz)

@@ -102,7 +102,18 @@ class ValueJsonCodec(
             obj["type"]?.jsonPrimitive?.content
                 ?: throw IllegalArgumentException("Missing 'type' for record")
 
-        val resolved: ResolvedType = classResolver.resolve(typeName)
+        val resolved: ResolvedType =
+            try {
+                classResolver.resolve(typeName)
+            } catch (e: IllegalArgumentException) {
+                throw IllegalArgumentException(
+                    "Cannot decode record type '$typeName'. " +
+                            "This type is not known to the API. " +
+                            "If it is a structured model type, add it to reflectionConfig(...).supportingTypes(...).",
+                    e
+                )
+            }
+
         require(resolved is ResolvedType.Structured) {
             "Type $typeName is scalar-like and cannot be a record"
         }

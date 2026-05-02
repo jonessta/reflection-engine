@@ -1,55 +1,33 @@
 package au.clef.web.demo
 
-import au.clef.api.model.ScalarValue
 import au.clef.api.reflectionApiConfig
-import au.clef.api.scalarConverter
-import au.clef.app.demo.model.Address
-import au.clef.app.demo.model.Customer
-import au.clef.app.demo.model.CustomerId
-import au.clef.app.demo.model.CustomerService
-import au.clef.app.demo.model.EmailAddress
-import au.clef.engine.MethodSource
+import au.clef.api.stringScalarConverter
+import au.clef.app.demo.model.*
+import au.clef.engine.MethodSource.Instance
+import au.clef.engine.MethodSource.InstanceMethod
+import au.clef.engine.MethodSource.StaticMethod
 import au.clef.engine.reflectionConfig
 import au.clef.web.WebServer
 import au.clef.web.WebServerConfig
 
 private val customerService: CustomerService = CustomerService()
+private val acmeService: AcmeService = AcmeService()
 
 internal val customerReflectionConfig = reflectionConfig(
-    MethodSource.InstanceMethod(
-        instance = customerService,
-        instanceDescription = "Customer Service",
-        function = CustomerService::findCustomer
-    ),
-    MethodSource.InstanceMethod(
-        instance = customerService,
-        instanceDescription = "Customer Service",
-        function = CustomerService::normalizeEmail
-    )
+    Instance(acmeService, "AcmeService"),
+    InstanceMethod(customerService, "Customer Service", CustomerService::findCustomer),
+    InstanceMethod(customerService, "Customer Service", CustomerService::normalizeEmail),
+    StaticMethod(::myAddKotlinFunction),
+    StaticMethod(Math::class, "min", Int::class, Int::class),
+    StaticMethod(Math::class, "max", Int::class, Int::class)
 )
-    .supportingTypes(Customer::class, Address::class)
+    .supportingTypes(Customer::class, Address::class, Person::class)
     .build()
 
 val customerReflectionApiConfig = reflectionApiConfig(customerReflectionConfig)
     .scalarConverters(
-        scalarConverter<CustomerId>(
-            encode = { value: CustomerId -> ScalarValue.StringValue(value.value) },
-            decode = { value: ScalarValue ->
-                when (value) {
-                    is ScalarValue.StringValue -> CustomerId(value.value)
-                    else -> throw IllegalArgumentException("Expected string scalar for CustomerId")
-                }
-            }
-        ),
-        scalarConverter<EmailAddress>(
-            encode = { value: EmailAddress -> ScalarValue.StringValue(value.value) },
-            decode = { value: ScalarValue ->
-                when (value) {
-                    is ScalarValue.StringValue -> EmailAddress(value.value)
-                    else -> throw IllegalArgumentException("Expected string scalar for EmailAddress")
-                }
-            }
-        )
+        stringScalarConverter(decodeText = ::CustomerId),
+        stringScalarConverter(decodeText = ::EmailAddress)
     )
     .build()
 

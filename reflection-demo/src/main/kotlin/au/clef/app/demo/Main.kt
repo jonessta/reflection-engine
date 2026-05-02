@@ -3,7 +3,7 @@ package au.clef.app.demo
 import au.clef.app.demo.model.AcmeService
 import au.clef.app.demo.model.Address
 import au.clef.app.demo.model.Person
-import au.clef.app.demo.model.add
+import au.clef.app.demo.model.myAddKotlinFunction
 import au.clef.engine.MethodSource.InstanceMethod
 import au.clef.engine.MethodSource.StaticMethod
 import au.clef.engine.ReflectionConfig
@@ -22,7 +22,7 @@ private val PERSON_ADDRESS_METHOD_ID = MethodId.from(AcmeService::class, "person
 
 private val STATIC_JAVA_MATH_MAX_METHOD_ID = MethodId.from(Math::class, "max", Int::class, Int::class)
 
-private val KOTLIN_ADD_METHOD_ID = MethodId.from(::add.javaMethod!!)
+private val KOTLIN_ADD_METHOD_ID = MethodId.from(::myAddKotlinFunction.javaMethod!!)
 
 private val acmeService = AcmeService()
 
@@ -38,7 +38,7 @@ private val reflectionConfig: ReflectionConfig = reflectionConfig(
         methodName = "personAddress",
         Person::class
     ),
-    StaticMethod(::add),
+    StaticMethod(::myAddKotlinFunction),
     StaticMethod(Math::class, "max", Int::class, Int::class)
 )
     .supportingTypes(Person::class, Address::class)

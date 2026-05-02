@@ -17,6 +17,7 @@ import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.server.plugins.statuspages.StatusPages
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.cors.routing.CORS
 import io.ktor.server.request.receive
@@ -54,6 +55,43 @@ fun Application.configureJson(
     }
 }
 
+fun Application.configureErrorHandling() {
+    install(StatusPages) {
+        exception<Throwable> { call, cause ->
+            cause.printStackTrace()
+
+            val response = when (cause) {
+                is IllegalArgumentException -> ErrorResponse(
+                    error = buildErrorMessage(cause)
+                )
+
+                else -> ErrorResponse(
+                    error = buildErrorMessage(cause)
+                )
+            }
+
+            val status = when (cause) {
+                is IllegalArgumentException -> HttpStatusCode.BadRequest
+                else -> HttpStatusCode.InternalServerError
+            }
+
+            call.respond(status, response)
+        }
+    }
+}
+
+private fun buildErrorMessage(throwable: Throwable): String =
+    buildString {
+        append(throwable.message ?: throwable::class.simpleName ?: "Unknown error")
+
+        var cause: Throwable? = throwable.cause
+        while (cause != null) {
+            append("\nCaused by: ")
+            append(cause.message ?: cause::class.simpleName ?: "Unknown cause")
+            cause = cause.cause
+        }
+    }
+
 data class WebServerConfig(
     val port: Int = 8080,
     val host: String = "0.0.0.0"
@@ -88,6 +126,8 @@ class WebServer(
                 scalarTypeRegistry = apiConfig.scalarTypeRegistry
             )
 
+            configureErrorHandling()
+
             install(CORS) {
                 anyHost()
                 allowHeader(HttpHeaders.ContentType)
@@ -120,20 +160,8 @@ fun Route.reflectionRoutes(
     }
 
     post("/invoke") {
-        try {
-            val request: InvocationRequest = call.receive()
-            val response = reflectionService.invoke(request)
-            call.respond(response)
-        } catch (e: IllegalArgumentException) {
-            call.respond(
-                HttpStatusCode.BadRequest,
-                ErrorResponse(e.message ?: "Bad request")
-            )
-        } catch (e: Exception) {
-            call.respond(
-                HttpStatusCode.InternalServerError,
-                ErrorResponse(e.message ?: e::class.simpleName ?: "Invocation failed")
-            )
-        }
+        val request: InvocationRequest = call.receive()
+        val response = reflectionService.invoke(request)
+        call.respond(response)
     }
 }

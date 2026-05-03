@@ -23,7 +23,6 @@ fun generateMetadata(config: MetadataGenerationConfig): Unit {
             methodSources = config.methodSources,
             methodSupportingTypes = config.methodSupportingTypes
         )
-
     val metadata: MetadataRoot =
         MetadataGenerator(methodSourceRegistry).generate()
 

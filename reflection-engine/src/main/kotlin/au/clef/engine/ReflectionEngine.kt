@@ -17,12 +17,9 @@ class ReflectionEngine(
         methodSupportingTypes = reflectionConfig.methodSupportingTypes,
         inheritanceLevel = reflectionConfig.inheritanceLevel
     )
+    override val declaringClasses: List<Class<*>> get() = reflectionRegistry.declaringClasses
 
-    override val declaringClasses: List<Class<*>>
-        get() = reflectionRegistry.declaringClasses
-
-    override val knownClasses: List<Class<*>>
-        get() = reflectionRegistry.knownClasses
+    override val knownClasses: List<Class<*>> get() = reflectionRegistry.knownClasses
 
     fun executionContext(executionId: ExecutionId): ExecutionContext =
         reflectionRegistry.executionContext(executionId)
@@ -30,8 +27,7 @@ class ReflectionEngine(
     fun executionContexts(): Collection<ExecutionContext> =
         reflectionRegistry.allExecutionContexts()
 
-    fun descriptors(clazz: KClass<*>): List<MethodDescriptor> =
-        descriptors(clazz.java)
+    fun descriptors(clazz: KClass<*>): List<MethodDescriptor> = descriptors(clazz.java)
 
     fun descriptors(clazz: Class<*>): List<MethodDescriptor> =
         decorate(reflectionRegistry.descriptors(clazz))
@@ -77,7 +73,6 @@ class ReflectionEngine(
         require(args.size == method.parameterCount) {
             "Expected ${method.parameterCount} args for ${descriptor.id}, got ${args.size}"
         }
-
         val target = if (descriptor.isStatic) null else instance
         return method.invoke(target, *args.toTypedArray())
     }

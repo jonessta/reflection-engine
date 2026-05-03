@@ -24,7 +24,9 @@ internal val acmeConfig = reflectionConfig(
     .build()
 
 val webConfig = WebServerConfig()
+
 val config = ReflectionApiConfig(acmeConfig)
+
 fun main() {
     WebServer(config, webConfig).start()
 }

@@ -8,15 +8,11 @@ import au.clef.metadata.model.MetadataRoot
 import au.clef.metadata.model.MethodMetadata
 import au.clef.metadata.model.ParamMetadata
 
-class MetadataValidator(
-    private val methodSourceRegistry: MethodSourceRegistry
-) {
+class MetadataValidator(private val methodSourceRegistry: MethodSourceRegistry) {
 
     fun validate(metadata: MetadataRoot): List<ValidationIssue> {
         val issues: MutableList<ValidationIssue> = mutableListOf()
-
         val allDescriptors: List<MethodDescriptor> = methodSourceRegistry.allDescriptors()
-
         val descriptorMap: Map<MethodId, MethodDescriptor> =
             allDescriptors.associateBy { descriptor: MethodDescriptor ->
                 descriptor.id
@@ -54,7 +50,6 @@ class MetadataValidator(
                 if (index >= descriptor.parameters.size) {
                     return@forEachIndexed
                 }
-
                 val descriptorParam: ParamDescriptor = descriptor.parameters[index]
 
                 if (paramMetadata.name != null && paramMetadata.name.isBlank()) {

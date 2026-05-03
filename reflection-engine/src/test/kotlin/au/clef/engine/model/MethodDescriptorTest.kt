@@ -14,7 +14,6 @@ class MethodDescriptorTest {
                 String::class.java,
                 Int::class.javaPrimitiveType!!
             )
-
         val descriptor: MethodDescriptor = MethodDescriptor.from(javaMethod)
 
         assertEquals(MethodId.from(javaMethod), descriptor.id)
@@ -24,14 +23,12 @@ class MethodDescriptorTest {
         assertFalse(descriptor.isStatic)
 
         assertEquals(2, descriptor.parameters.size)
-
         val first: ParamDescriptor = descriptor.parameters[0]
         assertEquals(0, first.index)
         assertEquals(String::class.java, first.logicalType)
         assertEquals(String::class.java, first.runtimeType)
         assertEquals(first.reflectedName, first.name)
         assertTrue(first.nullable)
-
         val second: ParamDescriptor = descriptor.parameters[1]
         assertEquals(1, second.index)
         assertEquals<Class<out Any>?>(Int::class.javaPrimitiveType, second.logicalType)
@@ -48,9 +45,7 @@ class MethodDescriptorTest {
                 String::class.java,
                 Int::class.javaPrimitiveType!!
             )
-
         val methodId: MethodId = MethodId.from(javaMethod)
-
         val descriptor: MethodDescriptor =
             MethodDescriptor.from(
                 javaMethod = javaMethod,
@@ -71,9 +66,7 @@ class MethodDescriptorTest {
         val javaMethod: Method =
             SampleKotlinMethods::nullableEcho.javaMethod
                 ?: fail("Expected javaMethod for nullableEcho")
-
         val methodId: MethodId = MethodId.from(javaMethod)
-
         val descriptor: MethodDescriptor =
             MethodDescriptor.from(
                 kotlinFunction = SampleKotlinMethods::nullableEcho,
@@ -89,7 +82,6 @@ class MethodDescriptorTest {
         assertFalse(descriptor.isStatic)
 
         assertEquals(2, descriptor.parameters.size)
-
         val first: ParamDescriptor = descriptor.parameters[0]
         assertEquals(0, first.index)
         assertEquals(String::class.java, first.logicalType)
@@ -97,7 +89,6 @@ class MethodDescriptorTest {
         assertEquals("value", first.reflectedName)
         assertEquals("value", first.name)
         assertTrue(first.nullable)
-
         val second: ParamDescriptor = descriptor.parameters[1]
         assertEquals(1, second.index)
         assertEquals(Int::class.javaObjectType, second.logicalType)
@@ -115,7 +106,6 @@ class MethodDescriptorTest {
                 Int::class.javaPrimitiveType!!,
                 Int::class.javaPrimitiveType!!
             )
-
         val descriptor: MethodDescriptor = MethodDescriptor.from(javaMethod)
 
         assertTrue(descriptor.isStatic)
@@ -130,9 +120,7 @@ class MethodDescriptorTest {
                 String::class.java,
                 Int::class.javaPrimitiveType!!
             )
-
         val original: MethodDescriptor = MethodDescriptor.from(javaMethod)
-
         val updatedParameters: List<ParamDescriptor> =
             listOf(
                 ParamDescriptor(
@@ -145,7 +133,6 @@ class MethodDescriptorTest {
                 ),
                 original.parameters[1]
             )
-
         val updated: MethodDescriptor =
             original.withMetadata(
                 displayName = "Joined Text",
@@ -169,7 +156,6 @@ class MethodDescriptorTest {
                 String::class.java,
                 Int::class.javaPrimitiveType!!
             )
-
         val first: MethodDescriptor =
             MethodDescriptor.from(
                 javaMethod = javaMethod,
@@ -177,7 +163,6 @@ class MethodDescriptorTest {
                 logicalMethodName = "joinA",
                 displayName = "First"
             )
-
         val second: MethodDescriptor =
             MethodDescriptor.from(
                 javaMethod = javaMethod,
@@ -198,13 +183,11 @@ class MethodDescriptorTest {
                 String::class.java,
                 Int::class.javaPrimitiveType!!
             )
-
         val secondMethod: Method =
             SampleJavaMethods::class.java.getDeclaredMethod(
                 "echo",
                 String::class.java
             )
-
         val first: MethodDescriptor = MethodDescriptor.from(firstMethod)
         val second: MethodDescriptor = MethodDescriptor.from(secondMethod)
 
@@ -218,7 +201,6 @@ class MethodDescriptorTest {
                 "echo",
                 String::class.java
             )
-
         val descriptor: MethodDescriptor =
             MethodDescriptor.from(
                 javaMethod = javaMethod,
@@ -226,7 +208,6 @@ class MethodDescriptorTest {
                 logicalMethodName = "logicalEcho",
                 displayName = "Echo"
             )
-
         val text: String = descriptor.toString()
 
         assertTrue(text.contains("MethodDescriptor("))
@@ -252,8 +233,8 @@ object SampleKotlinMethods {
 }
 
 class SampleStatics1 {
-
     companion object {
+
         @JvmStatic
         fun sum(a: Int, b: Int): Int =
             a + b

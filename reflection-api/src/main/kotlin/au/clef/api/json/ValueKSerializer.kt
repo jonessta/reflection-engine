@@ -14,17 +14,13 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonEncoder
 import kotlinx.serialization.modules.SerializersModule
 
-class ValueKSerializer(
-    private val codec: ValueJsonCodec
-) : KSerializer<Value> {
+class ValueKSerializer(private val codec: ValueJsonCodec) : KSerializer<Value> {
 
-    override val descriptor: SerialDescriptor =
-        buildClassSerialDescriptor("Value")
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("Value")
 
     override fun serialize(encoder: Encoder, value: Value) {
         val jsonEncoder: JsonEncoder = encoder as? JsonEncoder
             ?: error("ValueKSerializer only supports JSON")
-
         val element: JsonElement = codec.encode(value)
         jsonEncoder.encodeJsonElement(element)
     }
@@ -32,7 +28,6 @@ class ValueKSerializer(
     override fun deserialize(decoder: Decoder): Value {
         val jsonDecoder: JsonDecoder = decoder as? JsonDecoder
             ?: error("ValueKSerializer only supports JSON")
-
         val element: JsonElement = jsonDecoder.decodeJsonElement()
         return codec.decode(element)
     }

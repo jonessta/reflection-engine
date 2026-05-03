@@ -13,6 +13,7 @@ import java.util.*
 import kotlin.reflect.KClass
 
 interface ScalarConverter<T : Any> {
+
     val type: KClass<T>
     fun encode(value: T): ScalarValue
     fun decode(value: ScalarValue): T
@@ -34,10 +35,8 @@ inline fun <reified T : Any> stringScalarConverter(
 ): ScalarConverter<T> = scalarConverter(
     encode = { value: T -> ScalarValue.StringValue(encodeText(value)) },
     decode = { value: ScalarValue ->
-        when (value) {
-            is ScalarValue.StringValue -> decodeText(value.value)
-            else -> throw IllegalArgumentException("Expected string scalar")
-        }
+        if (value is ScalarValue.StringValue) decodeText(value.value)
+        else throw IllegalArgumentException("Expected string scalar")
     }
 )
 
@@ -48,10 +47,8 @@ private inline fun <reified T : Any> numberScalarConverter(
     scalarConverter(
         encode = { value: T -> ScalarValue.NumberValue(encodeText(value)) },
         decode = { value: ScalarValue ->
-            when (value) {
-                is ScalarValue.NumberValue -> decodeText(value.value)
-                else -> throw IllegalArgumentException("Expected numeric scalar")
-            }
+            if (value is ScalarValue.NumberValue) decodeText(value.value)
+            else throw IllegalArgumentException("Expected numeric scalar")
         }
     )
 

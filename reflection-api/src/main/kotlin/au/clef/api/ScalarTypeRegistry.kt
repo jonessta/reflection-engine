@@ -1,8 +1,7 @@
 package au.clef.api
 
-class ScalarTypeRegistry(
-    userDefinedConverters: List<ScalarConverter<out Any>> = emptyList()
-) {
+class ScalarTypeRegistry(userDefinedConverters: List<ScalarConverter<out Any>> = emptyList()) {
+
     private val decoderMap: Map<Class<*>, ScalarConverter<out Any>> =
         (userDefinedConverters + DefaultScalarConverters.all)
             .associateBy { converter: ScalarConverter<out Any> ->

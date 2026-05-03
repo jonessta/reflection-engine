@@ -20,10 +20,8 @@ class ValueJsonCodecTest {
     @Test
     fun encodeDecode_stringScalar_roundTrips() {
         val value: Value = Value.Scalar(ScalarValue.StringValue("abc"))
-
         val json = codec.encode(value)
         val decoded: Value = codec.decode(json)
-
         val scalar: Value.Scalar = assertIs(decoded)
         assertEquals(ScalarValue.StringValue("abc"), scalar.value)
     }
@@ -31,12 +29,10 @@ class ValueJsonCodecTest {
     @Test
     fun encodeDecode_intScalar_roundTripsAsNumber() {
         val value: Value = Value.Scalar(ScalarValue.NumberValue("123"))
-
         val json = codec.encode(value)
         val obj: JsonObject = assertIs(json)
         assertEquals(JsonPrimitive("scalar"), obj["kind"])
         assertEquals(JsonPrimitive(123), obj["value"])
-
         val decoded: Value = codec.decode(json)
         val scalar: Value.Scalar = assertIs(decoded)
         assertEquals(ScalarValue.NumberValue("123"), scalar.value)
@@ -45,10 +41,8 @@ class ValueJsonCodecTest {
     @Test
     fun encodeDecode_booleanScalar_roundTrips() {
         val value: Value = Value.Scalar(ScalarValue.BooleanValue(true))
-
         val json = codec.encode(value)
         val decoded: Value = codec.decode(json)
-
         val scalar: Value.Scalar = assertIs(decoded)
         assertEquals(ScalarValue.BooleanValue(true), scalar.value)
     }
@@ -56,12 +50,10 @@ class ValueJsonCodecTest {
     @Test
     fun encodeDecode_customScalar_roundTrips() {
         val value: Value = Value.Scalar(ScalarValue.StringValue("cust-123"))
-
         val json = codec.encode(value)
         val obj: JsonObject = assertIs(json)
         assertEquals(JsonPrimitive("scalar"), obj["kind"])
         assertEquals(JsonPrimitive("cust-123"), obj["value"])
-
         val decoded: Value = codec.decode(json)
         val scalar: Value.Scalar = assertIs(decoded)
         assertEquals(ScalarValue.StringValue("cust-123"), scalar.value)
@@ -84,10 +76,8 @@ class ValueJsonCodecTest {
                 Value.Null
             )
         )
-
         val json = codec.encode(value)
         val decoded: Value = codec.decode(json)
-
         val list: Value.ListValue = assertIs(decoded)
         assertEquals(3, list.items.size)
         assertEquals(ScalarValue.StringValue("a"), assertIs<Value.Scalar>(list.items[0]).value)
@@ -110,10 +100,8 @@ class ValueJsonCodecTest {
                 )
             )
         )
-
         val json = codec.encode(value)
         val decoded: Value = codec.decode(json)
-
         val record: Value.Record = assertIs(decoded)
         assertEquals(Person::class.java, record.type)
         assertEquals(
@@ -124,7 +112,6 @@ class ValueJsonCodecTest {
             ScalarValue.NumberValue("41"),
             assertIs<Value.Scalar>(record.fields.getValue("age")).value
         )
-
         val address: Value.Record = assertIs(record.fields.getValue("address"))
         assertEquals(Address3::class.java, address.type)
         assertEquals(
@@ -151,13 +138,10 @@ class ValueJsonCodecTest {
                 )
             )
         )
-
         val json = codec.encode(value)
         val decoded: Value = codec.decode(json)
-
         val map: Value.MapValue = assertIs(decoded)
         assertEquals(2, map.entries.size)
-
         val first: MapEntry = map.entries[0]
         assertEquals(
             ScalarValue.StringValue("one"),
@@ -167,7 +151,6 @@ class ValueJsonCodecTest {
             ScalarValue.NumberValue("1"),
             assertIs<Value.Scalar>(first.value).value
         )
-
         val second: MapEntry = map.entries[1]
         assertEquals(
             ScalarValue.NumberValue("2"),
@@ -187,7 +170,6 @@ class ValueJsonCodecTest {
                 putScalar(String::class.java.name, String::class.java)
             }
         )
-
         val json = JsonObject(
             mapOf(
                 "kind" to JsonPrimitive("record"),
@@ -195,7 +177,6 @@ class ValueJsonCodecTest {
                 "fields" to JsonObject(emptyMap())
             )
         )
-
         val ex: IllegalArgumentException = assertFailsWith {
             scalarResolvingCodec.decode(json)
         }
@@ -210,7 +191,6 @@ class ValueJsonCodecTest {
                 "value" to JsonPrimitive("x")
             )
         )
-
         val ex: IllegalArgumentException = assertFailsWith {
             codec.decode(json)
         }
@@ -225,7 +205,6 @@ class ValueJsonCodecTest {
                 "kind" to JsonPrimitive("mystery")
             )
         )
-
         val ex: IllegalArgumentException = assertFailsWith {
             codec.decode(json)
         }
@@ -237,7 +216,6 @@ class ValueJsonCodecTest {
 private class FakeClassResolver : ClassResolver {
 
     private val values: MutableMap<String, ResolvedType> = linkedMapOf()
-
     fun putScalar(typeName: String, clazz: Class<*>) {
         values[typeName] = ResolvedType.Scalar(clazz)
     }
@@ -252,6 +230,5 @@ private class FakeClassResolver : ClassResolver {
 
 @JvmInline
 value class CustomerId(val value: String)
-
 class Person
 class Address

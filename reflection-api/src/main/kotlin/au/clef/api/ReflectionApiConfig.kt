@@ -6,12 +6,14 @@ data class ReflectionApiConfig(
     val reflectionConfig: ReflectionConfig,
     val userDefinedScalarConverters: List<ScalarConverter<out Any>> = emptyList()
 ) {
+
     val scalarTypeRegistry: ScalarTypeRegistry = ScalarTypeRegistry(userDefinedScalarConverters)
 }
 
 class ReflectionApiConfigBuilder(
     private val reflectionConfig: ReflectionConfig
 ) {
+
     private val userDefinedScalarConverters = mutableListOf<ScalarConverter<out Any>>()
 
     fun scalarConverter(converter: ScalarConverter<out Any>): ReflectionApiConfigBuilder =

@@ -8,6 +8,7 @@ import kotlin.reflect.jvm.javaMethod
 sealed class MethodSource(val declaringClass: KClass<*>) {
 
     interface ExposableInstance {
+
         val instanceDescription: String
         val instance: Any
     }
@@ -21,6 +22,7 @@ sealed class MethodSource(val declaringClass: KClass<*>) {
      * Expose exactly one static method.
      */
     class StaticMethod : MethodSource {
+
         val methodId: MethodId
 
         constructor(declaringClass: KClass<*>, methodName: String, vararg parameterTypes: KClass<*>)
@@ -81,6 +83,7 @@ sealed class MethodSource(val declaringClass: KClass<*>) {
         )
 
         private companion object {
+
             fun validatedMethodId(
                 declaringClass: KClass<*>,
                 methodName: String,
@@ -88,7 +91,6 @@ sealed class MethodSource(val declaringClass: KClass<*>) {
             ): MethodId {
                 val requestedId: MethodId =
                     MethodId.from(declaringClass, methodName, *parameterTypes)
-
                 val matchingFunction: KFunction<*>? =
                     declaringClass.members
                         .filterIsInstance<KFunction<*>>()
@@ -103,7 +105,6 @@ sealed class MethodSource(val declaringClass: KClass<*>) {
                     val javaMethod = requireNotNull(matchingFunction.javaMethod) {
                         "Function $methodName does not have a Java method"
                     }
-
                     val actualId: MethodId = MethodId.from(javaMethod)
 
                     require(requestedId == actualId) {

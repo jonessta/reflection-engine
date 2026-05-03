@@ -9,13 +9,12 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 object ExecutionIdSerializer : KSerializer<ExecutionId> {
+
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("ExecutionId", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, value: ExecutionId) {
-        encoder.encodeString(value.value)
-    }
+    override fun serialize(encoder: Encoder, value: ExecutionId) =
+        encoder.encodeString(value.toString())
 
-    override fun deserialize(decoder: Decoder): ExecutionId =
-        ExecutionId(decoder.decodeString())
+    override fun deserialize(decoder: Decoder): ExecutionId = ExecutionId(decoder.decodeString())
 }

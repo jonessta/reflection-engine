@@ -9,12 +9,12 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 object MethodIdSerializer : KSerializer<MethodId> {
+
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("MethodId", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, value: MethodId) {
-        encoder.encodeString(value.toString())
-    }
+    override fun serialize(encoder: Encoder, value: MethodId) =
+        encoder.encodeString(value.value)
 
     override fun deserialize(decoder: Decoder): MethodId =
         MethodId.fromValue(decoder.decodeString())

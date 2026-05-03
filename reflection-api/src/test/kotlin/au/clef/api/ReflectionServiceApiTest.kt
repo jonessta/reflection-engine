@@ -79,7 +79,6 @@ class ReflectionServiceApiTest {
             }
 
         assertEquals(1, normalizeDescriptor.parameters.size)
-
         val param = normalizeDescriptor.parameters.single()
         assertEquals(EmailAddress1::class.java.name, param.type)
         assertTrue(param.scalarLike)
@@ -91,7 +90,6 @@ class ReflectionServiceApiTest {
             api.executionDescriptors().first { descriptor: ExecutionDescriptorDto ->
                 descriptor.reflectedName == "echoRecord"
             }
-
         val param = echoRecordDescriptor.parameters.single()
         assertEquals(SampleRecord::class.java.name, param.type)
         assertFalse(param.scalarLike)
@@ -103,7 +101,6 @@ class ReflectionServiceApiTest {
             api.executionDescriptors().first { descriptor: ExecutionDescriptorDto ->
                 descriptor.reflectedName == "sum"
             }
-
         val response: Value =
             api.invoke(
                 InvocationRequest(
@@ -114,7 +111,6 @@ class ReflectionServiceApiTest {
                     )
                 )
             )
-
         val result: Value.Scalar = assertIs(response)
         assertEquals(ScalarValue.NumberValue("5"), result.value)
     }
@@ -125,7 +121,6 @@ class ReflectionServiceApiTest {
             api.executionDescriptors().first { descriptor: ExecutionDescriptorDto ->
                 descriptor.reflectedName == "greet"
             }
-
         val response: Value =
             api.invoke(
                 InvocationRequest(
@@ -135,7 +130,6 @@ class ReflectionServiceApiTest {
                     )
                 )
             )
-
         val result: Value.Scalar = assertIs(response)
         assertEquals(ScalarValue.StringValue("Hello Alice"), result.value)
     }
@@ -146,7 +140,6 @@ class ReflectionServiceApiTest {
             api.executionDescriptors().first { descriptor: ExecutionDescriptorDto ->
                 descriptor.reflectedName == "normalizeEmail"
             }
-
         val response: Value =
             api.invoke(
                 InvocationRequest(
@@ -156,7 +149,6 @@ class ReflectionServiceApiTest {
                     )
                 )
             )
-
         val result: Value.Scalar = assertIs(response)
         assertEquals(ScalarValue.StringValue("alice@example.com"), result.value)
     }
@@ -167,7 +159,6 @@ class ReflectionServiceApiTest {
             api.executionDescriptors().first { descriptor: ExecutionDescriptorDto ->
                 descriptor.reflectedName == "echoRecord"
             }
-
         val response: Value =
             api.invoke(
                 InvocationRequest(
@@ -183,7 +174,6 @@ class ReflectionServiceApiTest {
                     )
                 )
             )
-
         val result: Value.Record = assertIs(response)
         val name: Value.Scalar = assertIs(result.fields.getValue("name"))
         val age: Value.Scalar = assertIs(result.fields.getValue("age"))
@@ -198,7 +188,6 @@ class ReflectionServiceApiTest {
             api.executionDescriptors().first { descriptor: ExecutionDescriptorDto ->
                 descriptor.reflectedName == "sum"
             }
-
         val ex: IllegalArgumentException =
             assertFailsWith {
                 api.invoke(
@@ -237,7 +226,6 @@ class ReflectionServiceApiTest {
             }
 
         assertEquals(1, descriptor.parameters.size)
-
         val param = descriptor.parameters.single()
         assertEquals(0, param.index)
         assertEquals(String::class.java.name, param.type)
@@ -270,8 +258,8 @@ class SampleService {
 }
 
 class SampleStatics {
-
     companion object {
+
         @JvmStatic
         fun sum(a: Int, b: Int): Int =
             a + b

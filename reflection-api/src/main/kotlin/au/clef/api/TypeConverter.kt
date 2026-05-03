@@ -12,15 +12,12 @@ import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.javaType
 
-class TypeConverter(
-    private val scalarRegistry: ScalarTypeRegistry
-) {
+class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
 
     fun materialize(value: Value, targetType: Class<*>): Any? =
         materializeInternal(value, targetType)
 
-    fun materialize(value: Value, targetType: Type): Any? =
-        materializeInternal(value, targetType)
+    fun materialize(value: Value, targetType: Type): Any? = materializeInternal(value, targetType)
 
     fun supportsScalarTarget(targetType: Class<*>): Boolean =
         scalarRegistry.isScalarLike(targetType)
@@ -33,20 +30,11 @@ class TypeConverter(
         }
 
         return when (value) {
-            is Value.Scalar ->
-                convertScalar(value.value, target)
-
-            is Value.Record ->
-                buildObject(value, rawTarget)
-
-            is Value.ListValue ->
-                convertList(value, target)
-
-            is Value.MapValue ->
-                convertMap(value, target)
-
-            Value.Null ->
-                error("Value.Null handled earlier")
+            is Value.Scalar -> convertScalar(value.value, target)
+            is Value.Record -> buildObject(value, rawTarget)
+            is Value.ListValue -> convertList(value, target)
+            is Value.MapValue -> convertMap(value, target)
+            Value.Null -> error("Value.Null handled earlier")
         }
     }
 
@@ -59,9 +47,7 @@ class TypeConverter(
                 is ScalarValue.StringValue -> value.value
                 is ScalarValue.BooleanValue -> value.value
                 is ScalarValue.NumberValue -> {
-                    value.value.toLongOrNull()
-                        ?: value.value.toDoubleOrNull()
-                        ?: value.value
+                    value.value.toLongOrNull() ?: value.value.toDoubleOrNull() ?: value.value
                 }
             }
         }
@@ -82,10 +68,8 @@ class TypeConverter(
                 else -> throw TypeMismatchException(Value.Scalar(value), rawTarget)
             }
         }
-
-        val decoder: ScalarConverter<Any> =
-            scalarRegistry.decoderFor(wrappedTarget)
-                ?: throw TypeMismatchException(Value.Scalar(value), rawTarget)
+        val decoder: ScalarConverter<Any> = scalarRegistry.decoderFor(wrappedTarget)
+            ?: throw TypeMismatchException(Value.Scalar(value), rawTarget)
 
         return try {
             decoder.decode(value)
@@ -96,18 +80,16 @@ class TypeConverter(
 
     private fun convertList(value: Value.ListValue, target: Type): Any {
         val rawTarget: Class<*> = rawClassOf(target)
-
         val elementType: Type =
             when {
                 rawTarget.isArray -> rawTarget.componentType
-                target is ParameterizedType -> target.actualTypeArguments.getOrNull(0) ?: Any::class.java
+                target is ParameterizedType -> target.actualTypeArguments.getOrNull(0)
+                    ?: Any::class.java
+
                 else -> Any::class.java
             }
-
         val items: List<Any?> =
-            value.items.map { item: Value ->
-                materializeInternal(item, elementType)
-            }
+            value.items.map { item: Value -> materializeInternal(item, elementType) }
 
         return when {
             rawTarget.isArray -> {
@@ -119,18 +101,13 @@ class TypeConverter(
                 array
             }
 
-            Set::class.java.isAssignableFrom(rawTarget) -> {
-                items.toSet()
-            }
-
+            Set::class.java.isAssignableFrom(rawTarget) -> items.toSet()
             List::class.java.isAssignableFrom(rawTarget) ||
                     Collection::class.java.isAssignableFrom(rawTarget) -> {
                 items.toMutableList()
             }
 
-            else -> {
-                throw TypeMismatchException(value, rawTarget)
-            }
+            else -> throw TypeMismatchException(value, rawTarget)
         }
     }
 
@@ -140,7 +117,6 @@ class TypeConverter(
         if (!Map::class.java.isAssignableFrom(rawTarget)) {
             throw TypeMismatchException(value, rawTarget)
         }
-
         val keyType: Type =
             (target as? ParameterizedType)?.actualTypeArguments?.getOrNull(0)
                 ?: Any::class.java
@@ -158,50 +134,41 @@ class TypeConverter(
             .toMutableMap()
     }
 
-    private fun buildObject(value: Value.Record, target: Class<*>): Any {
-        return tryBuildKotlinObject(value, target)
+    private fun buildObject(value: Value.Record, target: Class<*>): Any =
+        tryBuildKotlinObject(value, target)
             ?: tryBuildWithSingleJavaConstructor(value, target)
             ?: tryBuildWithNoArgAndFields(value, target)
             ?: throw ObjectConstructionException("No construction strategy for ${target.name}")
-    }
 
     private fun tryBuildKotlinObject(value: Value.Record, target: Class<*>): Any? {
         val kClass: KClass<*> = target.kotlin
-        val primaryConstructor: KFunction<Any>? = kClass.primaryConstructor
-
-        if (primaryConstructor == null) {
-            return null
-        }
-
+        val primaryConstructor: KFunction<Any> = kClass.primaryConstructor ?: return null
         val constructorParameterNames: Set<String> =
-            primaryConstructor.parameters.mapNotNull { parameter: KParameter ->
-                parameter.name
-            }.toSet()
+            primaryConstructor.parameters.mapNotNull { parameter: KParameter -> parameter.name }
+                .toSet()
 
         if ((value.fields.keys - constructorParameterNames).isNotEmpty()) {
             return null
         }
-
         val arguments: Map<KParameter, Any?> =
-            primaryConstructor.parameters
-                .associateWith { parameter: KParameter ->
-                    val parameterName: String =
-                        parameter.name
-                            ?: throw ObjectConstructionException(
-                                "Unnamed Kotlin constructor parameter on ${target.name}"
-                            )
-
-                    val fieldValue: Value? = value.fields[parameterName]
-
-                    when {
-                        fieldValue != null -> materializeInternal(fieldValue, parameter.type.javaType)
-                        parameter.isOptional -> null
-                        parameter.type.isMarkedNullable -> null
-                        else -> throw ObjectConstructionException(
-                            "Missing mandatory parameter '$parameterName' for ${target.name}"
+            primaryConstructor.parameters.associateWith { parameter: KParameter ->
+                val parameterName: String =
+                    parameter.name
+                        ?: throw ObjectConstructionException(
+                            "Unnamed Kotlin constructor parameter on ${target.name}"
                         )
-                    }
+                val fieldValue: Value? = value.fields[parameterName]
+
+                when {
+                    fieldValue != null -> materializeInternal(fieldValue, parameter.type.javaType)
+
+                    parameter.isOptional -> null
+                    parameter.type.isMarkedNullable -> null
+                    else -> throw ObjectConstructionException(
+                        "Missing mandatory parameter '$parameterName' for ${target.name}"
+                    )
                 }
+            }
                 .filterNot { entry: Map.Entry<KParameter, Any?> ->
                     entry.key.isOptional && value.fields[entry.key.name] == null
                 }
@@ -218,22 +185,15 @@ class TypeConverter(
         }
     }
 
-    private fun tryBuildWithSingleJavaConstructor(
-        value: Value.Record,
-        target: Class<*>
-    ): Any? {
-        val constructor: Constructor<*> =
-            target.declaredConstructors.singleOrNull() ?: return null
-
+    private fun tryBuildWithSingleJavaConstructor(value: Value.Record, target: Class<*>): Any? {
+        val constructor: Constructor<*> = target.declaredConstructors.singleOrNull() ?: return null
         if (constructor.parameterCount == 0) {
             return null
         }
-
         val arguments: List<Any?> =
             constructor.parameters.mapIndexed { index: Int, parameter: Parameter ->
                 val parameterName: String =
                     if (parameter.isNamePresent) parameter.name else "arg$index"
-
                 val fieldValue: Value =
                     value.fields[parameterName]
                         ?: throw ObjectConstructionException(
@@ -256,15 +216,11 @@ class TypeConverter(
         }
     }
 
-    private fun tryBuildWithNoArgAndFields(
-        value: Value.Record,
-        target: Class<*>
-    ): Any? {
+    private fun tryBuildWithNoArgAndFields(value: Value.Record, target: Class<*>): Any? {
         val constructor: Constructor<*> =
             target.declaredConstructors.firstOrNull { ctor: Constructor<*> ->
                 ctor.parameterCount == 0
             } ?: return null
-
         val instance: Any =
             try {
                 constructor.isAccessible = true
@@ -277,11 +233,10 @@ class TypeConverter(
             }
 
         value.fields.forEach { (fieldName: String, fieldValue: Value) ->
-            val field: Field =
-                findField(target, fieldName)
-                    ?: throw ObjectConstructionException(
-                        "Field '$fieldName' not found on ${target.name}"
-                    )
+            val field: Field = findField(target, fieldName)
+                ?: throw ObjectConstructionException(
+                    "Field '$fieldName' not found on ${target.name}"
+                )
 
             try {
                 field.isAccessible = true

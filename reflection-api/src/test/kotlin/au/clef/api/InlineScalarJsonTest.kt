@@ -18,7 +18,6 @@ value class CustomerId1(val value: String)
 
 @JvmInline
 value class EmailAddress(val value: String)
-
 data class Address3(
     val number: Int,
     val street: String,
@@ -33,6 +32,7 @@ data class Customer(
 )
 
 class CustomerService {
+
     fun findCustomer(id: CustomerId1): Customer =
         Customer(
             id = id,
@@ -52,7 +52,6 @@ class CustomerService {
 class InlineScalarJsonTest {
 
     private val customerService: CustomerService = CustomerService()
-
     private val reflectionConfig: ReflectionConfig = reflectionConfig(
         InstanceMethod(
             instance = customerService,
@@ -67,7 +66,6 @@ class InlineScalarJsonTest {
     )
         .supportingTypes(Customer::class, Address3::class)
         .build()
-
     private val scalarTypeRegistry: ScalarTypeRegistry = ScalarTypeRegistry(
         userDefinedConverters = listOf(
             scalarConverter<CustomerId1>(
@@ -94,15 +92,12 @@ class InlineScalarJsonTest {
             )
         )
     )
-
     private val engine: ReflectionEngine = ReflectionEngine(
         reflectionConfig = reflectionConfig
     )
-
     private val requestValueMapper: RequestValueMapper = RequestValueMapper(
         scalarTypeRegistry = scalarTypeRegistry
     )
-
     private val responseValueMapper: ResponseValueMapper = ResponseValueMapper(
         scalarRegistry = scalarTypeRegistry
     )
@@ -115,7 +110,6 @@ class InlineScalarJsonTest {
                 .first { context: ExecutionContext.Instance ->
                     engine.descriptor(context.methodId).reflectedName == "findCustomer"
                 }
-
         val descriptor = engine.descriptor(execution.methodId)
         val param = descriptor.parameters.single()
 
@@ -131,7 +125,6 @@ class InlineScalarJsonTest {
                 .first { context: ExecutionContext.Instance ->
                     engine.descriptor(context.methodId).reflectedName == "findCustomer"
                 }
-
         val response: Value = invoke(
             InvocationRequest(
                 executionId = execution.executionId,
@@ -140,9 +133,7 @@ class InlineScalarJsonTest {
                 )
             )
         )
-
         val result: Value.Record = assertIs(response)
-
         val id: Value.Scalar = assertIs(result.fields.getValue("id"))
         val name: Value.Scalar = assertIs(result.fields.getValue("name"))
         val email: Value.Scalar = assertIs(result.fields.getValue("email"))
@@ -151,7 +142,6 @@ class InlineScalarJsonTest {
         assertEquals(ScalarValue.StringValue("cust-123"), id.value)
         assertEquals(ScalarValue.StringValue("Alice"), name.value)
         assertEquals(ScalarValue.StringValue("alice@example.com"), email.value)
-
         val street: Value.Scalar = assertIs(address.fields.getValue("street"))
         assertEquals(ScalarValue.StringValue("Smith St"), street.value)
     }
@@ -164,7 +154,6 @@ class InlineScalarJsonTest {
                 .first { context: ExecutionContext.Instance ->
                     engine.descriptor(context.methodId).reflectedName == "normalizeEmail"
                 }
-
         val response: Value = invoke(
             InvocationRequest(
                 executionId = execution.executionId,
@@ -173,7 +162,6 @@ class InlineScalarJsonTest {
                 )
             )
         )
-
         val result: Value.Scalar = assertIs(response)
         assertEquals(ScalarValue.StringValue("alice@example.com"), result.value)
     }
@@ -185,12 +173,10 @@ class InlineScalarJsonTest {
         require(request.args.size == descriptor.parameters.size) {
             "Expected ${descriptor.parameters.size} args for ${descriptor.id}, got ${request.args.size}"
         }
-
         val args: List<Any?> =
             request.args.zip(descriptor.parameters).map { (argValue, param) ->
                 requestValueMapper.materialize(argValue, param.runtimeType)
             }
-
         val result: Any? =
             when (executionContext) {
                 is ExecutionContext.Static ->

@@ -1,7 +1,6 @@
 package au.clef.engine.model
 
 sealed class InheritanceLevel {
-
     /**
      * only methods in the class itself
      */
@@ -17,6 +16,7 @@ sealed class InheritanceLevel {
      * Depth(2): class + parent + grandparent
      */
     data class Depth(val value: Int) : InheritanceLevel() {
+
         init {
             require(value >= 0) { "Depth must be >= 0" }
         }

@@ -9,6 +9,7 @@ import au.clef.web.WebServer
 import au.clef.web.WebServerConfig
 
 private val customerService: CustomerService = CustomerService()
+
 private val acmeService: AcmeService = AcmeService()
 
 internal val customerReflectionConfig = reflectionConfig(
@@ -16,6 +17,7 @@ internal val customerReflectionConfig = reflectionConfig(
     InstanceMethod(customerService, "Customer Service", CustomerService::findCustomer),
     InstanceMethod(customerService, "Customer Service", CustomerService::normalizeEmail),
     StaticMethod(::myAddKotlinFunction),
+//    StaticClass(Math::class),
     StaticMethod(Math::class, "min", Int::class, Int::class),
     StaticMethod(Math::class, "max", Int::class, Int::class)
 )
@@ -26,8 +28,7 @@ val apiConfig = reflectionApiConfig(customerReflectionConfig)
     .scalarConverters(
         stringScalarConverter(decodeText = ::CustomerId),
         stringScalarConverter(decodeText = ::EmailAddress)
-    )
-    .build()
+    ).build()
 
 fun main() {
     WebServer(apiConfig, WebServerConfig()).start()

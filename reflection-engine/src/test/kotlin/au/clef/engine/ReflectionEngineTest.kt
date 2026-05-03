@@ -16,7 +16,6 @@ class ReflectionEngineTest {
                 MethodSource.StaticClass(SampleStatics2::class)
             ).build()
         )
-
         val descriptors = engine.descriptors(SampleStatics2::class)
 
         assertTrue(
@@ -33,7 +32,6 @@ class ReflectionEngineTest {
                 MethodSource.StaticClass(SampleStatics2::class)
             ).build()
         )
-
         val byKClass = engine.descriptors(SampleStatics2::class)
         val byClass = engine.descriptors(SampleStatics2::class.java)
 
@@ -47,7 +45,6 @@ class ReflectionEngineTest {
             "greet",
             String::class
         )
-
         val metadata: MetadataRoot = MetadataRoot(
             methods = mapOf(
                 methodId to MethodMetadata(
@@ -58,14 +55,12 @@ class ReflectionEngineTest {
                 )
             )
         )
-
         val engine: ReflectionEngine = ReflectionEngine(
             reflectionConfig = reflectionConfig(
                 MethodSource.Instance(SampleService2(), "Sample Service")
             ).build(),
             metadataRegistry = DescriptorMetadataRegistry(metadata)
         )
-
         val descriptor = engine.descriptor(methodId)
 
         assertEquals("Friendly Greeting", descriptor.displayName)
@@ -79,14 +74,12 @@ class ReflectionEngineTest {
                 MethodSource.StaticClass(SampleStatics2::class)
             ).build()
         )
-
         val methodId: MethodId = MethodId.from(
             SampleStatics2::class,
             "sum",
             Int::class,
             Int::class
         )
-
         val result: Any? = engine.invokeStatic(methodId, 2, 3)
 
         assertEquals(5, result)
@@ -99,16 +92,13 @@ class ReflectionEngineTest {
                 MethodSource.StaticClass(SampleStatics2::class)
             ).build()
         )
-
         val methodId: MethodId = MethodId.from(
             SampleStatics2::class,
             "sum",
             Int::class,
             Int::class
         )
-
         val descriptor = engine.descriptor(methodId)
-
         val result: Any? = engine.invokeStatic(descriptor, listOf(4, 6))
 
         assertEquals(10, result)
@@ -117,19 +107,16 @@ class ReflectionEngineTest {
     @Test
     fun invokeInstance_byMethodId_invokesInstanceMethod() {
         val instance: SampleService2 = SampleService2()
-
         val engine: ReflectionEngine = testEngine(
             reflectionConfig(
                 MethodSource.Instance(instance, "Sample Service")
             ).build()
         )
-
         val methodId: MethodId = MethodId.from(
             SampleService2::class,
             "greet",
             String::class
         )
-
         val result: Any? = engine.invokeInstance(methodId, instance, "Alice")
 
         assertEquals("Hello Alice", result)
@@ -138,21 +125,17 @@ class ReflectionEngineTest {
     @Test
     fun invokeInstance_byDescriptor_invokesInstanceMethod() {
         val instance: SampleService2 = SampleService2()
-
         val engine: ReflectionEngine = testEngine(
             reflectionConfig(
                 MethodSource.Instance(instance, "Sample Service")
             ).build()
         )
-
         val methodId: MethodId = MethodId.from(
             SampleService2::class,
             "greet",
             String::class
         )
-
         val descriptor = engine.descriptor(methodId)
-
         val result: Any? = engine.invokeInstance(descriptor, instance, listOf("Bob"))
 
         assertEquals("Hello Bob", result)
@@ -165,14 +148,12 @@ class ReflectionEngineTest {
                 MethodSource.StaticClass(SampleStatics2::class)
             ).build()
         )
-
         val methodId: MethodId = MethodId.from(
             SampleStatics2::class,
             "sum",
             Int::class,
             Int::class
         )
-
         val ex: IllegalArgumentException =
             try {
                 engine.invokeStatic(methodId, 1)
@@ -187,19 +168,16 @@ class ReflectionEngineTest {
     @Test
     fun invokeInstance_throwsWhenArgCountIsWrong() {
         val instance: SampleService2 = SampleService2()
-
         val engine: ReflectionEngine = testEngine(
             reflectionConfig(
                 MethodSource.Instance(instance, "Sample Service")
             ).build()
         )
-
         val methodId: MethodId = MethodId.from(
             SampleService2::class,
             "greet",
             String::class
         )
-
         val ex: IllegalArgumentException =
             try {
                 engine.invokeInstance(methodId, instance, emptyList())
@@ -214,21 +192,17 @@ class ReflectionEngineTest {
     @Test
     fun invokeInstance_throwsWhenDescriptorIsInstanceMethod_andInstanceIsNull() {
         val instance: SampleService2 = SampleService2()
-
         val engine: ReflectionEngine = testEngine(
             reflectionConfig(
                 MethodSource.Instance(instance, "Sample Service")
             ).build()
         )
-
         val methodId: MethodId = MethodId.from(
             SampleService2::class,
             "greet",
             String::class
         )
-
         val descriptor = engine.descriptor(methodId)
-
         val ex: MissingInstanceException =
             try {
                 engine.invokeStatic(descriptor, listOf("Alice"))
@@ -247,16 +221,13 @@ class ReflectionEngineTest {
                 MethodSource.StaticClass(SampleStatics2::class)
             ).build()
         )
-
         val methodId: MethodId = MethodId.from(
             SampleStatics2::class,
             "sum",
             Int::class,
             Int::class
         )
-
         val descriptor = engine.descriptor(methodId)
-
         val ex: IllegalArgumentException =
             try {
                 engine.invokeInstance(descriptor, Any(), listOf(1, 2))
@@ -271,14 +242,12 @@ class ReflectionEngineTest {
     @Test
     fun executionContexts_returnsRegisteredContexts() {
         val instance: SampleService2 = SampleService2()
-
         val engine: ReflectionEngine = testEngine(
             reflectionConfig(
                 MethodSource.StaticClass(SampleStatics2::class),
                 MethodSource.Instance(instance, "Sample Service")
             ).build()
         )
-
         val contexts: Collection<ExecutionContext> = engine.executionContexts()
 
         assertTrue(contexts.any { context -> context is ExecutionContext.Static })
@@ -288,20 +257,16 @@ class ReflectionEngineTest {
     @Test
     fun executionContext_returnsMatchingContextByExecutionId() {
         val instance: SampleService2 = SampleService2()
-
         val engine: ReflectionEngine = testEngine(
             reflectionConfig(
                 MethodSource.Instance(instance, "Sample Service")
             ).build()
         )
-
         val context: ExecutionContext.Instance =
             engine.executionContexts()
                 .filterIsInstance<ExecutionContext.Instance>()
                 .first()
-
         val resolved: ExecutionContext = engine.executionContext(context.executionId)
-
         val resolvedInstance: ExecutionContext.Instance = assertIs(resolved)
         assertEquals(context.executionId, resolvedInstance.executionId)
         assertEquals("Sample Service", resolvedInstance.instanceDescription)
@@ -330,7 +295,6 @@ class ReflectionEngineTest {
             "greet",
             String::class
         )
-
         val metadata: MetadataRoot = MetadataRoot(
             methods = mapOf(
                 methodId to MethodMetadata(
@@ -341,16 +305,13 @@ class ReflectionEngineTest {
                 )
             )
         )
-
         val engine: ReflectionEngine = ReflectionEngine(
             reflectionConfig = reflectionConfig(
                 MethodSource.Instance(SampleService2(), "Sample Service")
             ).build(),
             metadataRegistry = DescriptorMetadataRegistry(metadata)
         )
-
         val descriptors = engine.descriptors(SampleService2::class)
-
         val greetingDescriptor =
             descriptors.firstOrNull { descriptor ->
                 descriptor.id == methodId
@@ -372,10 +333,9 @@ class SampleService {
 }
 
 class SampleSupport
-
 class SampleStatics {
-
     companion object {
+
         @JvmStatic
         fun sum(a: Int, b: Int): Int =
             a + b

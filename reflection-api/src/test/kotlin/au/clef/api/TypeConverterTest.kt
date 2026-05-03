@@ -50,7 +50,6 @@ class TypeConverterTest {
     fun materialize_convertsListWithWildcardElementType() {
         val listType: Type =
             object : TypeReference<List<String>>() {}.type
-
         val result: Any? =
             converter.materialize(
                 Value.ListValue(
@@ -61,7 +60,6 @@ class TypeConverterTest {
                 ),
                 listType
             )
-
         val list: MutableList<*> = assertIs(result)
         assertEquals<List<Any?>>(listOf("a", "b"), list)
     }
@@ -131,7 +129,6 @@ class TypeConverterTest {
                 ),
                 object : TypeReference<List<String>>() {}.type
             )
-
         val list: MutableList<*> = assertIs(result)
         assertEquals<List<Any?>>(listOf("a", "b"), list)
     }
@@ -149,7 +146,6 @@ class TypeConverterTest {
                 ),
                 object : TypeReference<Set<String>>() {}.type
             )
-
         val set: Set<*> = assertIs(result)
         assertEquals(setOf("a", "b"), set)
     }
@@ -167,7 +163,6 @@ class TypeConverterTest {
                 ),
                 Array<Int>::class.java
             )
-
         val array: Array<*> = assertIs(result)
         assertEquals(listOf(1, 2, 3), array.toList())
     }
@@ -204,7 +199,6 @@ class TypeConverterTest {
                 ),
                 object : TypeReference<Map<String, Int>>() {}.type
             )
-
         val map: MutableMap<*, *> = assertIs(result)
         assertEquals(1, map["a"])
         assertEquals(2, map["b"])
@@ -240,7 +234,6 @@ class TypeConverterTest {
                 ),
                 SamplePerson::class.java
             )
-
         val person: SamplePerson = assertIs(result)
         assertEquals("Alice", person.name)
         assertEquals(25, person.age)
@@ -258,7 +251,6 @@ class TypeConverterTest {
                 ),
                 SampleWithDefault::class.java
             )
-
         val value: SampleWithDefault = assertIs(result)
         assertEquals("Alice", value.name)
         assertEquals(99, value.age)
@@ -295,7 +287,6 @@ class TypeConverterTest {
                 ),
                 JavaOnlyCtor::class.java
             )
-
         val value: JavaOnlyCtor = assertIs(result)
         assertEquals("Bob", value.name)
         assertEquals(41, value.age)
@@ -332,7 +323,6 @@ class TypeConverterTest {
                 ),
                 MutableBean::class.java
             )
-
         val bean: MutableBean = assertIs(result)
         assertEquals("Chris", bean.name)
         assertEquals(50, bean.age)
@@ -378,11 +368,13 @@ class JavaOnlyCtor(
 )
 
 class MutableBean {
+
     var name: String = ""
     var age: Int = 0
 }
 
 abstract class TypeReference<T> {
+
     val type: Type
         get() = (javaClass.genericSuperclass as java.lang.reflect.ParameterizedType)
             .actualTypeArguments[0]

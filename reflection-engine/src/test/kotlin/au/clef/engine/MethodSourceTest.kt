@@ -38,7 +38,6 @@ class MethodSourceTest {
     fun staticMethod_fromKFunction_buildsMethodIdAndDeclaringClass() {
         val source: MethodSource.StaticMethod =
             MethodSource.StaticMethod(::topLevelAdd)
-
         val javaMethod = requireNotNull(::topLevelAdd.javaMethod)
 
         assertEquals(javaMethod.declaringClass.kotlin, source.declaringClass)
@@ -48,7 +47,6 @@ class MethodSourceTest {
     @Test
     fun instance_setsDeclaringClassInstanceAndDescription() {
         val instance: SampleService2 = SampleService2()
-
         val source: MethodSource.Instance =
             MethodSource.Instance(
                 instance = instance,
@@ -64,7 +62,6 @@ class MethodSourceTest {
     @Test
     fun instanceMethod_fromMethodName_buildsMethodIdAndStoresInstanceData() {
         val instance: SampleService2 = SampleService2()
-
         val source: MethodSource.InstanceMethod =
             MethodSource.InstanceMethod(
                 instance = instance,
@@ -87,7 +84,6 @@ class MethodSourceTest {
     fun instanceMethod_primaryConstructor_keepsProvidedMethodId() {
         val instance: SampleService2 = SampleService2()
         val methodId: MethodId = MethodId.from(SampleService2::class, "greet", String::class)
-
         val source: MethodSource.InstanceMethod =
             MethodSource.InstanceMethod(
                 instance = instance,
@@ -103,11 +99,13 @@ class MethodSourceTest {
 }
 
 class SampleService2 {
+
     fun greet(name: String): String = "Hello $name"
 }
 
 class SampleStatics2 {
     companion object {
+
         @JvmStatic
         fun sum(a: Int, b: Int): Int = a + b
     }

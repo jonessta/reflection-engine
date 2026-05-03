@@ -14,16 +14,13 @@ class MethodSourceRegistryTest {
     @Test
     fun instanceSource_usesLogicalKotlinNames_forValueClassMethods() {
         val service: CustomerService = CustomerService()
-
         val registry: MethodSourceRegistry = MethodSourceRegistry(
             methodSources = listOf(
                 MethodSource.Instance(service, "Customer Service")
             )
         )
-
         val descriptors: List<MethodDescriptor> =
             registry.descriptors(CustomerService::class.java)
-
         val names: List<String> =
             descriptors.map { descriptor: MethodDescriptor -> descriptor.reflectedName }
 
@@ -37,7 +34,6 @@ class MethodSourceRegistryTest {
     @Test
     fun instanceMethodSource_usesLogicalKotlinName_forSingleMethod() {
         val service: CustomerService = CustomerService()
-
         val registry: MethodSourceRegistry = MethodSourceRegistry(
             methodSources = listOf(
                 MethodSource.InstanceMethod(
@@ -47,7 +43,6 @@ class MethodSourceRegistryTest {
                 )
             )
         )
-
         val descriptors: List<MethodDescriptor> =
             registry.descriptors(CustomerService::class.java)
 
@@ -63,7 +58,6 @@ class MethodSourceRegistryTest {
                 MethodSource.StaticMethod(::topLevelAdd)
             )
         )
-
         val methodId: MethodId = MethodId.from(::topLevelAdd.javaMethod!!)
         val descriptor: MethodDescriptor = registry.descriptor(methodId)
 
@@ -79,7 +73,6 @@ class MethodSourceRegistryTest {
                 MethodSource.StaticClass(MixedMethods::class)
             )
         )
-
         val descriptors: List<MethodDescriptor> =
             registry.descriptors(MixedMethods::class.java)
 
@@ -94,7 +87,6 @@ class MethodSourceRegistryTest {
                 MethodSource.Instance(MixedMethods(), "Mixed")
             )
         )
-
         val descriptors: List<MethodDescriptor> =
             registry.descriptors(MixedMethods::class.java)
 
@@ -105,18 +97,15 @@ class MethodSourceRegistryTest {
     @Test
     fun instanceSource_createsInstanceExecutionContexts() {
         val service: CustomerService = CustomerService()
-
         val registry: MethodSourceRegistry = MethodSourceRegistry(
             methodSources = listOf(
                 MethodSource.Instance(service, "Customer Service")
             )
         )
-
         val instanceContexts: List<ExecutionContext.Instance> =
             registry.allExecutionContexts().filterIsInstance<ExecutionContext.Instance>()
 
         assertTrue(instanceContexts.isNotEmpty())
-
         val names: List<String> =
             instanceContexts.map { context: ExecutionContext.Instance ->
                 registry.descriptor(context.methodId).reflectedName
@@ -138,12 +127,10 @@ class MethodSourceRegistryTest {
                 MethodSource.StaticClass(MixedMethods::class)
             )
         )
-
         val staticContexts: List<ExecutionContext.Static> =
             registry.allExecutionContexts().filterIsInstance<ExecutionContext.Static>()
 
         assertTrue(staticContexts.isNotEmpty())
-
         val names: List<String> =
             staticContexts.map { context: ExecutionContext.Static ->
                 registry.descriptor(context.methodId).reflectedName
@@ -155,20 +142,16 @@ class MethodSourceRegistryTest {
     @Test
     fun executionContext_returnsMatchingContextByExecutionId() {
         val service: CustomerService = CustomerService()
-
         val registry: MethodSourceRegistry = MethodSourceRegistry(
             methodSources = listOf(
                 MethodSource.Instance(service, "Customer Service")
             )
         )
-
         val context: ExecutionContext.Instance =
             registry.allExecutionContexts()
                 .filterIsInstance<ExecutionContext.Instance>()
                 .first()
-
         val resolved: ExecutionContext = registry.executionContext(context.executionId)
-
         val resolvedInstance: ExecutionContext.Instance = assertIs(resolved)
         assertEquals(context.executionId, resolvedInstance.executionId)
         assertEquals(service, resolvedInstance.instance)
@@ -197,7 +180,6 @@ class MethodSourceRegistryTest {
                 MethodSource.Instance(CustomerService(), "Customer Service")
             )
         )
-
         val ex: IllegalArgumentException =
             try {
                 registry.descriptors(String::class.java)
@@ -216,10 +198,8 @@ class MethodSourceRegistryTest {
                 MethodSource.Instance(CustomerService(), "Customer Service")
             )
         )
-
         val unknownMethodId: MethodId =
             MethodId.fromValue("com.example.Missing#nope()")
-
         val ex: MethodNotFoundException =
             try {
                 registry.descriptor(unknownMethodId)
@@ -235,7 +215,6 @@ class MethodSourceRegistryTest {
     fun staticMethod_registration_rejectsInstanceMethodId() {
         val instanceMethodId: MethodId =
             MethodId.from(MixedMethods::class, "instanceEcho", String::class)
-
         val ex: IllegalArgumentException =
             try {
                 MethodSourceRegistry(
@@ -285,10 +264,8 @@ class MethodSourceRegistryTest {
             ),
             inheritanceLevel = InheritanceLevel.DeclaredOnly
         )
-
         val descriptors: List<MethodDescriptor> =
             registry.descriptors(ChildService::class.java)
-
         val names: List<String> =
             descriptors.map { descriptor: MethodDescriptor -> descriptor.reflectedName }
 
@@ -304,10 +281,8 @@ class MethodSourceRegistryTest {
             ),
             inheritanceLevel = InheritanceLevel.All
         )
-
         val descriptors: List<MethodDescriptor> =
             registry.descriptors(ChildService::class.java)
-
         val names: List<String> =
             descriptors.map { descriptor: MethodDescriptor -> descriptor.reflectedName }
 
@@ -350,10 +325,12 @@ class CustomerService {
 }
 
 open class ParentService {
+
     fun parentOnly(): String = "parent"
 }
 
 class ChildService : ParentService() {
+
     fun childOnly(): String = "child"
 }
 
@@ -362,6 +339,7 @@ class MixedMethods {
     fun instanceEcho(value: String): String = value
 
     companion object {
+
         @JvmStatic
         fun staticEcho(value: String): String = value
     }

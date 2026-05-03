@@ -71,9 +71,7 @@ class MethodDescriptor(
     )
 
     override fun equals(other: Any?): Boolean = other is MethodDescriptor && id == other.id
-
     override fun hashCode(): Int = id.hashCode()
-
     override fun toString(): String =
         "MethodDescriptor(id=$id, reflectedName=$reflectedName, displayName=$displayName, parameters=$parameters)"
 }
@@ -99,10 +97,14 @@ private fun buildJavaParamDescriptors(javaMethod: Method): List<ParamDescriptor>
         )
     }
 
-private fun buildKotlinParamDescriptors(kotlinFunction: KFunction<*>, javaMethod: Method): List<ParamDescriptor> {
+private fun buildKotlinParamDescriptors(
+    kotlinFunction: KFunction<*>,
+    javaMethod: Method
+): List<ParamDescriptor> {
     val valueParameters: List<KParameter> =
-        kotlinFunction.parameters.filter { parameter: KParameter -> parameter.kind == KParameter.Kind.VALUE }
-
+        kotlinFunction.parameters.filter { parameter: KParameter ->
+            parameter.kind == KParameter.Kind.VALUE
+        }
     val runtimeParameterTypes: Array<Class<*>> = javaMethod.parameterTypes
 
     require(valueParameters.size == runtimeParameterTypes.size) {

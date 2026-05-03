@@ -5,15 +5,7 @@ import au.clef.api.ResolvedType
 import au.clef.api.model.MapEntry
 import au.clef.api.model.ScalarValue
 import au.clef.api.model.Value
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.longOrNull
+import kotlinx.serialization.json.*
 
 class ValueJsonCodec(private val classResolver: ClassResolver) {
 
@@ -117,7 +109,6 @@ class ValueJsonCodec(private val classResolver: ClassResolver) {
         require(resolved is ResolvedType.Structured) {
             "Type $typeName is scalar-like and cannot be a record"
         }
-
         val fieldsObject: JsonObject = obj["fields"] as? JsonObject
             ?: throw IllegalArgumentException("Missing or invalid 'fields' for record")
 
@@ -171,17 +162,13 @@ class ValueJsonCodec(private val classResolver: ClassResolver) {
             entries = entriesArray.map { entryElement: JsonElement ->
                 val entryObject: JsonObject = entryElement as? JsonObject
                     ?: throw IllegalArgumentException("Map entry must be an object")
-
                 val keyJson: JsonElement =
                     entryObject["key"] ?: throw IllegalArgumentException("Map entry missing 'key'")
-
                 val valueJson: JsonElement =
-                    entryObject["value"] ?: throw IllegalArgumentException("Map entry missing 'value'")
+                    entryObject["value"]
+                        ?: throw IllegalArgumentException("Map entry missing 'value'")
 
-                MapEntry(
-                    key = decode(keyJson),
-                    value = decode(valueJson)
-                )
+                MapEntry(key = decode(keyJson), value = decode(valueJson))
             }
         )
     }

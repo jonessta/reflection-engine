@@ -17,9 +17,7 @@ import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-fun Application.configureJson(
-    reflectionServiceApi: ReflectionServiceApi
-) {
+fun Application.configureJson(reflectionServiceApi: ReflectionServiceApi) {
     install(ContentNegotiation) {
         json(
             Json {
@@ -36,13 +34,10 @@ fun Application.configureErrorHandling() {
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             cause.printStackTrace()
-
             val response = when (cause) {
                 is IllegalArgumentException -> ErrorResponse(error = buildErrorMessage(cause))
-
                 else -> ErrorResponse(error = buildErrorMessage(cause))
             }
-
             val status = when (cause) {
                 is IllegalArgumentException -> HttpStatusCode.BadRequest
                 else -> HttpStatusCode.InternalServerError
@@ -53,24 +48,25 @@ fun Application.configureErrorHandling() {
     }
 }
 
-private fun buildErrorMessage(throwable: Throwable): String =
-    buildString {
-        append(throwable.message ?: throwable::class.simpleName ?: "Unknown error")
-
-        var cause: Throwable? = throwable.cause
-        while (cause != null) {
-            append("\nCaused by: ")
-            append(cause.message ?: cause::class.simpleName ?: "Unknown cause")
-            cause = cause.cause
-        }
+private fun buildErrorMessage(throwable: Throwable): String = buildString {
+    append(throwable.message ?: throwable::class.simpleName ?: "Unknown error")
+    var cause: Throwable? = throwable.cause
+    while (cause != null) {
+        append("\nCaused by: ")
+        append(cause.message ?: cause::class.simpleName ?: "Unknown cause")
+        cause = cause.cause
     }
+}
 
 data class WebServerConfig(
     val port: Int = 8080,
     val host: String = "0.0.0.0"
 )
 
-class WebServer(apiConfig: ReflectionApiConfig, private val webConfig: WebServerConfig = WebServerConfig()) {
+class WebServer(
+    apiConfig: ReflectionApiConfig,
+    private val webConfig: WebServerConfig = WebServerConfig()
+) {
 
     private val reflectionServiceApi: ReflectionServiceApi = ReflectionServiceApi(apiConfig)
 

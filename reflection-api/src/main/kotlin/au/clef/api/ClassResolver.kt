@@ -6,5 +6,6 @@ sealed class ResolvedType {
 }
 
 interface ClassResolver {
+
     fun resolve(typeName: String): ResolvedType
 }

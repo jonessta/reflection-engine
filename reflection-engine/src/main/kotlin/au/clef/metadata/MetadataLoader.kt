@@ -15,7 +15,6 @@ object MetadataLoader {
         val stream: InputStream =
             MetadataLoader::class.java.getResourceAsStream(path)
                 ?: error("Metadata resource not found on classpath: $path")
-
         val text: String =
             stream.bufferedReader().use { reader -> reader.readText() }
 

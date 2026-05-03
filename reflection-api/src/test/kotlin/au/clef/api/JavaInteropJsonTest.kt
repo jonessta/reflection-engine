@@ -28,17 +28,13 @@ class JavaInteropJsonTest {
     )
         .inheritanceLevel(InheritanceLevel.DeclaredOnly)
         .build()
-
     private val scalarTypeRegistry: ScalarTypeRegistry = ScalarTypeRegistry()
-
     private val engine: ReflectionEngine = ReflectionEngine(
         reflectionConfig = reflectionConfig
     )
-
     private val requestValueMapper: RequestValueMapper = RequestValueMapper(
         scalarTypeRegistry = scalarTypeRegistry
     )
-
     private val responseValueMapper: ResponseValueMapper = ResponseValueMapper(
         scalarRegistry = scalarTypeRegistry
     )
@@ -46,29 +42,24 @@ class JavaInteropJsonTest {
     @Test
     fun `generate descriptors and invoke JDK methods with JSON`() {
         val descriptors: List<ExecutionDescriptorDto> = executionDescriptors()
-
         val localDateDescriptor: ExecutionDescriptorDto =
             descriptors.first { descriptor: ExecutionDescriptorDto ->
                 descriptor.reflectedName == "of" &&
                         descriptor.returnType == "java.time.LocalDate"
             }
-
         val uriDescriptor: ExecutionDescriptorDto =
             descriptors.first { descriptor: ExecutionDescriptorDto ->
                 descriptor.reflectedName == "create" &&
                         descriptor.returnType == "java.net.URI"
             }
-
         val localeDescriptor: ExecutionDescriptorDto =
             descriptors.first { descriptor: ExecutionDescriptorDto ->
                 descriptor.reflectedName == "forLanguageTag"
             }
-
         val singletonMapDescriptor: ExecutionDescriptorDto =
             descriptors.first { descriptor: ExecutionDescriptorDto ->
                 descriptor.reflectedName == "singletonMap"
             }
-
         val localDateResponse: Value = invoke(
             InvocationRequest(
                 executionId = localDateDescriptor.executionId,
@@ -79,7 +70,6 @@ class JavaInteropJsonTest {
                 )
             )
         )
-
         val uriResponse: Value = invoke(
             InvocationRequest(
                 executionId = uriDescriptor.executionId,
@@ -88,7 +78,6 @@ class JavaInteropJsonTest {
                 )
             )
         )
-
         val localeResponse: Value = invoke(
             InvocationRequest(
                 executionId = localeDescriptor.executionId,
@@ -97,7 +86,6 @@ class JavaInteropJsonTest {
                 )
             )
         )
-
         val singletonMapResponse: Value = invoke(
             InvocationRequest(
                 executionId = singletonMapDescriptor.executionId,
@@ -110,10 +98,8 @@ class JavaInteropJsonTest {
 
         assertScalarString(localDateResponse, "2026-04-28")
         assertScalarString(uriResponse, "https://example.com/a/b?x=1")
-
         val localeScalar: Value.Scalar = assertIs(localeResponse)
         assertEquals(ScalarValue.StringValue("en-AU"), localeScalar.value)
-
         val mapResult: Value.MapValue = assertIs(singletonMapResponse)
         assertEquals(1, mapResult.entries.size)
     }
@@ -135,22 +121,16 @@ class JavaInteropJsonTest {
         val localConfig: ReflectionConfig = reflectionConfig(
             StaticMethod(Month::class, "valueOf", String::class)
         ).build()
-
         val localScalarTypeRegistry: ScalarTypeRegistry = ScalarTypeRegistry()
-
         val localEngine: ReflectionEngine = ReflectionEngine(
             reflectionConfig = localConfig
         )
-
         val localRequestValueMapper: RequestValueMapper = RequestValueMapper(
             scalarTypeRegistry = localScalarTypeRegistry
         )
-
         val execution: ExecutionContext.Static =
             localEngine.executionContexts().single() as ExecutionContext.Static
-
         val descriptor: MethodDescriptor = localEngine.descriptor(execution.methodId)
-
         val request = InvocationRequest(
             executionId = execution.executionId,
             args = listOf(
@@ -205,10 +185,8 @@ class JavaInteropJsonTest {
                 Value.Scalar(ScalarValue.StringValue("value-123"))
             )
         )
-
         val mapValue: Value.MapValue = assertIs(response)
         assertEquals(1, mapValue.entries.size)
-
         val entry = mapValue.entries.single()
         val key: Value.Scalar = assertIs(entry.key)
         val value: Value.Scalar = assertIs(entry.value)
@@ -224,12 +202,10 @@ class JavaInteropJsonTest {
         require(request.args.size == descriptor.parameters.size) {
             "Expected ${descriptor.parameters.size} args for ${descriptor.id}, got ${request.args.size}"
         }
-
         val args: List<Any?> =
             request.args.zip(descriptor.parameters).map { (argValue, param) ->
                 requestValueMapper.materialize(argValue, param.runtimeType)
             }
-
         val result: Any? =
             when (executionContext) {
                 is ExecutionContext.Static ->
@@ -248,33 +224,26 @@ class JavaInteropJsonTest {
     ): Value {
         val localConfig: ReflectionConfig = reflectionConfig(methodSource).build()
         val localScalarTypeRegistry: ScalarTypeRegistry = ScalarTypeRegistry()
-
         val localEngine: ReflectionEngine = ReflectionEngine(
             reflectionConfig = localConfig
         )
-
         val localRequestValueMapper: RequestValueMapper = RequestValueMapper(
             scalarTypeRegistry = localScalarTypeRegistry
         )
-
         val localResponseValueMapper: ResponseValueMapper = ResponseValueMapper(
             scalarRegistry = localScalarTypeRegistry
         )
-
         val execution: ExecutionContext.Static =
             localEngine.executionContexts().single() as ExecutionContext.Static
-
         val descriptor: MethodDescriptor = localEngine.descriptor(execution.methodId)
 
         require(args.size == descriptor.parameters.size) {
             "Expected ${descriptor.parameters.size} args for ${descriptor.id}, got ${args.size}"
         }
-
         val materializedArgs: List<Any?> =
             args.zip(descriptor.parameters).map { (argValue, param) ->
                 localRequestValueMapper.materialize(argValue, param.runtimeType)
             }
-
         val result: Any? = localEngine.invokeStatic(descriptor, materializedArgs)
 
         return localResponseValueMapper.toValue(result)

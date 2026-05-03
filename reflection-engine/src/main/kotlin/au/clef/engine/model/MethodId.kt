@@ -12,32 +12,28 @@ private fun formatMethodId(
     declaringClassName: String,
     methodName: String,
     parameterTypeNames: List<String>
-): String =
-    buildString {
-        append(declaringClassName)
-        append(CLASS_NAME_SEPARATOR)
-        append(methodName)
-        append("(")
-        append(parameterTypeNames.joinToString(","))
-        append(")")
-    }
+): String = buildString {
+    append(declaringClassName)
+    append(CLASS_NAME_SEPARATOR)
+    append(methodName)
+    append("(")
+    append(parameterTypeNames.joinToString(","))
+    append(")")
+}
 
 class MethodId private constructor(val value: String) {
 
     override fun toString(): String = value
 
-    override fun equals(other: Any?): Boolean =
-        other is MethodId && value == other.value
+    override fun equals(other: Any?): Boolean = other is MethodId && value == other.value
 
-    override fun hashCode(): Int =
-        value.hashCode()
+    override fun hashCode(): Int = value.hashCode()
 
     companion object {
 
         private val METHOD_ID_OUTER_REGEX = Regex(
             """^([A-Za-z_][A-Za-z0-9_$.]*)$CLASS_NAME_SEPARATOR([A-Za-z_][A-Za-z0-9_$-]*)\((.*)\)$"""
         )
-
         private val TYPE_NAME_REGEX = Regex("""^[A-Za-z_][A-Za-z0-9_$.]*$""")
 
         /**
@@ -46,14 +42,13 @@ class MethodId private constructor(val value: String) {
          * This is appropriate for Java methods and for cases where the JVM method
          * name is intentionally the public identity.
          */
-        fun from(method: Method): MethodId =
-            MethodId(
-                formatMethodId(
-                    declaringClassName = method.declaringClass.name,
-                    methodName = method.name,
-                    parameterTypeNames = method.parameterTypes.map { it.name }
-                )
+        fun from(method: Method): MethodId = MethodId(
+            formatMethodId(
+                declaringClassName = method.declaringClass.name,
+                methodName = method.name,
+                parameterTypeNames = method.parameterTypes.map { it.name }
             )
+        )
 
         /**
          * Builds a logical/source-level MethodId from the declared Kotlin-facing signature.
@@ -65,23 +60,20 @@ class MethodId private constructor(val value: String) {
             declaringClass: KClass<*>,
             methodName: String,
             vararg parameterTypes: KClass<*>
-        ): MethodId =
-            MethodId(
-                formatMethodId(
-                    declaringClassName = declaringClass.java.name,
-                    methodName = methodName,
-                    parameterTypeNames = parameterTypes.map { it.java.name }
-                )
+        ): MethodId = MethodId(
+            formatMethodId(
+                declaringClassName = declaringClass.java.name,
+                methodName = methodName,
+                parameterTypeNames = parameterTypes.map { it.java.name }
             )
+        )
 
         fun fromValue(value: String): MethodId {
             val match = METHOD_ID_OUTER_REGEX.matchEntire(value)
                 ?: throw IllegalMethodIdException("expected <class>#<method>(<paramTypes>)")
-
             val declaringClassName = match.groupValues[1]
             val methodName = match.groupValues[2]
             val paramsPart = match.groupValues[3]
-
             val parameterTypeNames =
                 if (paramsPart.isBlank()) {
                     emptyList()

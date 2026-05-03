@@ -3,8 +3,7 @@ package au.clef.api
 import au.clef.engine.registry.MethodSourceTypes
 
 class DefaultClassResolver(
-    methodSourceTypes: MethodSourceTypes,
-    private val scalarRegistry: ScalarTypeRegistry
+    methodSourceTypes: MethodSourceTypes, private val scalarRegistry: ScalarTypeRegistry
 ) : ClassResolver {
 
     private val classesByName: Map<String, Class<*>> = buildMap {
@@ -13,7 +12,6 @@ class DefaultClassResolver(
 
         methodSourceTypes.knownClasses.forEach { clazz: Class<*> ->
             put(clazz.name, clazz)
-
             val existing: Class<*>? = simpleNames.putIfAbsent(clazz.simpleName, clazz)
             if (existing != null && existing != clazz) {
                 ambiguousSimpleNames += clazz.simpleName

@@ -9,9 +9,9 @@ import au.clef.metadata.model.ParamMetadata
 class DescriptorMetadataRegistry(
     private val metadata: MetadataRoot
 ) {
+
     fun apply(descriptor: MethodDescriptor): MethodDescriptor {
         val methodMeta: MethodMetadata = metadata.methods[descriptor.id] ?: return descriptor
-
         val updatedParams: List<ParamDescriptor> =
             descriptor.parameters.map { param: ParamDescriptor ->
                 val paramMeta: ParamMetadata? = methodMeta.parameters.getOrNull(param.index)

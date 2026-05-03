@@ -17,13 +17,17 @@ class ReflectionConfigBuilder internal constructor(firstMethodSource: MethodSour
     private var metadataResourcePath: String? = null
     private var inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
 
-    fun methodSources(vararg sources: MethodSource): ReflectionConfigBuilder = apply { methodSources += sources }
+    fun methodSources(vararg sources: MethodSource): ReflectionConfigBuilder =
+        apply { methodSources += sources }
 
-    fun supportingTypes(vararg types: KClass<*>): ReflectionConfigBuilder = apply { methodSupportingTypes += types }
+    fun supportingTypes(vararg types: KClass<*>): ReflectionConfigBuilder =
+        apply { methodSupportingTypes += types }
 
-    fun metadataResourcePath(path: String?): ReflectionConfigBuilder = apply { metadataResourcePath = path }
+    fun metadataResourcePath(path: String?): ReflectionConfigBuilder =
+        apply { metadataResourcePath = path }
 
-    fun inheritanceLevel(level: InheritanceLevel): ReflectionConfigBuilder = apply { inheritanceLevel = level }
+    fun inheritanceLevel(level: InheritanceLevel): ReflectionConfigBuilder =
+        apply { inheritanceLevel = level }
 
     fun build(): ReflectionConfig =
         ReflectionConfig(
@@ -34,5 +38,8 @@ class ReflectionConfigBuilder internal constructor(firstMethodSource: MethodSour
         )
 }
 
-fun reflectionConfig(methodSource: MethodSource, vararg methodSources: MethodSource): ReflectionConfigBuilder =
+fun reflectionConfig(
+    methodSource: MethodSource,
+    vararg methodSources: MethodSource
+): ReflectionConfigBuilder =
     ReflectionConfigBuilder(methodSource).apply { methodSources(*methodSources) }

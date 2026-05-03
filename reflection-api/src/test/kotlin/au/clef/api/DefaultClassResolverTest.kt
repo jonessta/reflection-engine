@@ -13,9 +13,7 @@ class DefaultClassResolverTest {
             ),
             scalarRegistry = ScalarTypeRegistry()
         )
-
         val resolved: ResolvedType = resolver.resolve(Person1::class.java.name)
-
         val structured: ResolvedType.Structured = assertIs(resolved)
         assertEquals(Person1::class.java, structured.type)
     }
@@ -28,9 +26,7 @@ class DefaultClassResolverTest {
             ),
             scalarRegistry = ScalarTypeRegistry()
         )
-
         val resolved: ResolvedType = resolver.resolve("Person1")
-
         val structured: ResolvedType.Structured = assertIs(resolved)
         assertEquals(Person1::class.java, structured.type)
     }
@@ -43,9 +39,7 @@ class DefaultClassResolverTest {
             ),
             scalarRegistry = ScalarTypeRegistry()
         )
-
         val resolved: ResolvedType = resolver.resolve(String::class.java.name)
-
         val scalar: ResolvedType.Scalar = assertIs(resolved)
         assertEquals(String::class.java, scalar.type)
     }
@@ -58,9 +52,7 @@ class DefaultClassResolverTest {
             ),
             scalarRegistry = ScalarTypeRegistry()
         )
-
         val resolved: ResolvedType = resolver.resolve("String")
-
         val scalar: ResolvedType.Scalar = assertIs(resolved)
         assertEquals(String::class.java, scalar.type)
     }
@@ -76,12 +68,17 @@ class DefaultClassResolverTest {
             ),
             scalarRegistry = ScalarTypeRegistry()
         )
-
         val alpha: ResolvedType = resolver.resolve(au.clef.api.alpha.Duplicate::class.java.name)
         val beta: ResolvedType = resolver.resolve(au.clef.api.beta.Duplicate::class.java.name)
 
-        assertEquals(au.clef.api.alpha.Duplicate::class.java, assertIs<ResolvedType.Structured>(alpha).type)
-        assertEquals(au.clef.api.beta.Duplicate::class.java, assertIs<ResolvedType.Structured>(beta).type)
+        assertEquals(
+            au.clef.api.alpha.Duplicate::class.java,
+            assertIs<ResolvedType.Structured>(alpha).type
+        )
+        assertEquals(
+            au.clef.api.beta.Duplicate::class.java,
+            assertIs<ResolvedType.Structured>(beta).type
+        )
     }
 
     @Test
@@ -95,7 +92,6 @@ class DefaultClassResolverTest {
             ),
             scalarRegistry = ScalarTypeRegistry()
         )
-
         val ex: IllegalArgumentException = assertFailsWith {
             resolver.resolve("Duplicate")
         }
@@ -111,7 +107,6 @@ class DefaultClassResolverTest {
             ),
             scalarRegistry = ScalarTypeRegistry()
         )
-
         val ex: IllegalArgumentException = assertFailsWith {
             resolver.resolve("MissingType")
         }
@@ -131,7 +126,6 @@ class DefaultClassResolverTest {
             ),
             scalarRegistry = ScalarTypeRegistry()
         )
-
         val stringResolved: ResolvedType = resolver.resolve("String")
         val intResolved: ResolvedType = resolver.resolve(Int::class.javaObjectType.name)
         val personResolved: ResolvedType = resolver.resolve("Person1")

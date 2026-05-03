@@ -9,7 +9,6 @@ class MethodModelTest {
     fun methodId_fromMethod_buildsExpectedValue_forInstanceMethod() {
         val method: Method =
             SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
-
         val id: MethodId = MethodId.from(method)
 
         assertEquals(
@@ -25,7 +24,6 @@ class MethodModelTest {
             Int::class.javaPrimitiveType!!,
             Int::class.javaPrimitiveType!!
         )
-
         val id: MethodId = MethodId.from(method)
 
         assertEquals("java.lang.Math#max(int,int)", id.value)
@@ -101,7 +99,6 @@ class MethodModelTest {
     fun methodDescriptor_derivesFieldsFromMethod() {
         val method: Method =
             SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
-
         val descriptor = MethodDescriptor.from(method)
 
         assertEquals("personName", descriptor.reflectedName)
@@ -117,7 +114,6 @@ class MethodModelTest {
             Int::class.javaPrimitiveType!!,
             Int::class.javaPrimitiveType!!
         )
-
         val descriptor = MethodDescriptor.from(method)
 
         assertTrue(descriptor.isStatic)
@@ -128,11 +124,9 @@ class MethodModelTest {
     fun methodDescriptor_buildsParameterDescriptors() {
         val method: Method =
             SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
-
         val descriptor = MethodDescriptor.from(method)
 
         assertEquals(1, descriptor.parameters.size)
-
         val param: ParamDescriptor = descriptor.parameters[0]
         assertEquals(0, param.index)
         assertEquals(SamplePerson::class.java, param.logicalType)
@@ -148,7 +142,6 @@ class MethodModelTest {
             Int::class.javaPrimitiveType!!,
             Int::class.javaPrimitiveType!!
         )
-
         val descriptor = MethodDescriptor.from(method)
         val intPrimitive: Class<*> = Int::class.javaPrimitiveType!!
 
@@ -165,7 +158,6 @@ class MethodModelTest {
             SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
         val method2: Method =
             SampleService::class.java.getDeclaredMethod("personName", SamplePerson::class.java)
-
         val descriptor1 = MethodDescriptor.from(method1, displayName = "First")
         val descriptor2 = MethodDescriptor.from(method2, displayName = "Second")
 
@@ -182,7 +174,6 @@ class MethodModelTest {
                 "echo",
                 Int::class.javaPrimitiveType!!
             )
-
         val descriptor1 = MethodDescriptor.from(method1)
         val descriptor2 = MethodDescriptor.from(method2)
 
@@ -204,6 +195,7 @@ class MethodModelTest {
 }
 
 class SampleService {
+
     fun personName(person: SamplePerson): String = person.name
     fun ping(): String = "pong"
 }
@@ -214,12 +206,14 @@ data class SamplePerson(
 )
 
 class SampleOverloads {
+
     fun echo(value: String): String = value
     fun echo(value: Int): Int = value
 }
 
 class SampleStatics {
     companion object {
+
         @JvmStatic
         fun sum(a: Int, b: Int): Int = a + b
     }

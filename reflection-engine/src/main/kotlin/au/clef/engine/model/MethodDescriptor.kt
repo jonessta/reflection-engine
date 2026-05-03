@@ -20,83 +20,59 @@ class MethodDescriptor(
         fun from(
             javaMethod: Method,
             displayName: String? = null
-        ): MethodDescriptor =
-            create(
-                id = MethodId.from(javaMethod),
-                name = javaMethod.name,
-                displayName = displayName,
-                parameters = buildJavaParamDescriptors(javaMethod),
-                returnType = javaMethod.returnType,
-                isStatic = Modifier.isStatic(javaMethod.modifiers)
-            )
+        ): MethodDescriptor = MethodDescriptor(
+            id = MethodId.from(javaMethod),
+            reflectedName = javaMethod.name,
+            displayName = displayName,
+            parameters = buildJavaParamDescriptors(javaMethod),
+            returnType = javaMethod.returnType,
+            isStatic = Modifier.isStatic(javaMethod.modifiers)
+        )
 
         fun from(
             javaMethod: Method,
             id: MethodId,
             logicalMethodName: String,
             displayName: String? = null
-        ): MethodDescriptor =
-            create(
-                id = id,
-                // todo change ?? reflectionName is legacy
-                name = logicalMethodName,
-                displayName = displayName,
-                parameters = buildJavaParamDescriptors(javaMethod),
-                returnType = javaMethod.returnType,
-                isStatic = Modifier.isStatic(javaMethod.modifiers)
-            )
+        ): MethodDescriptor = MethodDescriptor(
+            id = id,
+            reflectedName = logicalMethodName,
+            displayName = displayName,
+            parameters = buildJavaParamDescriptors(javaMethod),
+            returnType = javaMethod.returnType,
+            isStatic = Modifier.isStatic(javaMethod.modifiers)
+        )
 
         fun from(
             kotlinFunction: KFunction<*>,
             javaMethod: Method,
             id: MethodId,
             displayName: String? = null
-        ): MethodDescriptor =
-            create(
-                id = id,
-                name = kotlinFunction.name,
-                displayName = displayName,
-                parameters = buildKotlinParamDescriptors(kotlinFunction, javaMethod),
-                returnType = javaMethod.returnType,
-                isStatic = Modifier.isStatic(javaMethod.modifiers)
-            )
-
-        private fun create(
-            id: MethodId,
-            name: String,
-            displayName: String?,
-            parameters: List<ParamDescriptor>,
-            returnType: Class<*>,
-            isStatic: Boolean
-        ): MethodDescriptor =
-            MethodDescriptor(
-                id = id,
-                reflectedName = name,
-                displayName = displayName,
-                parameters = parameters,
-                returnType = returnType,
-                isStatic = isStatic
-            )
+        ): MethodDescriptor = MethodDescriptor(
+            id = id,
+            reflectedName = kotlinFunction.name,
+            displayName = displayName,
+            parameters = buildKotlinParamDescriptors(kotlinFunction, javaMethod),
+            returnType = javaMethod.returnType,
+            isStatic = Modifier.isStatic(javaMethod.modifiers)
+        )
     }
 
     fun withMetadata(
         displayName: String? = this.displayName,
         parameters: List<ParamDescriptor> = this.parameters
-    ): MethodDescriptor =
-        MethodDescriptor(
-            id = id,
-            reflectedName = reflectedName,
-            displayName = displayName,
-            parameters = parameters,
-            returnType = returnType,
-            isStatic = isStatic
-        )
+    ): MethodDescriptor = MethodDescriptor(
+        id = id,
+        reflectedName = reflectedName,
+        displayName = displayName,
+        parameters = parameters,
+        returnType = returnType,
+        isStatic = isStatic
+    )
 
-    override fun equals(other: Any?): Boolean =
-        other is MethodDescriptor && id == other.id
+    override fun equals(other: Any?): Boolean = other is MethodDescriptor && id == other.id
 
-    override fun hashCode(): Int =
-        id.hashCode()
+    override fun hashCode(): Int = id.hashCode()
 
     override fun toString(): String =
         "MethodDescriptor(id=$id, reflectedName=$reflectedName, displayName=$displayName, parameters=$parameters)"
@@ -117,29 +93,26 @@ private fun buildJavaParamDescriptors(javaMethod: Method): List<ParamDescriptor>
             index = index,
             logicalType = parameter.type,
             runtimeType = parameter.type,
-            // todo do I need reflectedName?
             reflectedName = parameter.name,
             name = parameter.name,
             nullable = !parameter.type.isPrimitive
         )
     }
 
-private fun buildKotlinParamDescriptors(
-    kotlinFunction: KFunction<*>,
-    javaMethod: Method
-): List<ParamDescriptor> {
+private fun buildKotlinParamDescriptors(kotlinFunction: KFunction<*>, javaMethod: Method): List<ParamDescriptor> {
     val valueParameters: List<KParameter> =
-        kotlinFunction.parameters.filter { parameter: KParameter ->
-            parameter.kind == KParameter.Kind.VALUE
-        }
+        kotlinFunction.parameters.filter { parameter: KParameter -> parameter.kind == KParameter.Kind.VALUE }
 
     val runtimeParameterTypes: Array<Class<*>> = javaMethod.parameterTypes
 
+    require(valueParameters.size == runtimeParameterTypes.size) {
+        "Parameter count mismatch for function '${kotlinFunction.name}': " +
+                "Kotlin value params=${valueParameters.size}, Java params=${runtimeParameterTypes.size}"
+    }
+
     return valueParameters.mapIndexed { index: Int, parameter: KParameter ->
         val classifier: Any? = parameter.type.classifier
-        val logicalType: Class<*> =
-            (classifier as? KClass<*>)?.java ?: runtimeParameterTypes[index]
-
+        val logicalType: Class<*> = (classifier as? KClass<*>)?.java ?: runtimeParameterTypes[index]
         val parameterName: String = parameter.name ?: "arg$index"
 
         ParamDescriptor(

@@ -22,7 +22,7 @@ internal val customerReflectionConfig = reflectionConfig(
     .supportingTypes(Customer::class, Address::class, Person::class)
     .build()
 
-val customerReflectionApiConfig = reflectionApiConfig(customerReflectionConfig)
+val apiConfig = reflectionApiConfig(customerReflectionConfig)
     .scalarConverters(
         stringScalarConverter(decodeText = ::CustomerId),
         stringScalarConverter(decodeText = ::EmailAddress)
@@ -30,8 +30,5 @@ val customerReflectionApiConfig = reflectionApiConfig(customerReflectionConfig)
     .build()
 
 fun main() {
-    WebServer(
-        apiConfig = customerReflectionApiConfig,
-        webConfig = WebServerConfig()
-    ).start()
+    WebServer(apiConfig, WebServerConfig()).start()
 }

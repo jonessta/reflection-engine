@@ -26,7 +26,7 @@ fun Application.configureJson(
                 ignoreUnknownKeys = false
                 prettyPrint = true
                 classDiscriminator = "kind"
-                serializersModule = reflectionServiceApi.serializersModule()
+                serializersModule = reflectionServiceApi.jsonSerializersModule
             }
         )
     }
@@ -76,7 +76,7 @@ class WebServer(apiConfig: ReflectionApiConfig, private val webConfig: WebServer
 
     fun start() {
         embeddedServer(
-            Netty,
+            factory = Netty,
             host = webConfig.host,
             port = webConfig.port
         ) {

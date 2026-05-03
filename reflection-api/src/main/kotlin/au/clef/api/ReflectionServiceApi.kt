@@ -11,28 +11,23 @@ import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.ParamDescriptor
 import au.clef.metadata.DescriptorMetadataRegistry
 import au.clef.metadata.MetadataLoader
+import kotlinx.serialization.modules.SerializersModule
 
-class ReflectionServiceApi(
-    apiConfig: ReflectionApiConfig
-) {
+class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
 
     private val scalarRegistry: ScalarTypeRegistry = apiConfig.scalarTypeRegistry
 
-    private val metadataRegistry: DescriptorMetadataRegistry? =
-        apiConfig.reflectionConfig.metadataResourcePath
-            ?.let(MetadataLoader::fromResource)
-            ?.let(::DescriptorMetadataRegistry)
+    private val metadataRegistry: DescriptorMetadataRegistry? = apiConfig.reflectionConfig.metadataResourcePath
+        ?.let(MetadataLoader::fromResource)
+        ?.let(::DescriptorMetadataRegistry)
 
-    private val engine: ReflectionEngine =
-        ReflectionEngine(apiConfig.reflectionConfig, metadataRegistry)
+    private val engine: ReflectionEngine = ReflectionEngine(apiConfig.reflectionConfig, metadataRegistry)
 
-    private val requestMapper: RequestValueMapper =
-        RequestValueMapper(scalarRegistry)
+    private val requestMapper: RequestValueMapper = RequestValueMapper(scalarRegistry)
 
-    private val responseMapper: ResponseValueMapper =
-        ResponseValueMapper(scalarRegistry)
+    private val responseMapper: ResponseValueMapper = ResponseValueMapper(scalarRegistry)
 
-    fun serializersModule() = valueSerializersModule(
+    val jsonSerializersModule: SerializersModule = valueSerializersModule(
         DefaultClassResolver(engine, scalarRegistry)
     )
 
@@ -51,11 +46,8 @@ class ReflectionServiceApi(
 
         val result: Any? =
             when (context) {
-                is ExecutionContext.Static ->
-                    engine.invokeStatic(descriptor, args)
-
-                is ExecutionContext.Instance ->
-                    engine.invokeInstance(descriptor, context.instance, args)
+                is ExecutionContext.Static -> engine.invokeStatic(descriptor, args)
+                is ExecutionContext.Instance -> engine.invokeInstance(descriptor, context.instance, args)
             }
 
         return responseMapper.toValue(result)
@@ -63,14 +55,9 @@ class ReflectionServiceApi(
 
     fun executionDescriptors(): List<ExecutionDescriptorDto> =
         engine.executionContexts()
-            .map { ctx: ExecutionContext ->
-                toExecutionDescriptorDto(ctx, engine.descriptor(ctx.methodId))
-            }
+            .map { ctx: ExecutionContext -> toExecutionDescriptorDto(ctx, engine.descriptor(ctx.methodId)) }
 
-    private fun toExecutionDescriptorDto(
-        ctx: ExecutionContext,
-        desc: MethodDescriptor
-    ): ExecutionDescriptorDto =
+    private fun toExecutionDescriptorDto(ctx: ExecutionContext, desc: MethodDescriptor): ExecutionDescriptorDto =
         ExecutionDescriptorDto(
             executionId = ctx.executionId,
             instanceDescription = (ctx as? ExecutionContext.Instance)?.instanceDescription,

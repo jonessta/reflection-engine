@@ -12,6 +12,7 @@ import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
+import kotlin.reflect.full.declaredMemberFunctions
 import kotlin.reflect.jvm.javaMethod
 
 private data class RegistryEntry(
@@ -30,20 +31,14 @@ private data class ParsedMethodId(
     val parameterTypeNames: List<String>
 ) {
     companion object {
-        private val regex: Regex = Regex("""^([\w$.]+)#(\w+)\((.*)\)$""")
+        private val regex: Regex = Regex("""^([A-Za-z_][A-Za-z0-9_$.]*)#([A-Za-z_][A-Za-z0-9_$]*)\((.*)\)$""")
 
         fun parse(methodId: MethodId): ParsedMethodId {
             val match: MatchResult = regex.matchEntire(methodId.toString())
                 ?: throw IllegalMethodIdException("Expected <class>#<method>(<paramTypes>)")
 
             val (className: String, methodName: String, params: String) = match.destructured
-
-            val parameterTypeNames: List<String> =
-                if (params.isBlank()) {
-                    emptyList()
-                } else {
-                    params.split(",")
-                }
+            val parameterTypeNames: List<String> = if (params.isBlank()) emptyList() else params.split(",")
 
             return ParsedMethodId(
                 declaringClassName = className,
@@ -60,19 +55,19 @@ class MethodSourceRegistry(
     private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
 ) : MethodSourceTypes {
 
-    private val descriptorsByClass: MutableMap<Class<*>, MutableList<MethodDescriptor>> =
-        LinkedHashMap()
+    private val descriptorsByClass: MutableMap<Class<*>, MutableList<MethodDescriptor>> = LinkedHashMap()
 
-    private val entriesById: MutableMap<MethodId, RegistryEntry> =
-        LinkedHashMap()
+    private val entriesById: MutableMap<MethodId, RegistryEntry> = LinkedHashMap()
 
-    private val executionContextsById: MutableMap<ExecutionId, ExecutionContext> =
-        LinkedHashMap()
+    private val executionContextsById: MutableMap<ExecutionId, ExecutionContext> = LinkedHashMap()
 
-    override val declaringClasses: List<Class<*>> =
-        methodSources
-            .map { source: MethodSource -> source.declaringClass.java }
-            .distinct()
+    private val javaMethodsByClass: MutableMap<Class<*>, List<Method>> = LinkedHashMap()
+
+    private val kotlinFunctionsByClass: MutableMap<Class<*>, List<KFunction<*>>> = LinkedHashMap()
+
+    override val declaringClasses: List<Class<*>> = methodSources
+        .map { source: MethodSource -> source.declaringClass.java }
+        .distinct()
 
     override val knownClasses: List<Class<*>> =
         (methodSources.map { source: MethodSource -> source.declaringClass } + methodSupportingTypes)
@@ -81,42 +76,32 @@ class MethodSourceRegistry(
 
     init {
         require(methodSources.isNotEmpty()) { "methodSources must not be empty" }
-
-        methodSources.forEach { source: MethodSource ->
-            registerMethodSource(source)
-        }
+        methodSources.forEach { source: MethodSource -> registerMethodSource(source) }
     }
 
     fun descriptors(clazz: Class<*>): List<MethodDescriptor> =
         descriptorsByClass[clazz]?.toList()
             ?: throw IllegalArgumentException("Not registered: ${clazz.name}")
 
-    fun descriptor(id: MethodId): MethodDescriptor =
-        entriesById[id]?.descriptor ?: throwMethodNotFound(id)
+    fun descriptor(id: MethodId): MethodDescriptor = entriesById[id]?.descriptor ?: throwMethodNotFound(id)
 
-    fun method(id: MethodId): Method =
-        entriesById[id]?.javaMethod ?: throwMethodNotFound(id)
+    fun method(id: MethodId): Method = entriesById[id]?.javaMethod ?: throwMethodNotFound(id)
 
     fun executionContext(id: ExecutionId): ExecutionContext =
         executionContextsById[id] ?: throw IllegalArgumentException("Unknown ID: $id")
 
-    fun allDescriptors(): List<MethodDescriptor> =
-        entriesById.values.map { entry: RegistryEntry -> entry.descriptor }
+    fun allDescriptors(): List<MethodDescriptor> = entriesById.values.map { entry: RegistryEntry -> entry.descriptor }
 
-    fun allExecutionContexts(): List<ExecutionContext> =
-        executionContextsById.values.toList()
+    fun allExecutionContexts(): List<ExecutionContext> = executionContextsById.values.toList()
 
-    private fun registerMethodSource(source: MethodSource): Unit {
+    private fun registerMethodSource(source: MethodSource) {
         val clazz: Class<*> = source.declaringClass.java
-
         when (source) {
             is MethodSource.StaticClass -> {
                 registerMethods(
                     clazz = clazz,
                     requireStatic = true,
-                    executionContextFor = { methodId: MethodId ->
-                        ExecutionContext.Static(methodId)
-                    }
+                    executionContextFor = { methodId: MethodId -> ExecutionContext.Static(methodId) }
                 )
             }
 
@@ -139,9 +124,7 @@ class MethodSourceRegistry(
                     clazz = clazz,
                     methodId = source.methodId,
                     requireStatic = true,
-                    executionContextFor = { methodId: MethodId ->
-                        ExecutionContext.Static(methodId)
-                    }
+                    executionContextFor = { methodId: MethodId -> ExecutionContext.Static(methodId) }
                 )
             }
 
@@ -166,26 +149,16 @@ class MethodSourceRegistry(
         clazz: Class<*>,
         requireStatic: Boolean,
         executionContextFor: (MethodId) -> ExecutionContext
-    ): Unit {
-        val descriptors: MutableList<MethodDescriptor> =
-            descriptorsByClass.getOrPut(clazz) { mutableListOf() }
-
-        val kotlinFunctions: List<KFunction<*>> =
-            collectHierarchyFunctions(clazz.kotlin, inheritanceLevel)
-
+    ) {
+        val descriptors: MutableList<MethodDescriptor> = descriptorsByClass.getOrPut(clazz) { mutableListOf() }
         val kotlinFunctionsByJavaMethod: Map<Method, KFunction<*>> =
-            kotlinFunctions
+            collectHierarchyFunctions(clazz)
                 .mapNotNull { function: KFunction<*> ->
-                    function.javaMethod?.let { javaMethod: Method ->
-                        javaMethod to function
-                    }
+                    function.javaMethod?.let { javaMethod: Method -> javaMethod to function }
                 }
                 .toMap()
 
-        val javaMethods: List<Method> =
-            collectHierarchyMethods(clazz, inheritanceLevel)
-
-        for (javaMethod: Method in javaMethods) {
+        for (javaMethod: Method in collectHierarchyMethods(clazz)) {
             val isStaticMethod: Boolean = Modifier.isStatic(javaMethod.modifiers)
             if (isStaticMethod != requireStatic) {
                 continue
@@ -219,22 +192,17 @@ class MethodSourceRegistry(
         methodId: MethodId,
         requireStatic: Boolean,
         executionContextFor: (MethodId) -> ExecutionContext
-    ): Unit {
+    ) {
         val resolved: ResolvedMethod = resolveMethod(clazz, methodId)
         val javaMethod: Method = resolved.javaMethod
 
         if (requireStatic) {
-            require(Modifier.isStatic(javaMethod.modifiers)) {
-                "Method ${methodId.value} must be static"
-            }
+            require(Modifier.isStatic(javaMethod.modifiers)) { "Method ${methodId.value} must be static" }
         } else {
-            require(!Modifier.isStatic(javaMethod.modifiers)) {
-                "Method ${methodId.value} must be an instance method"
-            }
+            require(!Modifier.isStatic(javaMethod.modifiers)) { "Method ${methodId.value} must be an instance method" }
         }
 
-        val descriptors: MutableList<MethodDescriptor> =
-            descriptorsByClass.getOrPut(clazz) { mutableListOf() }
+        val descriptors: MutableList<MethodDescriptor> = descriptorsByClass.getOrPut(clazz) { mutableListOf() }
 
         if (!entriesById.containsKey(methodId)) {
             val descriptor: MethodDescriptor =
@@ -246,160 +214,112 @@ class MethodSourceRegistry(
                 }
 
             descriptors += descriptor
-            entriesById[methodId] = RegistryEntry(
-                descriptor = descriptor,
-                javaMethod = javaMethod
-            )
+            entriesById[methodId] = RegistryEntry(descriptor = descriptor, javaMethod = javaMethod)
         }
 
+        // Intentionally allow multiple execution contexts for the same registered method,
+        // for example when the same instance method is exposed on multiple object instances.
         val executionContext: ExecutionContext = executionContextFor(methodId)
         executionContextsById[executionContext.executionId] = executionContext
     }
 
-    private fun resolveMethod(
-        clazz: Class<*>,
-        methodId: MethodId
-    ): ResolvedMethod {
-        val resolvedJavaMethod: Method? = resolveJavaMethod(clazz, methodId)
+    private fun resolveMethod(clazz: Class<*>, methodId: MethodId): ResolvedMethod {
+        val javaMethods: List<Method> = collectHierarchyMethods(clazz)
+        val kotlinFunctions: List<KFunction<*>> = collectHierarchyFunctions(clazz)
+
+        val resolvedJavaMethod: Method? =
+            javaMethods.firstOrNull { javaMethod: Method -> MethodId.from(javaMethod) == methodId }
+
         if (resolvedJavaMethod != null) {
             val kotlinFunction: KFunction<*>? =
-                collectHierarchyFunctions(clazz.kotlin, inheritanceLevel)
-                    .firstOrNull { function: KFunction<*> ->
-                        function.javaMethod == resolvedJavaMethod
-                    }
-
-            return ResolvedMethod(
-                kotlinFunction = kotlinFunction,
-                javaMethod = resolvedJavaMethod
-            )
+                kotlinFunctions.firstOrNull { function: KFunction<*> -> function.javaMethod == resolvedJavaMethod }
+            return ResolvedMethod(kotlinFunction = kotlinFunction, javaMethod = resolvedJavaMethod)
         }
 
-        val resolvedKotlinMethod: ResolvedMethod? = resolveKotlinMethod(clazz.kotlin, methodId)
-        if (resolvedKotlinMethod != null) {
-            return resolvedKotlinMethod
+        val parsed: ParsedMethodId = ParsedMethodId.parse(methodId)
+
+        if (parsed.declaringClassName != clazz.name) {
+            throwMethodNotFound(methodId)
+        }
+
+        val kotlinFunction: KFunction<*>? =
+            kotlinFunctions.firstOrNull { function: KFunction<*> ->
+                function.name == parsed.methodName &&
+                        valueParameterTypeNames(function) == parsed.parameterTypeNames &&
+                        function.javaMethod != null
+            }
+
+        if (kotlinFunction != null) {
+            return ResolvedMethod(
+                kotlinFunction = kotlinFunction,
+                javaMethod = requireNotNull(kotlinFunction.javaMethod)
+            )
         }
 
         throwMethodNotFound(methodId)
     }
 
-    private fun resolveJavaMethod(
-        clazz: Class<*>,
-        methodId: MethodId
-    ): Method? =
-        collectHierarchyMethods(clazz, inheritanceLevel)
-            .firstOrNull { javaMethod: Method ->
-                MethodId.from(javaMethod) == methodId
-            }
-
-    private fun resolveKotlinMethod(
-        kClass: KClass<*>,
-        methodId: MethodId
-    ): ResolvedMethod? {
-        val parsed: ParsedMethodId = ParsedMethodId.parse(methodId)
-
-        if (parsed.declaringClassName != kClass.java.name) {
-            return null
+    private fun collectHierarchyFunctions(clazz: Class<*>): List<KFunction<*>> =
+        kotlinFunctionsByClass.getOrPut(clazz) {
+            hierarchyFor(clazz.kotlin)
+                .flatMap { current: KClass<*> -> current.declaredMemberFunctions.asSequence() }
+                .filter { function: KFunction<*> ->
+                    val javaMethod: Method? = function.javaMethod
+                    javaMethod != null &&
+                            Modifier.isPublic(javaMethod.modifiers) &&
+                            javaMethod.declaringClass != Any::class.java &&
+                            !javaMethod.isSynthetic &&
+                            !javaMethod.isBridge
+                }
+                .distinctBy { function: KFunction<*> ->
+                    "${function.name}(${valueParameterTypeNames(function).joinToString(",")})"
+                }
+                .sortedBy { function: KFunction<*> ->
+                    val javaMethod: Method = requireNotNull(function.javaMethod) {
+                        "Function ${function.name} does not have a Java method"
+                    }
+                    MethodId.from(javaMethod).value
+                }
+                .toList()
         }
 
-        val kotlinFunction: KFunction<*> =
-            collectHierarchyFunctions(kClass, inheritanceLevel)
-                .firstOrNull { function: KFunction<*> ->
-                    function.name == parsed.methodName &&
-                            valueParameterTypeNames(function) == parsed.parameterTypeNames &&
-                            function.javaMethod != null
-                }
-                ?: return null
-
-        return ResolvedMethod(
-            kotlinFunction = kotlinFunction,
-            javaMethod = kotlinFunction.javaMethod!!
-        )
-    }
-
-    private fun collectHierarchyFunctions(
-        kClass: KClass<*>,
-        level: InheritanceLevel
-    ): List<KFunction<*>> {
-        val hierarchy: Sequence<KClass<*>> =
-            generateSequence(kClass) { current: KClass<*> ->
-                current.java.superclass?.kotlin
-            }
-
-        val limitedHierarchy: Sequence<KClass<*>> =
-            when (level) {
-                InheritanceLevel.DeclaredOnly -> hierarchy.take(1)
-                InheritanceLevel.All -> hierarchy
-                is InheritanceLevel.Depth -> hierarchy.take(level.value + 1)
-            }
-
-        return limitedHierarchy
-            .flatMap { current: KClass<*> ->
-                current.members
-                    .filterIsInstance<KFunction<*>>()
-                    .asSequence()
-            }
-            .filter { function: KFunction<*> ->
-                val javaMethod: Method? = function.javaMethod
-                javaMethod != null &&
-                        Modifier.isPublic(javaMethod.modifiers) &&
-                        javaMethod.declaringClass != Any::class.java &&
-                        !javaMethod.isSynthetic &&
-                        !javaMethod.isBridge
-            }
-            .distinctBy { function: KFunction<*> ->
-                "${function.name}(${valueParameterTypeNames(function).joinToString(",")})"
-            }
-            .sortedBy { function: KFunction<*> ->
-                val javaMethod: Method = function.javaMethod
-                    ?: error("Function ${function.name} does not have a Java method")
-                MethodId.from(javaMethod).value
-            }
-            .toList()
-    }
-
-    private fun collectHierarchyMethods(
-        clazz: Class<*>,
-        level: InheritanceLevel
-    ): List<Method> {
-        val hierarchy: Sequence<Class<*>> =
-            generateSequence(clazz) { current: Class<*> ->
-                current.superclass
-            }
-
-        val limitedHierarchy: Sequence<Class<*>> =
-            when (level) {
-                InheritanceLevel.DeclaredOnly -> hierarchy.take(1)
-                InheritanceLevel.All -> hierarchy
-                is InheritanceLevel.Depth -> hierarchy.take(level.value + 1)
-            }
-
-        return limitedHierarchy
-            .filter { current: Class<*> ->
-                current != Any::class.java
-            }
-            .flatMap { current: Class<*> ->
-                current.declaredMethods.asSequence()
-            }
+    private fun collectHierarchyMethods(clazz: Class<*>): List<Method> = javaMethodsByClass.getOrPut(clazz) {
+        hierarchyFor(clazz)
+            .filter { current: Class<*> -> current != Any::class.java }
+            .flatMap { current: Class<*> -> current.declaredMethods.asSequence() }
             .filter { javaMethod: Method ->
                 Modifier.isPublic(javaMethod.modifiers) &&
                         !javaMethod.isSynthetic &&
                         !javaMethod.isBridge
             }
-            .distinctBy { javaMethod: Method ->
-                MethodId.from(javaMethod)
-            }
-            .sortedBy { javaMethod: Method ->
-                MethodId.from(javaMethod).value
-            }
+            .distinctBy { javaMethod: Method -> MethodId.from(javaMethod) }
+            .sortedBy { javaMethod: Method -> MethodId.from(javaMethod).value }
             .toList()
     }
 
-    private fun valueParameterTypeNames(
-        function: KFunction<*>
-    ): List<String> {
-        val javaMethod: Method = function.javaMethod
-            ?: error("Function ${function.name} does not have a Java method")
+    private fun hierarchyFor(root: KClass<*>): Sequence<KClass<*>> {
+        val hierarchy: Sequence<KClass<*>> =
+            generateSequence(root) { current: KClass<*> -> current.java.superclass?.kotlin }
 
+        return when (inheritanceLevel) {
+            InheritanceLevel.DeclaredOnly -> hierarchy.take(1)
+            InheritanceLevel.All -> hierarchy
+            is InheritanceLevel.Depth -> hierarchy.take(inheritanceLevel.value + 1)
+        }
+    }
+
+    private fun hierarchyFor(root: Class<*>): Sequence<Class<*>> {
+        val hierarchy: Sequence<Class<*>> = generateSequence(root) { current: Class<*> -> current.superclass }
+
+        return when (inheritanceLevel) {
+            InheritanceLevel.DeclaredOnly -> hierarchy.take(1)
+            InheritanceLevel.All -> hierarchy
+            is InheritanceLevel.Depth -> hierarchy.take(inheritanceLevel.value + 1)
+        }
+    }
+
+    private fun valueParameterTypeNames(function: KFunction<*>): List<String> {
+        val javaMethod: Method = function.javaMethod ?: error("Function ${function.name} does not have a Java method")
         return javaMethod.parameterTypes.map { parameterType: Class<*> ->
             parameterType.name
         }

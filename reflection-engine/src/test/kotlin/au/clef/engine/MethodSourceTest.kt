@@ -50,12 +50,12 @@ class MethodSourceTest {
         val source: MethodSource.Instance =
             MethodSource.Instance(
                 instance = instance,
-                instanceDescription = "Sample Service"
+                sourceDescription = "Sample Service"
             )
 
         assertEquals(SampleService2::class, source.declaringClass)
         assertSame(instance, source.instance)
-        assertEquals("Sample Service", source.instanceDescription)
+        assertEquals("Sample Service", source.sourceDescription)
         assertIs<MethodSource.InstanceSource>(source)
     }
 
@@ -65,14 +65,14 @@ class MethodSourceTest {
         val source: MethodSource.InstanceMethod =
             MethodSource.InstanceMethod(
                 instance = instance,
-                instanceDescription = "Sample Service",
+                sourceDescription = "Sample Service",
                 methodName = "greet",
                 String::class
             )
 
         assertEquals(SampleService2::class, source.declaringClass)
         assertSame(instance, source.instance)
-        assertEquals("Sample Service", source.instanceDescription)
+        assertEquals("Sample Service", source.sourceDescription)
         assertEquals(
             MethodId.from(SampleService2::class, "greet", String::class),
             source.methodId
@@ -87,13 +87,13 @@ class MethodSourceTest {
         val source: MethodSource.InstanceMethod =
             MethodSource.InstanceMethod(
                 instance = instance,
-                instanceDescription = "Sample Service",
+                sourceDescription = "Sample Service",
                 methodId = methodId
             )
 
         assertEquals(SampleService2::class, source.declaringClass)
         assertSame(instance, source.instance)
-        assertEquals("Sample Service", source.instanceDescription)
+        assertEquals("Sample Service", source.sourceDescription)
         assertEquals(methodId, source.methodId)
     }
 }

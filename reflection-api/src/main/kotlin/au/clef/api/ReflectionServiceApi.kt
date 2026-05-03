@@ -66,7 +66,7 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
             : ExecutionDescriptorDto =
         ExecutionDescriptorDto(
             executionId = ctx.executionId,
-            instanceDescription = (ctx as? ExecutionContext.Instance)?.instanceDescription,
+            sourceDescription = ctx.sourceDescription,
             reflectedName = desc.reflectedName,
             displayName = desc.displayName,
             returnType = desc.returnType.name,

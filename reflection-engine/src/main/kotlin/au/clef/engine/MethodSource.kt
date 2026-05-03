@@ -7,67 +7,112 @@ import kotlin.reflect.KParameter
 import kotlin.reflect.full.declaredMemberFunctions
 import kotlin.reflect.jvm.javaMethod
 
-sealed class MethodSource(val declaringClass: KClass<*>) {
+sealed class MethodSource(
+    val declaringClass: KClass<*>,
+    val sourceDescription: String? = null
+) {
 
     sealed class InstanceSource(
         declaringClass: KClass<*>,
-        val instance: Any,
-        val instanceDescription: String
-    ) : MethodSource(declaringClass)
+        sourceDescription: String,
+        val instance: Any
+    ) : MethodSource(
+        declaringClass = declaringClass,
+        sourceDescription = sourceDescription
+    )
 
     /**
      * Expose all supported static methods on this class.
      */
-    class StaticClass(declaringClass: KClass<*>) : MethodSource(declaringClass)
+    class StaticClass(
+        declaringClass: KClass<*>,
+        sourceDescription: String? = null
+    ) : MethodSource(
+        declaringClass = declaringClass,
+        sourceDescription = sourceDescription
+    )
 
     /**
      * Expose exactly one static method.
      */
-    class StaticMethod : MethodSource {
-
-        val methodId: MethodId
+    class StaticMethod(
+        declaringClass: KClass<*>,
+        val methodId: MethodId,
+        sourceDescription: String? = null
+    ) : MethodSource(
+        declaringClass = declaringClass,
+        sourceDescription = sourceDescription
+    ) {
 
         constructor(
             declaringClass: KClass<*>,
             methodName: String,
             vararg parameterTypes: KClass<*>
-        ) : super(declaringClass) {
-            this.methodId = MethodId.from(declaringClass, methodName, *parameterTypes)
-        }
+        ) : this(
+            declaringClass = declaringClass,
+            methodId = MethodId.from(declaringClass, methodName, *parameterTypes)
+        )
 
-        constructor(function: KFunction<*>) : super(
+        constructor(
+            declaringClass: KClass<*>,
+            sourceDescription: String?,
+            methodName: String,
+            vararg parameterTypes: KClass<*>
+        ) : this(
+            declaringClass = declaringClass,
+            methodId = MethodId.from(declaringClass, methodName, *parameterTypes),
+            sourceDescription = sourceDescription
+        )
+
+        constructor(
+            function: KFunction<*>,
+            sourceDescription: String? = null
+        ) : this(
             declaringClass = requireNotNull(function.javaMethod) {
                 "Function ${function.name} does not have a Java method"
-            }.declaringClass.kotlin
-        ) {
-            this.methodId = MethodId.from(
+            }.declaringClass.kotlin,
+            methodId = MethodId.from(
                 requireNotNull(function.javaMethod) {
                     "Function ${function.name} does not have a Java method"
                 }
-            )
-        }
+            ),
+            sourceDescription = sourceDescription
+        )
     }
 
     /**
      * Expose all instance methods on this object.
      */
-    class Instance(instance: Any, instanceDescription: String) :
-        InstanceSource(instance::class, instance, instanceDescription)
+    class Instance(
+        instance: Any,
+        sourceDescription: String
+    ) : InstanceSource(
+        declaringClass = instance::class,
+        sourceDescription = sourceDescription,
+        instance = instance
+    )
 
     /**
      * Expose exactly one instance method on this object.
      */
-    class InstanceMethod(instance: Any, instanceDescription: String, val methodId: MethodId) :
-        InstanceSource(instance::class, instance, instanceDescription) {
+    class InstanceMethod(
+        instance: Any,
+        sourceDescription: String,
+        val methodId: MethodId
+    ) : InstanceSource(
+        declaringClass = instance::class,
+        sourceDescription = sourceDescription,
+        instance = instance
+    ) {
 
         constructor(
             instance: Any,
-            instanceDescription: String,
+            sourceDescription: String,
             methodName: String,
             vararg parameterTypes: KClass<*>
         ) : this(
             instance = instance,
-            instanceDescription = instanceDescription,
+            sourceDescription = sourceDescription,
             methodId = validatedMethodId(
                 declaringClass = instance::class,
                 methodName = methodName,
@@ -77,11 +122,11 @@ sealed class MethodSource(val declaringClass: KClass<*>) {
 
         constructor(
             instance: Any,
-            instanceDescription: String,
+            sourceDescription: String,
             function: KFunction<*>
         ) : this(
             instance = instance,
-            instanceDescription = instanceDescription,
+            sourceDescription = sourceDescription,
             methodId = MethodId.from(
                 requireNotNull(function.javaMethod) {
                     "Function ${function.name} does not have a Java method"
@@ -105,8 +150,8 @@ sealed class MethodSource(val declaringClass: KClass<*>) {
                             return@firstOrNull false
                         }
 
-                        val valueParameters = function.parameters
-                            .filter { parameter: KParameter ->
+                        val valueParameters: List<KParameter> =
+                            function.parameters.filter { parameter: KParameter ->
                                 parameter.kind == KParameter.Kind.VALUE
                             }
 
@@ -115,10 +160,12 @@ sealed class MethodSource(val declaringClass: KClass<*>) {
                         }
 
                         valueParameters.mapIndexed { index: Int, parameter: KParameter ->
-                            val classifier = parameter.type.classifier as? KClass<*>
-                                ?: return@firstOrNull false
+                            val classifier: KClass<*> =
+                                parameter.type.classifier as? KClass<*>
+                                    ?: return@firstOrNull false
+
                             classifier == parameterTypes[index]
-                        }.all { it }
+                        }.all { matches: Boolean -> matches }
                     }
 
                 if (matchingFunction != null) {

@@ -55,12 +55,12 @@ class InlineScalarJsonTest {
     private val reflectionConfig: ReflectionConfig = reflectionConfig(
         InstanceMethod(
             instance = customerService,
-            instanceDescription = "Customer Service",
+            sourceDescription = "Customer Service",
             function = CustomerService::findCustomer
         ),
         InstanceMethod(
             instance = customerService,
-            instanceDescription = "Customer Service",
+            sourceDescription = "Customer Service",
             function = CustomerService::normalizeEmail
         )
     )

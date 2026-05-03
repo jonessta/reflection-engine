@@ -38,7 +38,7 @@ class MethodSourceRegistryTest {
             methodSources = listOf(
                 MethodSource.InstanceMethod(
                     instance = service,
-                    instanceDescription = "Customer Service",
+                    sourceDescription = "Customer Service",
                     function = CustomerService::findCustomer
                 )
             )
@@ -116,7 +116,7 @@ class MethodSourceRegistryTest {
 
         instanceContexts.forEach { context: ExecutionContext.Instance ->
             assertEquals(service, context.instance)
-            assertEquals("Customer Service", context.instanceDescription)
+            assertEquals("Customer Service", context.sourceDescription)
         }
     }
 
@@ -155,7 +155,7 @@ class MethodSourceRegistryTest {
         val resolvedInstance: ExecutionContext.Instance = assertIs(resolved)
         assertEquals(context.executionId, resolvedInstance.executionId)
         assertEquals(service, resolvedInstance.instance)
-        assertEquals("Customer Service", resolvedInstance.instanceDescription)
+        assertEquals("Customer Service", resolvedInstance.sourceDescription)
     }
 
     @Test
@@ -242,7 +242,7 @@ class MethodSourceRegistryTest {
                     methodSources = listOf(
                         MethodSource.InstanceMethod(
                             instance = MixedMethods(),
-                            instanceDescription = "Mixed",
+                            sourceDescription = "Mixed",
                             methodName = "staticEcho",
                             String::class
                         )

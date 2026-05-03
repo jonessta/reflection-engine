@@ -30,7 +30,7 @@ private val outputFile = File("reflection-demo/src/main/resources")
 private val reflectionConfig: ReflectionConfig = reflectionConfig(
     InstanceMethod(
         instance = acmeService,
-        instanceDescription = "ACME Service",
+        sourceDescription = "ACME Service",
         methodName = "personAddress",
         Person::class
     ),

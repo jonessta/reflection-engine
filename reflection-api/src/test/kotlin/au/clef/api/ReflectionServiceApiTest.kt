@@ -56,7 +56,7 @@ class ReflectionServiceApiTest {
                 descriptor.reflectedName == "greet"
             }
 
-        assertEquals("Sample Service", greetDescriptor.instanceDescription)
+        assertEquals("Sample Service", greetDescriptor.sourceDescription)
         assertFalse(greetDescriptor.isStatic)
     }
 
@@ -67,7 +67,7 @@ class ReflectionServiceApiTest {
                 descriptor.reflectedName == "sum"
             }
 
-        assertNull(sumDescriptor.instanceDescription)
+        assertNull(sumDescriptor.sourceDescription)
         assertTrue(sumDescriptor.isStatic)
     }
 

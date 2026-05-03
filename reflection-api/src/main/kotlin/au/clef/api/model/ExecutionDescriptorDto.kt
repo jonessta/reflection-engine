@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ExecutionDescriptorDto(
     @Contextual val executionId: ExecutionId,
-    val instanceDescription: String? = null,
+    val sourceDescription: String? = null,
     val reflectedName: String,
     val displayName: String? = null,
     val returnType: String,

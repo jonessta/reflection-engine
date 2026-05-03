@@ -266,10 +266,7 @@ class JavaInteropJsonTest {
     ): ExecutionDescriptorDto =
         ExecutionDescriptorDto(
             executionId = executionContext.executionId,
-            instanceDescription = when (executionContext) {
-                is ExecutionContext.Static -> null
-                is ExecutionContext.Instance -> executionContext.instanceDescription
-            },
+            sourceDescription = executionContext.sourceDescription,
             reflectedName = descriptor.reflectedName,
             displayName = descriptor.displayName,
             returnType = descriptor.returnType.name,

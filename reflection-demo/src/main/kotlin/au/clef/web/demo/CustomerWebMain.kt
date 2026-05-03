@@ -19,7 +19,7 @@ internal val customerReflectionConfig = reflectionConfig(
     StaticMethod(::myAddKotlinFunction),
 //    StaticClass(Math::class),
     StaticMethod(Math::class, "min", Int::class, Int::class),
-    StaticMethod(Math::class, "max", Int::class, Int::class)
+    StaticMethod(Math::class, "Minimum Of Two Numbers", "min", Int::class, Int::class),
 )
     .supportingTypes(Customer::class, Address::class, Person::class)
     .build()

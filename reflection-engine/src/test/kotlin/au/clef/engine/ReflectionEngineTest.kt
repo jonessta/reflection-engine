@@ -269,7 +269,7 @@ class ReflectionEngineTest {
         val resolved: ExecutionContext = engine.executionContext(context.executionId)
         val resolvedInstance: ExecutionContext.Instance = assertIs(resolved)
         assertEquals(context.executionId, resolvedInstance.executionId)
-        assertEquals("Sample Service", resolvedInstance.instanceDescription)
+        assertEquals("Sample Service", resolvedInstance.sourceDescription)
         assertEquals(instance, resolvedInstance.instance)
     }
 

@@ -56,7 +56,7 @@ class MethodSourceTest {
         assertEquals(SampleService2::class, source.declaringClass)
         assertSame(instance, source.instance)
         assertEquals("Sample Service", source.instanceDescription)
-        assertIs<MethodSource.ExposableInstance>(source)
+        assertIs<MethodSource.InstanceSource>(source)
     }
 
     @Test
@@ -77,7 +77,7 @@ class MethodSourceTest {
             MethodId.from(SampleService2::class, "greet", String::class),
             source.methodId
         )
-        assertIs<MethodSource.ExposableInstance>(source)
+        assertIs<MethodSource.InstanceSource>(source)
     }
 
     @Test

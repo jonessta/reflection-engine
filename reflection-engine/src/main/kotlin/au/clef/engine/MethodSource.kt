@@ -3,15 +3,17 @@ package au.clef.engine
 import au.clef.engine.model.MethodId
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
+import kotlin.reflect.KParameter
+import kotlin.reflect.full.declaredMemberFunctions
 import kotlin.reflect.jvm.javaMethod
 
 sealed class MethodSource(val declaringClass: KClass<*>) {
 
-    interface ExposableInstance {
-
+    sealed class InstanceSource(
+        declaringClass: KClass<*>,
+        val instance: Any,
         val instanceDescription: String
-        val instance: Any
-    }
+    ) : MethodSource(declaringClass)
 
     /**
      * Expose all supported static methods on this class.
@@ -25,33 +27,38 @@ sealed class MethodSource(val declaringClass: KClass<*>) {
 
         val methodId: MethodId
 
-        constructor(declaringClass: KClass<*>, methodName: String, vararg parameterTypes: KClass<*>)
-                : super(declaringClass) {
+        constructor(
+            declaringClass: KClass<*>,
+            methodName: String,
+            vararg parameterTypes: KClass<*>
+        ) : super(declaringClass) {
             this.methodId = MethodId.from(declaringClass, methodName, *parameterTypes)
         }
 
-        constructor(function: KFunction<*>)
-                : super(declaringClass = requireNotNull(function.javaMethod) { "Function ${function.name} does not have a Java method" }.declaringClass.kotlin) {
-            this.methodId = MethodId.from(function.javaMethod!!)
+        constructor(function: KFunction<*>) : super(
+            declaringClass = requireNotNull(function.javaMethod) {
+                "Function ${function.name} does not have a Java method"
+            }.declaringClass.kotlin
+        ) {
+            this.methodId = MethodId.from(
+                requireNotNull(function.javaMethod) {
+                    "Function ${function.name} does not have a Java method"
+                }
+            )
         }
     }
 
     /**
      * Expose all instance methods on this object.
      */
-    class Instance(
-        override val instance: Any,
-        override val instanceDescription: String
-    ) : MethodSource(instance::class), ExposableInstance
+    class Instance(instance: Any, instanceDescription: String) :
+        InstanceSource(instance::class, instance, instanceDescription)
 
     /**
      * Expose exactly one instance method on this object.
      */
-    class InstanceMethod(
-        override val instance: Any,
-        override val instanceDescription: String,
-        val methodId: MethodId
-    ) : MethodSource(instance::class), ExposableInstance {
+    class InstanceMethod(instance: Any, instanceDescription: String, val methodId: MethodId) :
+        InstanceSource(instance::class, instance, instanceDescription) {
 
         constructor(
             instance: Any,
@@ -91,20 +98,34 @@ sealed class MethodSource(val declaringClass: KClass<*>) {
             ): MethodId {
                 val requestedId: MethodId =
                     MethodId.from(declaringClass, methodName, *parameterTypes)
+
                 val matchingFunction: KFunction<*>? =
-                    declaringClass.members
-                        .filterIsInstance<KFunction<*>>()
-                        .firstOrNull { function: KFunction<*> ->
-                            function.name == methodName &&
-                                    function.parameters
-                                        .filter { it.kind == kotlin.reflect.KParameter.Kind.VALUE }
-                                        .mapNotNull { it.type.classifier as? KClass<*> } == parameterTypes.toList()
+                    declaringClass.declaredMemberFunctions.firstOrNull { function: KFunction<*> ->
+                        if (function.name != methodName) {
+                            return@firstOrNull false
                         }
+
+                        val valueParameters = function.parameters
+                            .filter { parameter: KParameter ->
+                                parameter.kind == KParameter.Kind.VALUE
+                            }
+
+                        if (valueParameters.size != parameterTypes.size) {
+                            return@firstOrNull false
+                        }
+
+                        valueParameters.mapIndexed { index: Int, parameter: KParameter ->
+                            val classifier = parameter.type.classifier as? KClass<*>
+                                ?: return@firstOrNull false
+                            classifier == parameterTypes[index]
+                        }.all { it }
+                    }
 
                 if (matchingFunction != null) {
                     val javaMethod = requireNotNull(matchingFunction.javaMethod) {
                         "Function $methodName does not have a Java method"
                     }
+
                     val actualId: MethodId = MethodId.from(javaMethod)
 
                     require(requestedId == actualId) {

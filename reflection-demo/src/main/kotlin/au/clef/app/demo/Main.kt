@@ -20,13 +20,19 @@ import kotlin.reflect.jvm.javaMethod
 
 private val PERSON_ADDRESS_METHOD_ID =
     MethodId.from(AcmeService::class, "personAddress", Person::class)
+
 private val STATIC_JAVA_MATH_MAX_METHOD_ID =
     MethodId.from(Math::class, "max", Int::class, Int::class)
+
 private val KOTLIN_ADD_METHOD_ID = MethodId.from(::myAddKotlinFunction.javaMethod!!)
+
 private val acmeService = AcmeService()
+
 private const val METADATA_RESOURCE_PATH = "/config/method-metadata.json"
+
 private val outputFile = File("reflection-demo/src/main/resources")
     .resolve(METADATA_RESOURCE_PATH.removePrefix("/"))
+
 private val reflectionConfig: ReflectionConfig = reflectionConfig(
     InstanceMethod(
         instance = acmeService,
@@ -40,15 +46,18 @@ private val reflectionConfig: ReflectionConfig = reflectionConfig(
     .supportingTypes(Person::class, Address::class)
     .metadataResourcePath(METADATA_RESOURCE_PATH)
     .build()
+
 private val reflectionRegistry = MethodSourceRegistry(
     methodSources = reflectionConfig.methodSources,
     methodSupportingTypes = reflectionConfig.methodSupportingTypes,
     inheritanceLevel = reflectionConfig.inheritanceLevel
 )
+
 private val metadataRegistry =
     runCatching { MetadataLoader.fromResource(METADATA_RESOURCE_PATH) }
         .getOrNull()
         ?.let(::DescriptorMetadataRegistry)
+
 private val engine =
     ReflectionEngine(reflectionConfig = reflectionConfig, metadataRegistry = metadataRegistry)
 
@@ -84,7 +93,6 @@ private fun validateMetadata() {
 
 private fun showAllDescriptors() {
     val descriptors: List<MethodDescriptor> = engine.descriptors(AcmeService::class)
-
     descriptors.forEach { descriptor ->
         println("METHOD: ${descriptor.id}")
 

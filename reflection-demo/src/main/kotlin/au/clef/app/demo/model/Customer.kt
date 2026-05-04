@@ -5,6 +5,7 @@ value class CustomerId(val value: String)
 
 @JvmInline
 value class EmailAddress(val value: String)
+
 data class Customer(
     val id: CustomerId,
     val name: String,

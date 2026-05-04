@@ -13,8 +13,7 @@ object MethodIdSerializer : KSerializer<MethodId> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("MethodId", PrimitiveKind.STRING)
 
-    override fun serialize(encoder: Encoder, value: MethodId) =
-        encoder.encodeString(value.value)
+    override fun serialize(encoder: Encoder, value: MethodId) = encoder.encodeString(value.value)
 
     override fun deserialize(decoder: Decoder): MethodId =
         MethodId.fromValue(decoder.decodeString())

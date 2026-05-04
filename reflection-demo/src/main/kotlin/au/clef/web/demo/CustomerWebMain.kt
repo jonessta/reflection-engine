@@ -13,7 +13,7 @@ private val customerService: CustomerService = CustomerService()
 private val acmeService: AcmeService = AcmeService()
 
 internal val customerReflectionConfig = reflectionConfig(
-    Instance(acmeService, "AcmeService"),
+    Instance(acmeService, "Acme Service"),
     InstanceMethod(customerService, "Customer Service", CustomerService::findCustomer),
     InstanceMethod(customerService, "Customer Service", CustomerService::normalizeEmail),
     StaticMethod(::myAddKotlinFunction),

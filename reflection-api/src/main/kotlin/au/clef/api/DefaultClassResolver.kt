@@ -3,7 +3,8 @@ package au.clef.api
 import au.clef.engine.registry.MethodSourceTypes
 
 class DefaultClassResolver(
-    methodSourceTypes: MethodSourceTypes, private val scalarRegistry: ScalarTypeRegistry
+    methodSourceTypes: MethodSourceTypes,
+    private val scalarRegistry: ScalarTypeRegistry
 ) : ClassResolver {
 
     private val classesByName: Map<String, Class<*>> = buildMap {

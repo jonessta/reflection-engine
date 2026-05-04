@@ -24,7 +24,6 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
 
     private fun materializeInternal(value: Value, target: Type): Any? {
         val rawTarget: Class<*> = rawClassOf(target)
-
         if (value is Value.Null) {
             return handleNull(rawTarget)
         }
@@ -144,31 +143,35 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
         val kClass: KClass<*> = target.kotlin
         val primaryConstructor: KFunction<Any> = kClass.primaryConstructor ?: return null
         val constructorParameterNames: Set<String> =
-            primaryConstructor.parameters.mapNotNull { parameter: KParameter -> parameter.name }
+            primaryConstructor.parameters
+                .mapNotNull { parameter: KParameter -> parameter.name }
                 .toSet()
 
         if ((value.fields.keys - constructorParameterNames).isNotEmpty()) {
             return null
         }
         val arguments: Map<KParameter, Any?> =
-            primaryConstructor.parameters.associateWith { parameter: KParameter ->
-                val parameterName: String =
-                    parameter.name
+            primaryConstructor.parameters
+                .associateWith { parameter: KParameter ->
+                    val parameterName: String = parameter.name
                         ?: throw ObjectConstructionException(
                             "Unnamed Kotlin constructor parameter on ${target.name}"
                         )
-                val fieldValue: Value? = value.fields[parameterName]
+                    val fieldValue: Value? = value.fields[parameterName]
 
-                when {
-                    fieldValue != null -> materializeInternal(fieldValue, parameter.type.javaType)
+                    when {
+                        fieldValue != null -> materializeInternal(
+                            fieldValue,
+                            parameter.type.javaType
+                        )
 
-                    parameter.isOptional -> null
-                    parameter.type.isMarkedNullable -> null
-                    else -> throw ObjectConstructionException(
-                        "Missing mandatory parameter '$parameterName' for ${target.name}"
-                    )
+                        parameter.isOptional -> null
+                        parameter.type.isMarkedNullable -> null
+                        else -> throw ObjectConstructionException(
+                            "Missing mandatory parameter '$parameterName' for ${target.name}"
+                        )
+                    }
                 }
-            }
                 .filterNot { entry: Map.Entry<KParameter, Any?> ->
                     entry.key.isOptional && value.fields[entry.key.name] == null
                 }

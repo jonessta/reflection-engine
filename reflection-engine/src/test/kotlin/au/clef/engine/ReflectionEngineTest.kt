@@ -274,21 +274,6 @@ class ReflectionEngineTest {
     }
 
     @Test
-    fun knownClasses_andDeclaringClasses_areExposedThroughEngine() {
-        val engine: ReflectionEngine = testEngine(
-            reflectionConfig(
-                MethodSource.StaticClass(SampleStatics2::class)
-            )
-                .supportingTypes(SampleSupport::class)
-                .build()
-        )
-
-        assertTrue(engine.declaringClasses.contains(SampleStatics2::class.java))
-        assertTrue(engine.knownClasses.contains(SampleStatics2::class.java))
-        assertTrue(engine.knownClasses.contains(SampleSupport::class.java))
-    }
-
-    @Test
     fun descriptors_returnsDecoratedList_whenMetadataExists() {
         val methodId: MethodId = MethodId.from(
             SampleService2::class,

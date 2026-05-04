@@ -1,6 +1,6 @@
 package au.clef.api
 
-import au.clef.engine.registry.MethodSourceTypes
+import au.clef.engine.registry.KnownTypeSource
 import kotlin.test.*
 
 class DefaultClassResolverTest {
@@ -8,7 +8,7 @@ class DefaultClassResolverTest {
     @Test
     fun resolve_returnsStructuredType_forKnownQualifiedClassName() {
         val resolver: DefaultClassResolver = DefaultClassResolver(
-            methodSourceTypes = FakeMethodSourceTypes(
+            knownTypeSource = FakeKnownTypeSource(
                 knownClasses = listOf(Person1::class.java)
             ),
             scalarRegistry = ScalarTypeRegistry()
@@ -21,7 +21,7 @@ class DefaultClassResolverTest {
     @Test
     fun resolve_returnsStructuredType_forUniqueSimpleName() {
         val resolver: DefaultClassResolver = DefaultClassResolver(
-            methodSourceTypes = FakeMethodSourceTypes(
+            knownTypeSource = FakeKnownTypeSource(
                 knownClasses = listOf(Person1::class.java)
             ),
             scalarRegistry = ScalarTypeRegistry()
@@ -34,7 +34,7 @@ class DefaultClassResolverTest {
     @Test
     fun resolve_returnsScalarType_forKnownScalarQualifiedName() {
         val resolver: DefaultClassResolver = DefaultClassResolver(
-            methodSourceTypes = FakeMethodSourceTypes(
+            knownTypeSource = FakeKnownTypeSource(
                 knownClasses = listOf(String::class.java)
             ),
             scalarRegistry = ScalarTypeRegistry()
@@ -47,7 +47,7 @@ class DefaultClassResolverTest {
     @Test
     fun resolve_returnsScalarType_forKnownScalarSimpleName() {
         val resolver: DefaultClassResolver = DefaultClassResolver(
-            methodSourceTypes = FakeMethodSourceTypes(
+            knownTypeSource = FakeKnownTypeSource(
                 knownClasses = listOf(String::class.java)
             ),
             scalarRegistry = ScalarTypeRegistry()
@@ -60,7 +60,7 @@ class DefaultClassResolverTest {
     @Test
     fun resolve_prefersQualifiedNames_evenWhenSimpleNamesAreAmbiguous() {
         val resolver: DefaultClassResolver = DefaultClassResolver(
-            methodSourceTypes = FakeMethodSourceTypes(
+            knownTypeSource = FakeKnownTypeSource(
                 knownClasses = listOf(
                     au.clef.api.alpha.Duplicate::class.java,
                     au.clef.api.beta.Duplicate::class.java
@@ -84,7 +84,7 @@ class DefaultClassResolverTest {
     @Test
     fun resolve_rejectsAmbiguousSimpleName() {
         val resolver: DefaultClassResolver = DefaultClassResolver(
-            methodSourceTypes = FakeMethodSourceTypes(
+            knownTypeSource = FakeKnownTypeSource(
                 knownClasses = listOf(
                     au.clef.api.alpha.Duplicate::class.java,
                     au.clef.api.beta.Duplicate::class.java
@@ -102,7 +102,7 @@ class DefaultClassResolverTest {
     @Test
     fun resolve_rejectsUnknownType() {
         val resolver: DefaultClassResolver = DefaultClassResolver(
-            methodSourceTypes = FakeMethodSourceTypes(
+            knownTypeSource = FakeKnownTypeSource(
                 knownClasses = listOf(Person1::class.java)
             ),
             scalarRegistry = ScalarTypeRegistry()
@@ -117,7 +117,7 @@ class DefaultClassResolverTest {
     @Test
     fun resolve_handlesMixedScalarAndStructuredKnownClasses() {
         val resolver: DefaultClassResolver = DefaultClassResolver(
-            methodSourceTypes = FakeMethodSourceTypes(
+            knownTypeSource = FakeKnownTypeSource(
                 knownClasses = listOf(
                     String::class.java,
                     Person1::class.java,
@@ -136,9 +136,9 @@ class DefaultClassResolverTest {
     }
 }
 
-private data class FakeMethodSourceTypes(
+private data class FakeKnownTypeSource(
     override val declaringClasses: List<Class<*>> = emptyList(),
     override val knownClasses: List<Class<*>>
-) : MethodSourceTypes
+) : KnownTypeSource
 
 private class Person1

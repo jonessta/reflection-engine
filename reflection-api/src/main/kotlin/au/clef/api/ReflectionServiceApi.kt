@@ -30,7 +30,7 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
     private val responseMapper: ResponseValueMapper = ResponseValueMapper(scalarRegistry)
 
     val jsonSerializersModule: SerializersModule =
-        valueSerializersModule(DefaultClassResolver(engine, scalarRegistry))
+        valueSerializersModule(DefaultClassResolver(apiConfig.reflectionConfig, scalarRegistry))
 
     fun invoke(request: InvocationRequest): Value {
         val context: ExecutionContext = engine.executionContext(request.executionId)

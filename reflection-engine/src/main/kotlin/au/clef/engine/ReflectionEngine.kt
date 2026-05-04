@@ -4,23 +4,19 @@ import au.clef.engine.model.ExecutionId
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
 import au.clef.engine.registry.MethodSourceRegistry
-import au.clef.engine.registry.MethodSourceTypes
 import au.clef.metadata.DescriptorMetadataRegistry
 import kotlin.reflect.KClass
 
 class ReflectionEngine(
     reflectionConfig: ReflectionConfig,
     private val metadataRegistry: DescriptorMetadataRegistry? = null
-) : MethodSourceTypes {
+) {
 
     private val reflectionRegistry = MethodSourceRegistry(
         methodSources = reflectionConfig.methodSources,
         methodSupportingTypes = reflectionConfig.methodSupportingTypes,
         inheritanceLevel = reflectionConfig.inheritanceLevel
     )
-    override val declaringClasses: List<Class<*>> get() = reflectionRegistry.declaringClasses
-
-    override val knownClasses: List<Class<*>> get() = reflectionRegistry.knownClasses
 
     fun executionContext(executionId: ExecutionId): ExecutionContext =
         reflectionRegistry.executionContext(executionId)

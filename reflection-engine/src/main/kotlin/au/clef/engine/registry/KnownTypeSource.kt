@@ -1,6 +1,6 @@
 package au.clef.engine.registry
 
-interface MethodSourceTypes {
+interface KnownTypeSource {
 
     /**
      * Classes whose methods are directly exposed for invocation.

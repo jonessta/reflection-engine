@@ -49,11 +49,12 @@ private data class ParsedMethodId(
     }
 }
 
+// todo get knowtypes from config - change constructor
 class MethodSourceRegistry(
     methodSources: Collection<MethodSource>,
     methodSupportingTypes: Collection<KClass<*>> = emptyList(),
     private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-) : MethodSourceTypes {
+) : KnownTypeSource {
 
     private val descriptorsByClass: MutableMap<Class<*>, MutableList<MethodDescriptor>> =
         LinkedHashMap()
@@ -66,10 +67,12 @@ class MethodSourceRegistry(
 
     private val kotlinFunctionsByClass: MutableMap<Class<*>, List<KFunction<*>>> = LinkedHashMap()
 
+    // todo remove this
     override val declaringClasses: List<Class<*>> = methodSources
         .map { source: MethodSource -> source.declaringClass.java }
         .distinct()
 
+    // todo remove this
     override val knownClasses: List<Class<*>> =
         (methodSources.map { source: MethodSource -> source.declaringClass } + methodSupportingTypes)
             .distinct()

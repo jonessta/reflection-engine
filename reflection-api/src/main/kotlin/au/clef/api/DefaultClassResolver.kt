@@ -1,9 +1,9 @@
 package au.clef.api
 
-import au.clef.engine.registry.MethodSourceTypes
+import au.clef.engine.registry.KnownTypeSource
 
 class DefaultClassResolver(
-    methodSourceTypes: MethodSourceTypes,
+    knownTypeSource: KnownTypeSource,
     private val scalarRegistry: ScalarTypeRegistry
 ) : ClassResolver {
 
@@ -11,7 +11,7 @@ class DefaultClassResolver(
         val simpleNames: MutableMap<String, Class<*>> = mutableMapOf()
         val ambiguousSimpleNames: MutableSet<String> = mutableSetOf()
 
-        methodSourceTypes.knownClasses.forEach { clazz: Class<*> ->
+        knownTypeSource.knownClasses.forEach { clazz: Class<*> ->
             put(clazz.name, clazz)
             val existing: Class<*>? = simpleNames.putIfAbsent(clazz.simpleName, clazz)
             if (existing != null && existing != clazz) {

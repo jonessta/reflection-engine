@@ -7,30 +7,13 @@ import kotlin.reflect.KParameter
 import kotlin.reflect.full.declaredMemberFunctions
 import kotlin.reflect.jvm.javaMethod
 
-sealed class MethodSource(
-    val declaringClass: KClass<*>,
-    val sourceDescription: String? = null
-) {
-
-    sealed class InstanceSource(
-        declaringClass: KClass<*>,
-        sourceDescription: String,
-        val instance: Any
-    ) : MethodSource(
-        declaringClass = declaringClass,
-        sourceDescription = sourceDescription
-    )
+sealed class MethodSource(val declaringClass: KClass<*>, val sourceDescription: String? = null) {
 
     /**
      * Expose all supported static methods on this class.
      */
-    class StaticClass(
-        declaringClass: KClass<*>,
-        sourceDescription: String? = null
-    ) : MethodSource(
-        declaringClass = declaringClass,
-        sourceDescription = sourceDescription
-    )
+    class StaticClass(declaringClass: KClass<*>, sourceDescription: String? = null) :
+        MethodSource(declaringClass = declaringClass, sourceDescription = sourceDescription)
 
     /**
      * Expose exactly one static method.
@@ -39,10 +22,7 @@ sealed class MethodSource(
         declaringClass: KClass<*>,
         val methodId: MethodId,
         sourceDescription: String? = null
-    ) : MethodSource(
-        declaringClass = declaringClass,
-        sourceDescription = sourceDescription
-    ) {
+    ) : MethodSource(declaringClass = declaringClass, sourceDescription = sourceDescription) {
 
         constructor(
             declaringClass: KClass<*>,
@@ -83,27 +63,19 @@ sealed class MethodSource(
     /**
      * Expose all instance methods on this object.
      */
-    class Instance(
-        instance: Any,
-        sourceDescription: String
-    ) : InstanceSource(
+    class Instance(val instance: Any, sourceDescription: String) : MethodSource(
         declaringClass = instance::class,
-        sourceDescription = sourceDescription,
-        instance = instance
+        sourceDescription = sourceDescription
     )
 
     /**
      * Expose exactly one instance method on this object.
      */
-    class InstanceMethod(
-        instance: Any,
-        sourceDescription: String,
-        val methodId: MethodId
-    ) : InstanceSource(
-        declaringClass = instance::class,
-        sourceDescription = sourceDescription,
-        instance = instance
-    ) {
+    class InstanceMethod(val instance: Any, sourceDescription: String, val methodId: MethodId) :
+        MethodSource(
+            declaringClass = instance::class,
+            sourceDescription = sourceDescription
+        ) {
 
         constructor(
             instance: Any,
@@ -120,11 +92,7 @@ sealed class MethodSource(
             )
         )
 
-        constructor(
-            instance: Any,
-            sourceDescription: String,
-            function: KFunction<*>
-        ) : this(
+        constructor(instance: Any, sourceDescription: String, function: KFunction<*>) : this(
             instance = instance,
             sourceDescription = sourceDescription,
             methodId = MethodId.from(

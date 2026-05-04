@@ -4,7 +4,6 @@ import au.clef.engine.model.MethodId
 import kotlin.reflect.jvm.javaMethod
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 import kotlin.test.assertSame
 
 class MethodSourceTest {
@@ -56,7 +55,6 @@ class MethodSourceTest {
         assertEquals(SampleService2::class, source.declaringClass)
         assertSame(instance, source.instance)
         assertEquals("Sample Service", source.sourceDescription)
-        assertIs<MethodSource.InstanceSource>(source)
     }
 
     @Test
@@ -77,7 +75,6 @@ class MethodSourceTest {
             MethodId.from(SampleService2::class, "greet", String::class),
             source.methodId
         )
-        assertIs<MethodSource.InstanceSource>(source)
     }
 
     @Test

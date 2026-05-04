@@ -23,5 +23,5 @@ dependencies {
 
 application {
     mainClass.set("au.clef.app.demo.MainKt")
-    mainClass.set("au.clef.web.demo.AcmeWebMainKt")
+    mainClass.set("au.clef.web.demo.CustomerWebMainKt")
 }

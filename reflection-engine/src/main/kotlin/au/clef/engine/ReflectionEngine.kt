@@ -1,5 +1,6 @@
 package au.clef.engine
 
+import au.clef.engine.model.ExecutionId
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
 import au.clef.engine.registry.MethodSourceRegistry

@@ -2,7 +2,7 @@ package au.clef.api.json
 
 import au.clef.api.ClassResolver
 import au.clef.api.model.Value
-import au.clef.engine.ExecutionId
+import au.clef.engine.model.ExecutionId
 import au.clef.engine.model.MethodId
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor

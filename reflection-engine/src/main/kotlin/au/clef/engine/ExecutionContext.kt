@@ -1,14 +1,8 @@
 package au.clef.engine
 
+import au.clef.engine.model.ExecutionId
 import au.clef.engine.model.MethodId
 import java.util.*
-
-// todo move to model?
-@JvmInline
-value class ExecutionId(val value: String) {
-
-    override fun toString(): String = value
-}
 
 sealed class ExecutionContext(val methodId: MethodId, val sourceDescription: String? = null) {
 

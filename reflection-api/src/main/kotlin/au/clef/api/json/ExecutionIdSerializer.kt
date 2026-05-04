@@ -1,6 +1,6 @@
 package au.clef.api.json
 
-import au.clef.engine.ExecutionId
+import au.clef.engine.model.ExecutionId
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor

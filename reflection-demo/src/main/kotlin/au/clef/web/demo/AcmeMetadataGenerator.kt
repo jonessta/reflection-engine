@@ -10,12 +10,7 @@ private val metadataOutputFile = File("reflection-demo/src/main/resources")
     }.removePrefix("/"))
 
 fun main() {
-    generateMetadata(
-        MetadataGenerationConfig(
-            methodSources = acmeConfig.methodSources,
-            methodSupportingTypes = acmeConfig.methodSupportingTypes,
-            outputFile = metadataOutputFile
-        )
-    )
+    val metadataConfig = MetadataGenerationConfig(acmeConfig, outputFile = metadataOutputFile)
+    generateMetadata(metadataConfig)
 }
 

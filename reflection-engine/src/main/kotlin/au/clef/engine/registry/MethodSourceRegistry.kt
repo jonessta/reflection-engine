@@ -1,8 +1,6 @@
 package au.clef.engine.registry
 
-import au.clef.engine.ExecutionContext
-import au.clef.engine.MethodNotFoundException
-import au.clef.engine.MethodSource
+import au.clef.engine.*
 import au.clef.engine.model.*
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
@@ -49,12 +47,17 @@ private data class ParsedMethodId(
     }
 }
 
-// todo get knowtypes from config - change constructor
 class MethodSourceRegistry(
     methodSources: Collection<MethodSource>,
     methodSupportingTypes: Collection<KClass<*>> = emptyList(),
     private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-) : KnownTypeSource {
+) : KnownTypeSource by ConfigKnownTypeSource(methodSources, methodSupportingTypes) {
+
+    constructor(reflectionConfig: ReflectionConfig) : this(
+        methodSources = reflectionConfig.methodSources,
+        methodSupportingTypes = reflectionConfig.methodSupportingTypes,
+        inheritanceLevel = reflectionConfig.inheritanceLevel
+    )
 
     private val descriptorsByClass: MutableMap<Class<*>, MutableList<MethodDescriptor>> =
         LinkedHashMap()
@@ -66,17 +69,6 @@ class MethodSourceRegistry(
     private val javaMethodsByClass: MutableMap<Class<*>, List<Method>> = LinkedHashMap()
 
     private val kotlinFunctionsByClass: MutableMap<Class<*>, List<KFunction<*>>> = LinkedHashMap()
-
-    // todo remove this
-    override val declaringClasses: List<Class<*>> = methodSources
-        .map { source: MethodSource -> source.declaringClass.java }
-        .distinct()
-
-    // todo remove this
-    override val knownClasses: List<Class<*>> =
-        (methodSources.map { source: MethodSource -> source.declaringClass } + methodSupportingTypes)
-            .distinct()
-            .map { kClass: KClass<*> -> kClass.java }
 
     init {
         require(methodSources.isNotEmpty()) { "methodSources must not be empty" }
@@ -339,29 +331,16 @@ class MethodSourceRegistry(
                 .toList()
         }
 
-    private fun hierarchyFor(root: KClass<*>): Sequence<KClass<*>> {
-        val hierarchy: Sequence<KClass<*>> =
-            generateSequence(root) { current: KClass<*> ->
-                current.java.superclass?.kotlin
-            }
-
-        return when (inheritanceLevel) {
-            InheritanceLevel.DeclaredOnly -> hierarchy.take(1)
-            InheritanceLevel.All -> hierarchy
-            is InheritanceLevel.Depth -> hierarchy.take(inheritanceLevel.value + 1)
-        }
-    }
+    private fun hierarchyFor(root: KClass<*>): Sequence<KClass<*>> =
+        hierarchyFor(root.java).map { clazz: Class<*> -> clazz.kotlin }
 
     private fun hierarchyFor(root: Class<*>): Sequence<Class<*>> {
         val hierarchy: Sequence<Class<*>> =
-            generateSequence(root) { current: Class<*> ->
-                current.superclass
-            }
-
+            generateSequence(root) { current: Class<*> -> current.superclass }
         return when (inheritanceLevel) {
             InheritanceLevel.DeclaredOnly -> hierarchy.take(1)
             InheritanceLevel.All -> hierarchy
-            is InheritanceLevel.Depth -> hierarchy.take(inheritanceLevel.value + 1)
+            is InheritanceLevel.Depth -> hierarchy.take(inheritanceLevel.depth + 1)
         }
     }
 

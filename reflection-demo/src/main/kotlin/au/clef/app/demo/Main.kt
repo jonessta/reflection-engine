@@ -47,11 +47,7 @@ private val reflectionConfig: ReflectionConfig = reflectionConfig(
     .metadataResourcePath(METADATA_RESOURCE_PATH)
     .build()
 
-private val reflectionRegistry = MethodSourceRegistry(
-    methodSources = reflectionConfig.methodSources,
-    methodSupportingTypes = reflectionConfig.methodSupportingTypes,
-    inheritanceLevel = reflectionConfig.inheritanceLevel
-)
+private val reflectionRegistry = MethodSourceRegistry(reflectionConfig)
 
 private val metadataRegistry =
     runCatching { MetadataLoader.fromResource(METADATA_RESOURCE_PATH) }

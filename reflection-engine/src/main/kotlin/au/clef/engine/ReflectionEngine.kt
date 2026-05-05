@@ -12,11 +12,7 @@ class ReflectionEngine(
     private val metadataRegistry: DescriptorMetadataRegistry? = null
 ) {
 
-    private val reflectionRegistry = MethodSourceRegistry(
-        methodSources = reflectionConfig.methodSources,
-        methodSupportingTypes = reflectionConfig.methodSupportingTypes,
-        inheritanceLevel = reflectionConfig.inheritanceLevel
-    )
+    private val reflectionRegistry = MethodSourceRegistry(reflectionConfig)
 
     fun executionContext(executionId: ExecutionId): ExecutionContext =
         reflectionRegistry.executionContext(executionId)

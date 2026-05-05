@@ -5,10 +5,12 @@ import au.clef.api.model.ExecutionDescriptorDto
 import au.clef.api.model.InvocationRequest
 import au.clef.api.model.ParamDescriptorDto
 import au.clef.api.model.Value
+import au.clef.engine.ConfigKnownTypeSource
 import au.clef.engine.ExecutionContext
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.ParamDescriptor
+import au.clef.engine.registry.KnownTypeSource
 import au.clef.metadata.DescriptorMetadataRegistry
 import au.clef.metadata.MetadataLoader
 import kotlinx.serialization.modules.SerializersModule
@@ -22,15 +24,16 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
             ?.let(MetadataLoader::fromResource)
             ?.let(::DescriptorMetadataRegistry)
 
-    private val engine: ReflectionEngine =
-        ReflectionEngine(apiConfig.reflectionConfig, metadataRegistry)
+    private val engine = ReflectionEngine(apiConfig.reflectionConfig, metadataRegistry)
 
-    private val requestMapper: RequestValueMapper = RequestValueMapper(scalarRegistry)
+    private val requestMapper = RequestValueMapper(scalarRegistry)
 
-    private val responseMapper: ResponseValueMapper = ResponseValueMapper(scalarRegistry)
+    private val responseMapper = ResponseValueMapper(scalarRegistry)
+
+    private val knownTypeSource: KnownTypeSource = ConfigKnownTypeSource(apiConfig.reflectionConfig)
 
     val jsonSerializersModule: SerializersModule =
-        valueSerializersModule(DefaultClassResolver(apiConfig.reflectionConfig, scalarRegistry))
+        valueSerializersModule(DefaultClassResolver(knownTypeSource, scalarRegistry))
 
     fun invoke(request: InvocationRequest): Value {
         val context: ExecutionContext = engine.executionContext(request.executionId)
@@ -62,24 +65,25 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
                 toExecutionDescriptorDto(ctx, engine.descriptor(ctx.methodId))
             }
 
-    private fun toExecutionDescriptorDto(ctx: ExecutionContext, desc: MethodDescriptor)
-            : ExecutionDescriptorDto =
-        ExecutionDescriptorDto(
-            executionId = ctx.executionId,
-            sourceDescription = ctx.sourceDescription,
-            reflectedName = desc.reflectedName,
-            displayName = desc.displayName,
-            returnType = desc.returnType.name,
-            isStatic = desc.isStatic,
-            parameters = desc.parameters.map { p: ParamDescriptor ->
-                ParamDescriptorDto(
-                    index = p.index,
-                    type = p.logicalType.name,
-                    reflectedName = p.reflectedName,
-                    name = p.name,
-                    nullable = p.nullable,
-                    scalarLike = requestMapper.isScalarLike(p.logicalType)
-                )
-            }
-        )
+    private fun toExecutionDescriptorDto(
+        ctx: ExecutionContext,
+        desc: MethodDescriptor
+    ): ExecutionDescriptorDto = ExecutionDescriptorDto(
+        executionId = ctx.executionId,
+        sourceDescription = ctx.sourceDescription,
+        reflectedName = desc.reflectedName,
+        displayName = desc.displayName,
+        returnType = desc.returnType.name,
+        isStatic = desc.isStatic,
+        parameters = desc.parameters.map { p: ParamDescriptor ->
+            ParamDescriptorDto(
+                index = p.index,
+                type = p.logicalType.name,
+                reflectedName = p.reflectedName,
+                name = p.name,
+                nullable = p.nullable,
+                scalarLike = requestMapper.isScalarLike(p.logicalType)
+            )
+        }
+    )
 }

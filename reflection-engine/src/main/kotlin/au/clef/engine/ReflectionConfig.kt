@@ -9,21 +9,11 @@ data class ReflectionConfig(
     val methodSupportingTypes: Collection<KClass<*>> = emptyList(),
     val metadataResourcePath: String? = null,
     val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-): KnownTypeSource {
+) {
 
     init {
         require(methodSources.isNotEmpty()) { "methodSources must not be empty" }
     }
-
-    override val declaringClasses: List<Class<*>> = methodSources
-        .map { source: MethodSource -> source.declaringClass.java }
-        .distinct()
-
-    override val knownClasses: List<Class<*>> =
-        (methodSources.map { source: MethodSource -> source.declaringClass } + methodSupportingTypes)
-            .distinct()
-            .map { kClass: KClass<*> -> kClass.java }
-
 }
 
 class ReflectionConfigBuilder internal constructor(firstMethodSource: MethodSource) {
@@ -59,3 +49,24 @@ fun reflectionConfig(
     vararg methodSources: MethodSource
 ): ReflectionConfigBuilder =
     ReflectionConfigBuilder(methodSource).apply { methodSources(*methodSources) }
+
+class ConfigKnownTypeSource(
+    methodSources: Collection<MethodSource>,
+    methodSupportingTypes: Collection<KClass<*>> = emptyList()
+) : KnownTypeSource {
+
+    constructor(reflectionConfig: ReflectionConfig) : this(
+        methodSources = reflectionConfig.methodSources,
+        methodSupportingTypes = reflectionConfig.methodSupportingTypes
+    )
+
+    override val declaringClasses: List<Class<*>> =
+        methodSources
+            .map { it.declaringClass.java }
+            .distinct()
+
+    override val knownClasses: List<Class<*>> =
+        (methodSources.map { it.declaringClass } + methodSupportingTypes)
+            .distinct()
+            .map { it.java }
+}

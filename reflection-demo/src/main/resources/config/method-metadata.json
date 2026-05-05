@@ -29,10 +29,10 @@
       "order": null,
       "parameters": [
         {
-          "name": "param0"
+          "name": "first"
         },
         {
-          "name": "param1"
+          "name": "second"
         }
       ]
     }

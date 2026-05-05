@@ -18,7 +18,7 @@ internal val customerReflectionConfig = reflectionConfig(
     InstanceMethod(customerService, "Customer Service", CustomerService::normalizeEmail),
     StaticMethod(::myAddKotlinFunction),
 //    StaticClass(Math::class),
-    StaticMethod(Math::class, "min", Int::class, Int::class),
+    StaticMethod(Math::class, "max", Int::class, Int::class),
     StaticMethod(Math::class, "Minimum Of Two Numbers", "min", Int::class, Int::class),
 )
     .supportingTypes(Customer::class, Address::class, Person::class)
@@ -29,6 +29,7 @@ val apiConfig = reflectionApiConfig(customerReflectionConfig)
         stringScalarConverter(decodeText = ::CustomerId),
         stringScalarConverter(decodeText = ::EmailAddress)
     )
+    .metadataResourcePath("/config/method-metadata.json")
     .build()
 
 fun main() {

@@ -1,6 +1,7 @@
 package au.clef.api.model
 
 sealed class Value {
+
     data class Scalar(val value: ScalarValue) : Value()
 
     data class Record(val type: Class<*>, val fields: Map<String, Value>) : Value()

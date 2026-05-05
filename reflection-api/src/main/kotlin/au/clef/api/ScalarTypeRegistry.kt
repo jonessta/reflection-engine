@@ -3,10 +3,8 @@ package au.clef.api
 class ScalarTypeRegistry(userDefinedConverters: List<ScalarConverter<out Any>> = emptyList()) {
 
     private val decoderMap: Map<Class<*>, ScalarConverter<out Any>> =
-        (userDefinedConverters + DefaultScalarConverters.all)
-            .associateBy { converter: ScalarConverter<out Any> ->
-                converter.type.javaObjectType
-            }
+        (DefaultScalarConverters.all + userDefinedConverters)
+            .associateBy { converter: ScalarConverter<out Any> -> converter.type.javaObjectType }
 
     fun isScalarLike(type: Class<*>): Boolean {
         val wrapped: Class<*> = wrapPrimitive(type)
@@ -23,6 +21,5 @@ class ScalarTypeRegistry(userDefinedConverters: List<ScalarConverter<out Any>> =
             converter.type.javaObjectType.isInstance(value)
         } as ScalarConverter<Any>?
 
-    fun wrapPrimitive(type: Class<*>): Class<*> =
-        if (type.isPrimitive && type != Void.TYPE) type.kotlin.javaObjectType else type
+    fun wrapPrimitive(type: Class<*>): Class<*> = type.kotlin.javaObjectType
 }

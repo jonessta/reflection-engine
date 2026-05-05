@@ -38,11 +38,7 @@ private data class ParsedMethodId(
             val parameterTypeNames: List<String> =
                 if (params.isBlank()) emptyList() else params.split(",")
 
-            return ParsedMethodId(
-                declaringClassName = className,
-                methodName = methodName,
-                parameterTypeNames = parameterTypeNames
-            )
+            return ParsedMethodId(className, methodName, parameterTypeNames)
         }
     }
 }
@@ -183,10 +179,9 @@ class MethodSourceRegistry(
             }
 
             val kotlinFunction: KFunction<*>? = kotlinFunctionsByJavaMethod[javaMethod]
-            val descriptor: MethodDescriptor =
-                kotlinFunction?.let { function: KFunction<*> ->
-                    MethodDescriptor.from(function, javaMethod, methodId)
-                } ?: MethodDescriptor.from(javaMethod)
+            val descriptor: MethodDescriptor = kotlinFunction?.let { function: KFunction<*> ->
+                MethodDescriptor.from(function, javaMethod, methodId)
+            } ?: MethodDescriptor.from(javaMethod)
 
             descriptors += descriptor
             entriesById[methodId] = RegistryEntry(
@@ -243,9 +238,7 @@ class MethodSourceRegistry(
         val kotlinFunctions: List<KFunction<*>> = collectHierarchyFunctions(clazz)
 
         val resolvedJavaMethod: Method? =
-            javaMethods.firstOrNull { javaMethod: Method ->
-                MethodId.from(javaMethod) == methodId
-            }
+            javaMethods.firstOrNull { javaMethod: Method -> MethodId.from(javaMethod) == methodId }
 
         if (resolvedJavaMethod != null) {
             val kotlinFunction: KFunction<*>? =
@@ -260,7 +253,6 @@ class MethodSourceRegistry(
         }
 
         val parsed: ParsedMethodId = ParsedMethodId.parse(methodId)
-
         if (parsed.declaringClassName != clazz.name) {
             throwMethodNotFound(methodId)
         }
@@ -285,9 +277,7 @@ class MethodSourceRegistry(
     private fun collectHierarchyFunctions(clazz: Class<*>): List<KFunction<*>> =
         kotlinFunctionsByClass.getOrPut(clazz) {
             hierarchyFor(clazz.kotlin)
-                .flatMap { current: KClass<*> ->
-                    current.declaredMemberFunctions.asSequence()
-                }
+                .flatMap { current: KClass<*> -> current.declaredMemberFunctions.asSequence() }
                 .filter { function: KFunction<*> ->
                     val javaMethod: Method? = function.javaMethod
                     javaMethod != null &&
@@ -311,23 +301,15 @@ class MethodSourceRegistry(
     private fun collectHierarchyMethods(clazz: Class<*>): List<Method> =
         javaMethodsByClass.getOrPut(clazz) {
             hierarchyFor(clazz)
-                .filter { current: Class<*> ->
-                    current != Any::class.java
-                }
-                .flatMap { current: Class<*> ->
-                    current.declaredMethods.asSequence()
-                }
+                .filter { current: Class<*> -> current != Any::class.java }
+                .flatMap { current: Class<*> -> current.declaredMethods.asSequence() }
                 .filter { javaMethod: Method ->
                     Modifier.isPublic(javaMethod.modifiers) &&
                             !javaMethod.isSynthetic &&
                             !javaMethod.isBridge
                 }
-                .distinctBy { javaMethod: Method ->
-                    MethodId.from(javaMethod)
-                }
-                .sortedBy { javaMethod: Method ->
-                    MethodId.from(javaMethod).value
-                }
+                .distinctBy { javaMethod: Method -> MethodId.from(javaMethod) }
+                .sortedBy { javaMethod: Method -> MethodId.from(javaMethod).value }
                 .toList()
         }
 
@@ -348,9 +330,7 @@ class MethodSourceRegistry(
         val javaMethod: Method =
             function.javaMethod ?: error("Function ${function.name} does not have a Java method")
 
-        return javaMethod.parameterTypes.map { parameterType: Class<*> ->
-            parameterType.name
-        }
+        return javaMethod.parameterTypes.map { parameterType: Class<*> -> parameterType.name }
     }
 
     private fun throwMethodNotFound(methodId: MethodId): Nothing =

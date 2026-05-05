@@ -11,9 +11,7 @@ data class ReflectionApiConfig(
     val scalarTypeRegistry: ScalarTypeRegistry = ScalarTypeRegistry(userDefinedScalarConverters)
 }
 
-class ReflectionApiConfigBuilder(
-    private val reflectionConfig: ReflectionConfig
-) {
+class ReflectionApiConfigBuilder(private val reflectionConfig: ReflectionConfig) {
 
     private val userDefinedScalarConverters = mutableListOf<ScalarConverter<out Any>>()
 
@@ -31,6 +29,7 @@ class ReflectionApiConfigBuilder(
     fun build(): ReflectionApiConfig =
         ReflectionApiConfig(
             reflectionConfig = reflectionConfig,
+            metadataResourcePath = metadataResourcePath,
             userDefinedScalarConverters = userDefinedScalarConverters.toList()
         )
 }

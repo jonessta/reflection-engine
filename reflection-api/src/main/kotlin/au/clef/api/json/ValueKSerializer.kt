@@ -2,8 +2,6 @@ package au.clef.api.json
 
 import au.clef.api.ClassResolver
 import au.clef.api.model.Value
-import au.clef.engine.model.ExecutionId
-import au.clef.engine.model.MethodId
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
@@ -33,12 +31,10 @@ class ValueKSerializer(private val codec: ValueJsonCodec) : KSerializer<Value> {
     }
 }
 
-fun valueSerializersModule(classResolver: ClassResolver): SerializersModule {
+fun reflectionApiJsonSerializersModule(classResolver: ClassResolver): SerializersModule {
     val codec = ValueJsonCodec(classResolver)
 
     return SerializersModule {
-        contextual(ExecutionId::class, ExecutionIdSerializer)
-        contextual(MethodId::class, MethodIdSerializer)
         contextual(Value::class, ValueKSerializer(codec))
     }
 }

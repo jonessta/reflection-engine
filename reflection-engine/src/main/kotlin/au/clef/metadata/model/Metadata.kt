@@ -1,12 +1,11 @@
 package au.clef.metadata.model
 
 import au.clef.engine.model.MethodId
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class MetadataRoot(
-    val methods: Map<@Contextual MethodId, MethodMetadata> = emptyMap()
+    val methods: Map<MethodId, MethodMetadata> = emptyMap()
 )
 
 @Serializable

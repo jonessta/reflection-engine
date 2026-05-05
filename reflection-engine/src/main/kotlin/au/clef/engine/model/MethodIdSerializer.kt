@@ -1,6 +1,5 @@
-package au.clef.api.json
+package au.clef.engine.model
 
-import au.clef.engine.model.MethodId
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor

@@ -6,6 +6,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class InvocationRequest(
-    @Contextual val executionId: ExecutionId,
+    val executionId: ExecutionId,
     val args: List<@Contextual Value> = emptyList()
 )

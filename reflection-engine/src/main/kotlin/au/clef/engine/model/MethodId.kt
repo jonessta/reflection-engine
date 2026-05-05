@@ -1,6 +1,7 @@
 package au.clef.engine.model
 
 import au.clef.engine.EngineException
+import kotlinx.serialization.Serializable
 import java.lang.reflect.Method
 import kotlin.reflect.KClass
 
@@ -21,6 +22,7 @@ private fun formatMethodId(
     append(")")
 }
 
+@Serializable(with = MethodIdSerializer::class)
 class MethodId private constructor(val value: String) {
 
     override fun toString(): String = value

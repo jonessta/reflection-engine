@@ -1,6 +1,6 @@
 package au.clef.api
 
-import au.clef.api.json.valueSerializersModule
+import au.clef.api.json.reflectionApiJsonSerializersModule
 import au.clef.api.model.ExecutionDescriptorDto
 import au.clef.api.model.InvocationRequest
 import au.clef.api.model.ParamDescriptorDto
@@ -32,8 +32,9 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
 
     private val knownTypeSource: KnownTypeSource = ConfigKnownTypeSource(apiConfig.reflectionConfig)
 
-    val jsonSerializersModule: SerializersModule =
-        valueSerializersModule(DefaultClassResolver(knownTypeSource, scalarRegistry))
+    val jsonSerializersModule: SerializersModule = reflectionApiJsonSerializersModule(
+        DefaultClassResolver(knownTypeSource, scalarRegistry)
+    )
 
     fun invoke(request: InvocationRequest): Value {
         val context: ExecutionContext = engine.executionContext(request.executionId)

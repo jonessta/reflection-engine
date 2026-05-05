@@ -94,7 +94,7 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
             rawTarget.isArray -> {
                 val componentType: Class<*> = rawTarget.componentType
                 val array: Any = newInstance(componentType, items.size)
-                items.forEachIndexed { index: Int, item: Any? ->
+                for ((index: Int, item: Any?) in items.withIndex()) {
                     set(array, index, item)
                 }
                 array
@@ -102,9 +102,7 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
 
             Set::class.java.isAssignableFrom(rawTarget) -> items.toSet()
             List::class.java.isAssignableFrom(rawTarget) ||
-                    Collection::class.java.isAssignableFrom(rawTarget) -> {
-                items.toMutableList()
-            }
+                    Collection::class.java.isAssignableFrom(rawTarget) -> items.toMutableList()
 
             else -> throw TypeMismatchException(value, rawTarget)
         }

@@ -184,10 +184,7 @@ class MethodSourceRegistry(
             } ?: MethodDescriptor.from(javaMethod)
 
             descriptors += descriptor
-            entriesById[methodId] = RegistryEntry(
-                descriptor = descriptor,
-                javaMethod = javaMethod
-            )
+            entriesById[methodId] = RegistryEntry(descriptor, javaMethod)
 
             val executionContext: ExecutionContext = executionContextFor(methodId)
             executionContextsById[executionContext.executionId] = executionContext
@@ -246,10 +243,7 @@ class MethodSourceRegistry(
                     function.javaMethod == resolvedJavaMethod
                 }
 
-            return ResolvedMethod(
-                kotlinFunction = kotlinFunction,
-                javaMethod = resolvedJavaMethod
-            )
+            return ResolvedMethod(kotlinFunction, resolvedJavaMethod)
         }
 
         val parsed: ParsedMethodId = ParsedMethodId.parse(methodId)

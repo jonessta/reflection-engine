@@ -71,7 +71,9 @@ class MethodDescriptor(
     )
 
     override fun equals(other: Any?): Boolean = other is MethodDescriptor && id == other.id
+
     override fun hashCode(): Int = id.hashCode()
+
     override fun toString(): String =
         "MethodDescriptor(id=$id, reflectedName=$reflectedName, displayName=$displayName, parameters=$parameters)"
 }

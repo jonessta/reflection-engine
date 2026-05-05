@@ -5,7 +5,10 @@ import au.clef.metadata.generateMetadata
 import java.io.File
 
 fun main() {
-    val metadataConfig = MetadataGenerationConfig(acmeConfig, outputFile = File("reflection-demo/src/main/resources"))
+    val metadataConfig = MetadataGenerationConfig(
+        acmeConfig,
+        outputFile = File("reflection-demo/src/main/resources")
+    )
     generateMetadata(metadataConfig)
 }
 

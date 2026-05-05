@@ -20,7 +20,7 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
     private val scalarRegistry: ScalarTypeRegistry = apiConfig.scalarTypeRegistry
 
     private val metadataRegistry: DescriptorMetadataRegistry? =
-        apiConfig.reflectionConfig.metadataResourcePath
+        apiConfig.metadataResourcePath
             ?.let(MetadataLoader::fromResource)
             ?.let(::DescriptorMetadataRegistry)
 

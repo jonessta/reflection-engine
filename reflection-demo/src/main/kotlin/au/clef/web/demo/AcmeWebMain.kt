@@ -20,12 +20,11 @@ internal val acmeConfig = reflectionConfig(
     StaticMethod(Math::class, "max", Int::class, Int::class)
 )
     .supportingTypes(Person::class, Address::class)
-    .metadataResourcePath("/config/acme-metadata.json")
     .build()
 
 val webConfig = WebServerConfig()
 
-val config = ReflectionApiConfig(acmeConfig)
+val config = ReflectionApiConfig(acmeConfig, "/config/acme-metadata.json")
 
 fun main() {
     WebServer(config, webConfig).start()

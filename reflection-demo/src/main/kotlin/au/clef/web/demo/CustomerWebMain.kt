@@ -28,7 +28,8 @@ val apiConfig = reflectionApiConfig(customerReflectionConfig)
     .scalarConverters(
         stringScalarConverter(decodeText = ::CustomerId),
         stringScalarConverter(decodeText = ::EmailAddress)
-    ).build()
+    )
+    .build()
 
 fun main() {
     WebServer(apiConfig, WebServerConfig()).start()

@@ -44,7 +44,6 @@ private val reflectionConfig: ReflectionConfig = reflectionConfig(
     StaticMethod(Math::class, "max", Int::class, Int::class)
 )
     .supportingTypes(Person::class, Address::class)
-    .metadataResourcePath(METADATA_RESOURCE_PATH)
     .build()
 
 private val reflectionRegistry = MethodSourceRegistry(reflectionConfig)

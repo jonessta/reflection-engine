@@ -1,10 +1,7 @@
 package au.clef.api
 
 import au.clef.api.json.reflectionApiJsonSerializersModule
-import au.clef.api.model.ExecutionDescriptorDto
-import au.clef.api.model.InvocationRequest
-import au.clef.api.model.ParamDescriptorDto
-import au.clef.api.model.Value
+import au.clef.api.model.*
 import au.clef.engine.ConfigKnownTypeSource
 import au.clef.engine.ExecutionContext
 import au.clef.engine.ReflectionEngine
@@ -44,8 +41,8 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
             "Expected ${descriptor.parameters.size} args for ${descriptor.id}, got ${request.args.size}"
         }
         val args: List<Any?> =
-            request.args.zip(descriptor.parameters) { value: Value, param: ParamDescriptor ->
-                requestMapper.materialize(value, param.runtimeType)
+            descriptor.parameters.mapIndexed { index: Int, param: ParamDescriptor ->
+                requestMapper.materialize(request.args[index], param.runtimeType)
             }
         val result: Any? =
             when (context) {
@@ -69,22 +66,92 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
     private fun toExecutionDescriptorDto(
         ctx: ExecutionContext,
         desc: MethodDescriptor
-    ): ExecutionDescriptorDto = ExecutionDescriptorDto(
-        executionId = ctx.executionId,
-        sourceDescription = ctx.sourceDescription,
-        reflectedName = desc.reflectedName,
-        displayName = desc.displayName,
-        returnType = desc.returnType.name,
-        isStatic = desc.isStatic,
-        parameters = desc.parameters.map { p: ParamDescriptor ->
-            ParamDescriptorDto(
-                index = p.index,
-                type = p.logicalType.name,
-                reflectedName = p.reflectedName,
-                name = p.name,
-                nullable = p.nullable,
-                scalarLike = requestMapper.isScalarLike(p.logicalType)
+    ): ExecutionDescriptorDto =
+        ExecutionDescriptorDto(
+            executionId = ctx.executionId,
+            sourceDescription = ctx.sourceDescription,
+            reflectedName = desc.reflectedName,
+            displayName = desc.displayName,
+            returnType = desc.returnType.name,
+            isStatic = desc.isStatic,
+            parameters = desc.parameters.map { p: ParamDescriptor ->
+                toFieldDescriptorDto(p)
+            }
+        )
+
+    private fun toFieldDescriptorDto(
+        param: ParamDescriptor
+    ): FieldDescriptorDto =
+        toFieldDescriptorDto(
+            index = param.index,
+            reflectedName = param.reflectedName,
+            name = param.name,
+            type = param.logicalType,
+            nullable = param.nullable,
+            visited = emptySet()
+        )
+
+    private fun toFieldDescriptorDto(
+        index: Int? = null,
+        reflectedName: String,
+        name: String,
+        type: Class<*>,
+        nullable: Boolean,
+        visited: Set<Class<*>>
+    ): FieldDescriptorDto {
+        val scalarLike: Boolean = requestMapper.isScalarLike(type)
+
+        if (scalarLike) {
+            return FieldDescriptorDto(
+                index = index,
+                reflectedName = reflectedName,
+                name = name,
+                type = type.name,
+                nullable = nullable,
+                kind = FieldKindDto.SCALAR
             )
         }
-    )
+
+        if (type in visited) {
+            return FieldDescriptorDto(
+                index = index,
+                reflectedName = reflectedName,
+                name = name,
+                type = type.name,
+                nullable = nullable,
+                kind = FieldKindDto.RECORD,
+                children = emptyList()
+            )
+        }
+
+        val nextVisited: Set<Class<*>> = visited + type
+
+        val childDescriptors: List<FieldDescriptorDto> =
+            type.declaredFields
+                .asSequence()
+                .filter { field ->
+                    !java.lang.reflect.Modifier.isStatic(field.modifiers) && !field.isSynthetic
+                }
+                .sortedBy { field -> field.name }
+                .map { field ->
+                    toFieldDescriptorDto(
+                        reflectedName = field.name,
+                        name = field.name,
+                        type = field.type,
+                        nullable = !field.type.isPrimitive,
+                        visited = nextVisited
+                    )
+                }
+                .toList()
+
+        return FieldDescriptorDto(
+            index = index,
+            reflectedName = reflectedName,
+            name = name,
+            type = type.name,
+            nullable = nullable,
+            kind = FieldKindDto.RECORD,
+            children = childDescriptors
+        )
+    }
 }

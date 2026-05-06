@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reflection Method Explorer</title>
+    <style>
+        :root {
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --muted: #64748b;
+            --text: #0f172a;
+            --border: #dbe3ee;
+            --accent: #2563eb;
+            --accent-soft: #dbeafe;
+            --code: #020617;
+            --code-text: #e2e8f0;
+            --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .page {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 0.95fr 1.25fr 1.1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .stack {
+            display: grid;
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(219, 227, 238, 0.8);
+            overflow: hidden;
+        }
+
+        .card-header { padding: 20px 22px 0; }
+        .card-body { padding: 20px 22px 22px; }
+
+        h1, h2, h3, p { margin: 0; }
+
+        .title {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .method-grid {
+            display: grid;
+            gap: 16px;
+            font-size: 14px;
+        }
+
+        .meta-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--muted);
+            letter-spacing: 0.06em;
+            margin-bottom: 4px;
+        }
+
+        .meta-value {
+            font-size: 14px;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        .badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            color: #334155;
+            background: #fff;
+            line-height: 1;
+        }
+
+        .badge.kind {
+            background: var(--accent-soft);
+            border-color: transparent;
+            color: #1d4ed8;
+            font-weight: 600;
+        }
+
+        .field-card {
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 14px;
+            background: #fff;
+        }
+
+        .record-card {
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 16px;
+            background: #fff;
+        }
+
+        .field-grid, .record-children, .tree-root, .tree-children, .stack {
+            display: grid;
+            gap: 12px;
+        }
+
+        .scalar-input {
+            width: 100%;
+            padding: 11px 12px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            outline: none;
+            font-size: 14px;
+            color: var(--text);
+            background: #fff;
+        }
+
+        .scalar-input:focus {
+            border-color: #93c5fd;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #334155;
+            padding-top: 6px;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 16px;
+            padding: 11px 14px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.05s ease, opacity 0.15s ease;
+        }
+
+        button:hover { opacity: 0.95; }
+        button:active { transform: translateY(1px); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .primary-btn { background: var(--accent); color: white; }
+        .secondary-btn, .ghost-btn { background: #e2e8f0; color: #0f172a; }
+        .ghost-btn { background: white; border: 1px solid var(--border); }
+
+        .tree-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 14px;
+            padding: 8px 10px;
+        }
+
+        .tree-row:hover { background: #f8fafc; }
+
+        .tree-toggle {
+            width: 22px;
+            height: 22px;
+            padding: 0;
+            border-radius: 999px;
+            background: transparent;
+            color: #475569;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            flex: 0 0 auto;
+        }
+
+        .tree-toggle:hover { background: #e2e8f0; }
+        .tree-spacer { width: 22px; height: 22px; flex: 0 0 auto; }
+        .tree-label { font-size: 14px; font-weight: 600; }
+        .tree-type { font-size: 13px; color: var(--muted); }
+
+        .payload {
+            background: var(--code);
+            color: var(--code-text);
+            padding: 16px;
+            border-radius: 22px;
+            font-size: 12px;
+            line-height: 1.5;
+            overflow: auto;
+            max-height: 480px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.45;
+            margin-top: 6px;
+        }
+
+        .status-line {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 600;
+            display: none;
+        }
+
+        .status-line.info {
+            display: block;
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+        }
+
+        .status-line.success {
+            display: block;
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+
+        .status-line.error {
+            display: block;
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        .validation-list {
+            margin: 0;
+            padding-left: 18px;
+            color: #b91c1c;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 1100px) {
+            .layout { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="layout">
+        <div class="stack">
+            <section class="card">
+                <div class="card-header">
+                    <h2 class="title">Available Methods</h2>
+                    <p class="hint">Loaded dynamically from the server.</p>
+                </div>
+                <div class="card-body">
+                    <select id="methodSelect" class="scalar-input"></select>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <h2 class="title">Method</h2>
+                </div>
+                <div class="card-body method-grid" id="methodSummary"></div>
+            </section>
+        </div>
+
+        <section class="card">
+            <div class="card-header">
+                <h2 class="title">Recursive Form</h2>
+                <p class="hint">Built entirely from the nested field descriptors returned by the server.</p>
+            </div>
+            <div class="card-body">
+                <div id="formRoot"></div>
+                <div class="actions">
+                    <button class="primary-btn" type="button" id="invokeButton">Invoke</button>
+                    <button class="secondary-btn" type="button" id="resetButton">Reset</button>
+                </div>
+                <div class="status-line" id="statusLine"></div>
+                <div id="validationBlock" style="display:none; margin-top:12px;">
+                    <ul class="validation-list" id="validationList"></ul>
+                </div>
+            </div>
+        </section>
+
+        <div class="stack">
+            <section class="card">
+                <div class="card-header">
+                    <h2 class="title">Field Tree</h2>
+                    <p class="hint">Expand nested structured fields.</p>
+                </div>
+                <div class="card-body">
+                    <div class="tree-root" id="treeRoot"></div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+                        <div>
+                            <h2 class="title">Generated Invocation Payload</h2>
+                            <p class="hint">Auto-generated from the current form state.</p>
+                        </div>
+                        <button class="ghost-btn" type="button" id="copyButton">Copy</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <pre class="payload" id="payloadOutput"></pre>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <h2 class="title">Result</h2>
+                    <p class="hint">Response from the invoke endpoint.</p>
+                </div>
+                <div class="card-body">
+                    <pre class="payload" id="resultOutput">No result yet.</pre>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE_URL = 'http://localhost:8080';
+
+    const state = {
+        descriptors: [],
+        selectedExecutionId: null,
+        form: {},
+        expanded: {}
+    };
+
+    function currentDescriptor() {
+        return state.descriptors.find(d => d.executionId === state.selectedExecutionId) || null;
+    }
+
+    function shortType(type) {
+        const parts = String(type || '').split('.');
+        return parts[parts.length - 1] || type || '';
+    }
+
+    function defaultScalarValue(type) {
+        const lower = String(type).toLowerCase();
+        if (lower === 'boolean' || lower === 'java.lang.boolean') return false;
+        return '';
+    }
+
+    function buildInitialState(fields) {
+        const result = {};
+        (fields || []).forEach((field) => {
+            if (field.kind === 'RECORD') {
+                result[field.name] = buildInitialState(field.children || []);
+            } else {
+                result[field.name] = defaultScalarValue(field.type);
+            }
+        });
+        return result;
+    }
+
+    function toValue(field, rawValue) {
+        if (field.kind === 'SCALAR') {
+            if (rawValue === '' || rawValue === null || rawValue === undefined) {
+                return field.nullable ? { kind: 'null' } : { kind: 'scalar', value: rawValue };
+            }
+
+            const type = String(field.type).toLowerCase();
+            if (['int', 'long', 'double', 'float', 'short', 'byte'].includes(type)) {
+                const n = Number(rawValue);
+                return { kind: 'scalar', value: Number.isNaN(n) ? rawValue : n };
+            }
+
+            if (type === 'boolean' || type === 'java.lang.boolean') {
+                return { kind: 'scalar', value: Boolean(rawValue) };
+            }
+
+            return { kind: 'scalar', value: rawValue };
+        }
+
+        const fields = {};
+        (field.children || []).forEach((child) => {
+            fields[child.name] = toValue(child, rawValue ? rawValue[child.name] : undefined);
+        });
+
+        return {
+            kind: 'record',
+            type: field.type,
+            fields
+        };
+    }
+
+    function buildInvocationPayload(descriptor, formState) {
+        return {
+            executionId: descriptor.executionId,
+            args: descriptor.parameters.map((param) => toValue(param, formState[param.name]))
+        };
+    }
+
+    function validateField(field, rawValue, path = field.name) {
+        const errors = [];
+
+        if (field.kind === 'SCALAR') {
+            const type = String(field.type).toLowerCase();
+            const isEmpty = rawValue === '' || rawValue === null || rawValue === undefined;
+
+            if (!field.nullable && isEmpty) {
+                errors.push(`${path} is required.`);
+                return errors;
+            }
+
+            if (!isEmpty && ['int', 'long', 'double', 'float', 'short', 'byte'].includes(type)) {
+                if (Number.isNaN(Number(rawValue))) {
+                    errors.push(`${path} must be a valid number.`);
+                }
+            }
+
+            return errors;
+        }
+
+        if (!field.nullable && (rawValue === null || rawValue === undefined)) {
+            errors.push(`${path} is required.`);
+            return errors;
+        }
+
+        (field.children || []).forEach((child) => {
+            errors.push(...validateField(child, rawValue ? rawValue[child.name] : undefined, `${path}.${child.name}`));
+        });
+
+        return errors;
+    }
+
+    function validateForm(descriptor, formState) {
+        const errors = [];
+        descriptor.parameters.forEach((param) => {
+            errors.push(...validateField(param, formState[param.name], param.name));
+        });
+        return errors;
+    }
+
+    function showValidation(errors) {
+        const block = document.getElementById('validationBlock');
+        const list = document.getElementById('validationList');
+        list.innerHTML = '';
+
+        if (!errors.length) {
+            block.style.display = 'none';
+            return;
+        }
+
+        errors.forEach((error) => {
+            const item = document.createElement('li');
+            item.textContent = error;
+            list.appendChild(item);
+        });
+
+        block.style.display = 'block';
+    }
+
+    function fieldKey(field) {
+        return `${field.type}:${field.reflectedName}:${field.name}`;
+    }
+
+    function getFormValueAtPath(path) {
+        let cursor = state.form;
+        for (const key of path) {
+            if (cursor == null) return undefined;
+            cursor = cursor[key];
+        }
+        return cursor;
+    }
+
+    function setFormValueAtPath(path, nextValue) {
+        let cursor = state.form;
+        for (let i = 0; i < path.length - 1; i++) {
+            const key = path[i];
+            if (!cursor[key] || typeof cursor[key] !== 'object') {
+                cursor[key] = {};
+            }
+            cursor = cursor[key];
+        }
+        cursor[path[path.length - 1]] = nextValue;
+    }
+
+    function setStatus(kind, message) {
+        const statusLine = document.getElementById('statusLine');
+        statusLine.className = `status-line ${kind}`;
+        statusLine.textContent = message;
+    }
+
+    function renderMethodSelect() {
+        const select = document.getElementById('methodSelect');
+        select.innerHTML = '';
+
+        state.descriptors.forEach((descriptor) => {
+            const option = document.createElement('option');
+            option.value = descriptor.executionId;
+            option.textContent = `${descriptor.sourceDescription || 'Static'} · ${descriptor.reflectedName}`;
+            option.selected = descriptor.executionId === state.selectedExecutionId;
+            select.appendChild(option);
+        });
+
+        select.onchange = (event) => {
+            state.selectedExecutionId = event.target.value;
+            const descriptor = currentDescriptor();
+            state.form = buildInitialState(descriptor ? descriptor.parameters : []);
+            state.expanded = {};
+            showValidation([]);
+            rerenderAll();
+        };
+    }
+
+    function renderSummary() {
+        const root = document.getElementById('methodSummary');
+        root.innerHTML = '';
+        const descriptor = currentDescriptor();
+        if (!descriptor) return;
+
+        const items = [
+            ['Invocation', descriptor.executionId],
+            ['Method', descriptor.reflectedName],
+            ['Source', descriptor.sourceDescription || '—'],
+            ['Returns', shortType(descriptor.returnType)],
+            ['Static', descriptor.isStatic ? 'Yes' : 'No']
+        ];
+
+        items.forEach(([label, value]) => {
+            const block = document.createElement('div');
+            block.innerHTML = `
+          <div class="meta-label">${label}</div>
+          <div class="meta-value">${value}</div>
+        `;
+            root.appendChild(block);
+        });
+    }
+
+    function renderTree() {
+        const root = document.getElementById('treeRoot');
+        root.innerHTML = '';
+        const descriptor = currentDescriptor();
+        if (!descriptor) return;
+        descriptor.parameters.forEach((field) => root.appendChild(renderTreeNode(field, 0)));
+    }
+
+    function renderTreeNode(field, depth) {
+        const node = document.createElement('div');
+        node.className = 'tree-node';
+
+        const row = document.createElement('div');
+        row.className = 'tree-row';
+        row.style.marginLeft = `${depth * 16}px`;
+
+        const hasChildren = field.kind === 'RECORD' && field.children && field.children.length > 0;
+        const key = fieldKey(field);
+        const open = state.expanded[key] !== false;
+
+        if (hasChildren) {
+            const toggle = document.createElement('button');
+            toggle.className = 'tree-toggle';
+            toggle.type = 'button';
+            toggle.textContent = open ? '▾' : '▸';
+            toggle.addEventListener('click', () => {
+                state.expanded[key] = !open;
+                renderTree();
+            });
+            row.appendChild(toggle);
+        } else {
+            const spacer = document.createElement('div');
+            spacer.className = 'tree-spacer';
+            row.appendChild(spacer);
+        }
+
+        const label = document.createElement('div');
+        label.className = 'tree-label';
+        label.textContent = field.name;
+        row.appendChild(label);
+
+        const kind = document.createElement('span');
+        kind.className = 'badge kind';
+        kind.textContent = field.kind === 'RECORD' ? 'record' : 'scalar';
+        row.appendChild(kind);
+
+        const type = document.createElement('span');
+        type.className = 'tree-type';
+        type.textContent = shortType(field.type);
+        row.appendChild(type);
+
+        const nullable = document.createElement('span');
+        nullable.className = 'badge';
+        nullable.textContent = field.nullable ? 'nullable' : 'required';
+        row.appendChild(nullable);
+
+        node.appendChild(row);
+
+        if (hasChildren && open) {
+            const children = document.createElement('div');
+            children.className = 'tree-children';
+            field.children.forEach((child) => children.appendChild(renderTreeNode(child, depth + 1)));
+            node.appendChild(children);
+        }
+
+        return node;
+    }
+
+    function renderForm() {
+        const root = document.getElementById('formRoot');
+        root.innerHTML = '';
+        const descriptor = currentDescriptor();
+        if (!descriptor) return;
+
+        const grid = document.createElement('div');
+        grid.className = 'field-grid';
+        descriptor.parameters.forEach((field) => {
+            grid.appendChild(renderFieldForm(field, [field.name]));
+        });
+        root.appendChild(grid);
+    }
+
+    function renderFieldForm(field, path) {
+        const value = getFormValueAtPath(path);
+
+        if (field.kind === 'SCALAR') {
+            const card = document.createElement('div');
+            card.className = 'field-card';
+
+            const header = document.createElement('div');
+            header.className = 'badge-row';
+            header.innerHTML = `
+          <strong>${field.name}</strong>
+          <span class="badge kind">scalar</span>
+          <span class="badge">${shortType(field.type)}</span>
+          <span class="badge">${field.nullable ? 'nullable' : 'required'}</span>
+        `;
+            card.appendChild(header);
+
+            const type = String(field.type).toLowerCase();
+            if (type === 'boolean' || type === 'java.lang.boolean') {
+                const label = document.createElement('label');
+                label.className = 'checkbox-row';
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.checked = Boolean(value);
+                input.addEventListener('change', (event) => {
+                    setFormValueAtPath(path, event.target.checked);
+                    renderPayload();
+                    showValidation([]);
+                });
+                label.appendChild(input);
+                const text = document.createElement('span');
+                text.textContent = 'True / False';
+                label.appendChild(text);
+                card.appendChild(label);
+            } else {
+                const input = document.createElement('input');
+                input.className = 'scalar-input';
+                input.type = ['int', 'long', 'double', 'float', 'short', 'byte'].includes(type) ? 'number' : 'text';
+                input.value = value ?? '';
+                input.placeholder = shortType(field.type);
+                input.addEventListener('input', (event) => {
+                    setFormValueAtPath(path, event.target.value);
+                    renderPayload();
+                    showValidation([]);
+                });
+                card.appendChild(input);
+            }
+
+            return card;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'record-card';
+
+        const header = document.createElement('div');
+        header.className = 'badge-row';
+        header.innerHTML = `
+        <strong>${field.name}</strong>
+        <span class="badge kind">record</span>
+        <span class="badge">${shortType(field.type)}</span>
+        <span class="badge">${field.nullable ? 'nullable' : 'required'}</span>
+      `;
+        card.appendChild(header);
+
+        const children = document.createElement('div');
+        children.className = 'record-children';
+        (field.children || []).forEach((child) => {
+            children.appendChild(renderFieldForm(child, [...path, child.name]));
+        });
+        card.appendChild(children);
+
+        return card;
+    }
+
+    function renderPayload() {
+        const descriptor = currentDescriptor();
+        if (!descriptor) return;
+        const payload = buildInvocationPayload(descriptor, state.form);
+        document.getElementById('payloadOutput').textContent = JSON.stringify(payload, null, 2);
+    }
+
+    function resetForm() {
+        const descriptor = currentDescriptor();
+        state.form = buildInitialState(descriptor ? descriptor.parameters : []);
+        renderForm();
+        renderPayload();
+        showValidation([]);
+        const statusLine = document.getElementById('statusLine');
+        statusLine.className = 'status-line';
+        statusLine.textContent = '';
+    }
+
+    async function copyPayload() {
+        const text = document.getElementById('payloadOutput').textContent;
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async function invokeMethod() {
+        const descriptor = currentDescriptor();
+        if (!descriptor) return;
+
+        const errors = validateForm(descriptor, state.form);
+        showValidation(errors);
+        if (errors.length) {
+            setStatus('error', 'Fix validation errors before invoking.');
+            return;
+        }
+
+        const payload = buildInvocationPayload(descriptor, state.form);
+        const resultOutput = document.getElementById('resultOutput');
+        const invokeButton = document.getElementById('invokeButton');
+
+        invokeButton.disabled = true;
+        resultOutput.textContent = 'Invoking...';
+        setStatus('info', 'Invoking method...');
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/invoke`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const text = await response.text();
+            try {
+                const json = JSON.parse(text);
+                resultOutput.textContent = JSON.stringify(json, null, 2);
+            } catch {
+                resultOutput.textContent = text;
+            }
+
+            if (response.ok) {
+                setStatus('success', `Invocation succeeded (${response.status}).`);
+            } else {
+                setStatus('error', `Invocation failed (${response.status}).`);
+                console.error('Invoke failed', response.status, text);
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            resultOutput.textContent = message;
+            setStatus('error', `Invocation failed before a response was received. ${message}`);
+        } finally {
+            invokeButton.disabled = false;
+        }
+    }
+
+    async function loadDescriptors() {
+        const response = await fetch(`${API_BASE_URL}/executions`);
+        if (!response.ok) {
+            throw new Error(`Failed to load executions (${response.status})`);
+        }
+
+        const data = await response.json();
+        state.descriptors = Array.isArray(data) ? data : [];
+
+        if (state.descriptors.length > 0) {
+            state.selectedExecutionId = state.descriptors[0].executionId;
+            state.form = buildInitialState(currentDescriptor().parameters);
+        }
+    }
+
+    function rerenderAll() {
+        renderMethodSelect();
+        renderSummary();
+        renderTree();
+        renderForm();
+        renderPayload();
+    }
+
+    document.getElementById('resetButton').addEventListener('click', resetForm);
+    document.getElementById('invokeButton').addEventListener('click', invokeMethod);
+    document.getElementById('copyButton').addEventListener('click', copyPayload);
+
+    (async function init() {
+        try {
+            await loadDescriptors();
+            rerenderAll();
+            setStatus('success', 'Loaded execution descriptors from server.');
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            document.getElementById('resultOutput').textContent = message;
+            setStatus('error', `Failed to load execution descriptors. ${message}`);
+        }
+    })();
+</script>
+</body>
+</html>

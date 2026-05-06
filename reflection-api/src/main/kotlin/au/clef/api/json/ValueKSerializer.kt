@@ -24,8 +24,8 @@ class ValueKSerializer(private val codec: ValueJsonCodec) : KSerializer<Value> {
     }
 
     override fun deserialize(decoder: Decoder): Value {
-        val jsonDecoder: JsonDecoder = decoder as? JsonDecoder
-            ?: error("ValueKSerializer only supports JSON")
+        val jsonDecoder: JsonDecoder =
+            decoder as? JsonDecoder ?: error("ValueKSerializer only supports JSON")
         val element: JsonElement = jsonDecoder.decodeJsonElement()
         return codec.decode(element)
     }
@@ -34,7 +34,5 @@ class ValueKSerializer(private val codec: ValueJsonCodec) : KSerializer<Value> {
 fun reflectionApiJsonSerializersModule(classResolver: ClassResolver): SerializersModule {
     val codec = ValueJsonCodec(classResolver)
 
-    return SerializersModule {
-        contextual(Value::class, ValueKSerializer(codec))
-    }
+    return SerializersModule { contextual(Value::class, ValueKSerializer(codec)) }
 }

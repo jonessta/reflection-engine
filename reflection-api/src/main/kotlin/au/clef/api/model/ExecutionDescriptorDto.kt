@@ -11,7 +11,7 @@ data class ExecutionDescriptorDto(
     val displayName: String? = null,
     val returnType: String,
     val isStatic: Boolean,
-    val parameters: List<ParamDescriptorDto>
+    val parameters: List<FieldDescriptorDto>
 )
 
 @Serializable

@@ -27,11 +27,13 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
 
     private val responseMapper = ResponseValueMapper(scalarRegistry)
 
-    private val knownTypeSource: KnownTypeSource = ConfigKnownTypeSource(apiConfig.reflectionConfig)
+    private val knownTypeSource: KnownTypeSource =
+        ConfigKnownTypeSource(apiConfig.reflectionConfig)
 
-    val jsonSerializersModule: SerializersModule = reflectionApiJsonSerializersModule(
-        DefaultClassResolver(knownTypeSource, scalarRegistry)
-    )
+    val jsonSerializersModule: SerializersModule =
+        reflectionApiJsonSerializersModule(
+            DefaultClassResolver(knownTypeSource, scalarRegistry)
+        )
 
     fun invoke(request: InvocationRequest): Value {
         val context: ExecutionContext = engine.executionContext(request.executionId)
@@ -40,18 +42,19 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
         require(request.args.size == descriptor.parameters.size) {
             "Expected ${descriptor.parameters.size} args for ${descriptor.id}, got ${request.args.size}"
         }
+
         val args: List<Any?> =
             descriptor.parameters.mapIndexed { index: Int, param: ParamDescriptor ->
                 requestMapper.materialize(request.args[index], param.runtimeType)
             }
+
         val result: Any? =
             when (context) {
-                is ExecutionContext.Static -> engine.invokeStatic(descriptor, args)
-                is ExecutionContext.Instance -> engine.invokeInstance(
-                    descriptor,
-                    context.instance,
-                    args
-                )
+                is ExecutionContext.Static ->
+                    engine.invokeStatic(descriptor, args)
+
+                is ExecutionContext.Instance ->
+                    engine.invokeInstance(descriptor, context.instance, args)
             }
 
         return responseMapper.toValue(result)
@@ -79,6 +82,11 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
             }
         )
 
+    private fun isDescriptorScalarLike(type: Class<*>): Boolean =
+        requestMapper.isScalarLike(type) ||
+                type == Any::class.java ||
+                type == Object::class.java
+
     private fun toFieldDescriptorDto(
         param: ParamDescriptor
     ): FieldDescriptorDto =
@@ -99,7 +107,7 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
         nullable: Boolean,
         visited: Set<Class<*>>
     ): FieldDescriptorDto {
-        val scalarLike: Boolean = requestMapper.isScalarLike(type)
+        val scalarLike: Boolean = isDescriptorScalarLike(type)
 
         if (scalarLike) {
             return FieldDescriptorDto(

@@ -17,9 +17,6 @@ class ReflectionApiConfigBuilder(private val reflectionConfig: ReflectionConfig)
 
     private var metadataResourcePath: String? = null
 
-    fun scalarConverter(converter: ScalarConverter<out Any>): ReflectionApiConfigBuilder =
-        apply { userDefinedScalarConverters += converter }
-
     fun scalarConverters(vararg converters: ScalarConverter<out Any>): ReflectionApiConfigBuilder =
         apply { userDefinedScalarConverters += converters }
 

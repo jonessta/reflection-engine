@@ -3,7 +3,7 @@ package au.clef.web.demo
 import au.clef.api.reflectionApiConfig
 import au.clef.api.stringScalarConverter
 import au.clef.app.demo.model.*
-import au.clef.engine.MethodSource.*
+import au.clef.engine.MethodSource.Instance
 import au.clef.engine.reflectionConfig
 import au.clef.web.WebServer
 import au.clef.web.WebServerConfig
@@ -13,13 +13,14 @@ private val customerService: CustomerService = CustomerService()
 private val acmeService: AcmeService = AcmeService()
 
 internal val customerReflectionConfig = reflectionConfig(
-    Instance(acmeService, "Acme Service"),
-    InstanceMethod(customerService, "Customer Service", CustomerService::findCustomer),
-    InstanceMethod(customerService, "Customer Service", CustomerService::normalizeEmail),
-    StaticMethod(::myAddKotlinFunction, "A kotlin function"),
+//    Instance(acmeService, "Acme Service"),
+    Instance(customerService, "Customer Service"),
+//    InstanceMethod(customerService, "Customer Service", CustomerService::findCustomer),
+//    InstanceMethod(customerService, "Customer Service", CustomerService::normalizeEmail),
+//    StaticMethod(::myAddKotlinFunction, "A kotlin function"),
 //    StaticClass(Math::class),
-    StaticMethod(Math::class, "Java static method", "max", Int::class, Int::class),
-    StaticMethod(Math::class, "Minimum Of Two Numbers", "min", Int::class, Int::class),
+//    StaticMethod(Math::class, "Java static method", "max", Int::class, Int::class),
+//    StaticMethod(Math::class, "Minimum Of Two Numbers", "min", Int::class, Int::class),
 )
     .supportingTypes(Customer::class, Address::class, Person::class)
     .build()

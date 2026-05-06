@@ -15,6 +15,7 @@ data class FieldDescriptorDto(
 
 @Serializable
 enum class FieldKindDto {
+
     SCALAR,
     RECORD
 }

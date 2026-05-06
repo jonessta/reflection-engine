@@ -14,12 +14,3 @@ data class ExecutionDescriptorDto(
     val parameters: List<FieldDescriptorDto>
 )
 
-@Serializable
-data class ParamDescriptorDto(
-    val index: Int,
-    val type: String,
-    val reflectedName: String,
-    val name: String,
-    val nullable: Boolean,
-    val scalarLike: Boolean = false
-)

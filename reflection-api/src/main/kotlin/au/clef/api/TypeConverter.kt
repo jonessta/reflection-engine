@@ -140,50 +140,111 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
     private fun tryBuildKotlinObject(value: Value.Record, target: Class<*>): Any? {
         val kClass: KClass<*> = target.kotlin
         val primaryConstructor: KFunction<Any> = kClass.primaryConstructor ?: return null
+
+        val valueParameters: List<KParameter> =
+            primaryConstructor.parameters.filter { parameter: KParameter ->
+                parameter.kind == KParameter.Kind.VALUE
+            }
+
         val constructorParameterNames: Set<String> =
-            primaryConstructor.parameters
-                .mapNotNull { parameter: KParameter -> parameter.name }
-                .toSet()
+            valueParameters.mapNotNull { parameter: KParameter -> parameter.name }.toSet()
 
         if ((value.fields.keys - constructorParameterNames).isNotEmpty()) {
             return null
         }
-        val arguments: Map<KParameter, Any?> =
-            primaryConstructor.parameters
-                .associateWith { parameter: KParameter ->
-                    val parameterName: String = parameter.name
-                        ?: throw ObjectConstructionException(
-                            "Unnamed Kotlin constructor parameter on ${target.name}"
-                        )
-                    val fieldValue: Value? = value.fields[parameterName]
 
-                    when {
-                        fieldValue != null -> materializeInternal(
-                            fieldValue,
-                            parameter.type.javaType
-                        )
+        val hasValueClassParameters: Boolean =
+            valueParameters.any { parameter: KParameter ->
+                val classifier = parameter.type.classifier as? KClass<*>
+                classifier?.isValue == true
+            }
 
-                        parameter.isOptional -> null
-                        parameter.type.isMarkedNullable -> null
-                        else -> throw ObjectConstructionException(
-                            "Missing mandatory parameter '$parameterName' for ${target.name}"
-                        )
-                    }
+        val missingOptional = mutableSetOf<KParameter>()
+        val orderedArgs = mutableListOf<Any?>()
+        val callByArgs = linkedMapOf<KParameter, Any?>()
+
+        for (parameter in valueParameters) {
+            val parameterName: String =
+                parameter.name ?: throw ObjectConstructionException(
+                    "Unnamed Kotlin constructor parameter on ${target.name}"
+                )
+
+            val fieldValue: Value? = value.fields[parameterName]
+
+            when {
+                fieldValue != null -> {
+                    val converted = materializeInternal(fieldValue, parameter.type.javaType)
+                    orderedArgs += converted
+                    callByArgs[parameter] = converted
                 }
-                .filterNot { entry: Map.Entry<KParameter, Any?> ->
-                    entry.key.isOptional && value.fields[entry.key.name] == null
+
+                parameter.isOptional -> {
+                    missingOptional += parameter
                 }
 
-        return try {
-            primaryConstructor.callBy(arguments)
-        } catch (e: ObjectConstructionException) {
-            throw e
-        } catch (e: Exception) {
-            throw ObjectConstructionException(
-                "Failed to construct ${target.name} with Kotlin primary constructor: ${e.message}",
-                e
-            )
+                parameter.type.isMarkedNullable -> {
+                    orderedArgs += null
+                    callByArgs[parameter] = null
+                }
+
+                else -> {
+                    throw ObjectConstructionException(
+                        "Missing mandatory parameter '$parameterName' for ${target.name}"
+                    )
+                }
+            }
         }
+
+        if (!hasValueClassParameters) {
+            return try {
+                if (missingOptional.isEmpty()) {
+                    primaryConstructor.call(*orderedArgs.toTypedArray())
+                } else {
+                    primaryConstructor.callBy(callByArgs)
+                }
+            } catch (e: ObjectConstructionException) {
+                throw e
+            } catch (e: Exception) {
+                throw ObjectConstructionException(
+                    "Failed to construct ${target.name} with Kotlin primary constructor: ${e.message}",
+                    e
+                )
+            }
+        }
+
+        val candidateConstructors: List<Constructor<*>> =
+            target.declaredConstructors
+                .filter { constructor: Constructor<*> ->
+                    !constructor.isSynthetic &&
+                            constructor.parameterCount == orderedArgs.size
+                }
+
+        val matchingConstructor: Constructor<*>? =
+            candidateConstructors.firstOrNull { constructor: Constructor<*> ->
+                constructor.parameterTypes.indices.all { index: Int ->
+                    val expected: Class<*> =
+                        scalarRegistry.wrapPrimitive(constructor.parameterTypes[index])
+
+                    val actual: Any? = orderedArgs[index]
+                    actual == null || expected.isInstance(actual)
+                }
+            }
+
+        if (matchingConstructor != null && missingOptional.isEmpty()) {
+            return try {
+                matchingConstructor.isAccessible = true
+                matchingConstructor.newInstance(*orderedArgs.toTypedArray())
+            } catch (e: ObjectConstructionException) {
+                throw e
+            } catch (e: Exception) {
+                throw ObjectConstructionException(
+                    "Failed to construct ${target.name} with Java-backed Kotlin constructor: ${e.message}",
+                    e
+                )
+            }
+        }
+
+        return null
     }
 
     private fun tryBuildWithSingleJavaConstructor(value: Value.Record, target: Class<*>): Any? {

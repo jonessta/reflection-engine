@@ -16,6 +16,8 @@ data class Customer(
 @Suppress("unused")
 class CustomerService {
 
+    private val customers = mutableMapOf<String, Customer>()
+
     fun findCustomer(id: CustomerId): Customer =
         Customer(
             id = id,
@@ -30,4 +32,8 @@ class CustomerService {
 
     fun normalizeEmail(email: EmailAddress): EmailAddress =
         EmailAddress(email.value.trim().lowercase())
+
+    fun addCustomer(customer: Customer) {
+        customers[customer.id.value] = customer
+    }
 }

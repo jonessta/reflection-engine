@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>Reflection Method Explorer</title>
     <style>
         :root {
@@ -18,7 +18,9 @@
             --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
         }
 
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
 
         body {
             margin: 0;
@@ -53,10 +55,17 @@
             overflow: hidden;
         }
 
-        .card-header { padding: 20px 22px 0; }
-        .card-body { padding: 20px 22px 22px; }
+        .card-header {
+            padding: 20px 22px 0;
+        }
 
-        h1, h2, h3, p { margin: 0; }
+        .card-body {
+            padding: 20px 22px 22px;
+        }
+
+        h1, h2, h3, p {
+            margin: 0;
+        }
 
         .title {
             font-size: 22px;
@@ -172,13 +181,34 @@
             transition: transform 0.05s ease, opacity 0.15s ease;
         }
 
-        button:hover { opacity: 0.95; }
-        button:active { transform: translateY(1px); }
-        button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        button:hover {
+            opacity: 0.95;
+        }
 
-        .primary-btn { background: var(--accent); color: white; }
-        .secondary-btn, .ghost-btn { background: #e2e8f0; color: #0f172a; }
-        .ghost-btn { background: white; border: 1px solid var(--border); }
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .primary-btn {
+            background: var(--accent);
+            color: white;
+        }
+
+        .secondary-btn, .ghost-btn {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+
+        .ghost-btn {
+            background: white;
+            border: 1px solid var(--border);
+        }
 
         .tree-row {
             display: flex;
@@ -188,7 +218,9 @@
             padding: 8px 10px;
         }
 
-        .tree-row:hover { background: #f8fafc; }
+        .tree-row:hover {
+            background: #f8fafc;
+        }
 
         .tree-toggle {
             width: 22px;
@@ -204,10 +236,25 @@
             flex: 0 0 auto;
         }
 
-        .tree-toggle:hover { background: #e2e8f0; }
-        .tree-spacer { width: 22px; height: 22px; flex: 0 0 auto; }
-        .tree-label { font-size: 14px; font-weight: 600; }
-        .tree-type { font-size: 13px; color: var(--muted); }
+        .tree-toggle:hover {
+            background: #e2e8f0;
+        }
+
+        .tree-spacer {
+            width: 22px;
+            height: 22px;
+            flex: 0 0 auto;
+        }
+
+        .tree-label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .tree-type {
+            font-size: 13px;
+            color: var(--muted);
+        }
 
         .payload {
             background: var(--code);
@@ -268,7 +315,9 @@
         }
 
         @media (max-width: 1100px) {
-            .layout { grid-template-columns: 1fr; }
+            .layout {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -282,7 +331,7 @@
                     <p class="hint">Loaded dynamically from the server.</p>
                 </div>
                 <div class="card-body">
-                    <select id="methodSelect" class="scalar-input"></select>
+                    <select class="scalar-input" id="methodSelect"></select>
                 </div>
             </section>
 
@@ -297,13 +346,14 @@
         <section class="card">
             <div class="card-header">
                 <h2 class="title">Recursive Form</h2>
-                <p class="hint">Built entirely from the nested field descriptors returned by the server.</p>
+                <p class="hint">Built entirely from the nested field descriptors returned by the
+                    server.</p>
             </div>
             <div class="card-body">
                 <div id="formRoot"></div>
                 <div class="actions">
-                    <button class="primary-btn" type="button" id="invokeButton">Invoke</button>
-                    <button class="secondary-btn" type="button" id="resetButton">Reset</button>
+                    <button class="primary-btn" id="invokeButton" type="button">Invoke</button>
+                    <button class="secondary-btn" id="resetButton" type="button">Reset</button>
                 </div>
                 <div class="status-line" id="statusLine"></div>
                 <div id="validationBlock" style="display:none; margin-top:12px;">
@@ -330,7 +380,7 @@
                             <h2 class="title">Generated Invocation Payload</h2>
                             <p class="hint">Auto-generated from the current form state.</p>
                         </div>
-                        <button class="ghost-btn" type="button" id="copyButton">Copy</button>
+                        <button class="ghost-btn" id="copyButton" type="button">Copy</button>
                     </div>
                 </div>
                 <div class="card-body">
@@ -391,20 +441,20 @@
     function toValue(field, rawValue) {
         if (field.kind === 'SCALAR') {
             if (rawValue === '' || rawValue === null || rawValue === undefined) {
-                return field.nullable ? { kind: 'null' } : { kind: 'scalar', value: rawValue };
+                return field.nullable ? {kind: 'null'} : {kind: 'scalar', value: rawValue};
             }
 
             const type = String(field.type).toLowerCase();
             if (['int', 'long', 'double', 'float', 'short', 'byte'].includes(type)) {
                 const n = Number(rawValue);
-                return { kind: 'scalar', value: Number.isNaN(n) ? rawValue : n };
+                return {kind: 'scalar', value: Number.isNaN(n) ? rawValue : n};
             }
 
             if (type === 'boolean' || type === 'java.lang.boolean') {
-                return { kind: 'scalar', value: Boolean(rawValue) };
+                return {kind: 'scalar', value: Boolean(rawValue)};
             }
 
-            return { kind: 'scalar', value: rawValue };
+            return {kind: 'scalar', value: rawValue};
         }
 
         const fields = {};
@@ -768,7 +818,7 @@
         try {
             const response = await fetch(`${API_BASE_URL}/invoke`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
             });
 

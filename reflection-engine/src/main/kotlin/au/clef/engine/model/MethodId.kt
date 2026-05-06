@@ -92,7 +92,8 @@ class MethodId private constructor(val value: String) {
                     }
                 }
 
-            val methodIdVal: String = formatMethodId(declaringClassName, methodName, parameterTypeNames)
+            val methodIdVal: String =
+                formatMethodId(declaringClassName, methodName, parameterTypeNames)
             return MethodId(methodIdVal)
         }
     }

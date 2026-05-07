@@ -63,7 +63,7 @@
             padding: 20px 22px 22px;
         }
 
-        h1, h2, h3, p {
+        h1, h2, h3, p, pre {
             margin: 0;
         }
 
@@ -79,6 +79,28 @@
             font-size: 14px;
         }
 
+        .meta-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--muted);
+            letter-spacing: 0.06em;
+            margin-bottom: 4px;
+        }
+
+        .meta-value {
+            font-size: 14px;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        .badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
         .badge {
             display: inline-flex;
             align-items: center;
@@ -89,6 +111,13 @@
             color: #334155;
             background: #fff;
             line-height: 1;
+        }
+
+        .badge.kind {
+            background: var(--accent-soft);
+            border-color: transparent;
+            color: #1d4ed8;
+            font-weight: 600;
         }
 
         .field-card {
@@ -105,6 +134,14 @@
             background: #fff;
         }
 
+        .record-children,
+        .field-grid,
+        .tree-root,
+        .tree-children {
+            display: grid;
+            gap: 12px;
+        }
+
         .scalar-input {
             width: 100%;
             padding: 11px 12px;
@@ -114,11 +151,21 @@
             font-size: 14px;
             color: var(--text);
             background: #fff;
+            margin-top: 10px;
         }
 
         .scalar-input:focus {
             border-color: #93c5fd;
             box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08);
+        }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #334155;
+            padding-top: 10px;
         }
 
         .actions {
@@ -157,7 +204,8 @@
             color: white;
         }
 
-        .secondary-btn, .ghost-btn {
+        .secondary-btn,
+        .ghost-btn {
             background: #e2e8f0;
             color: #0f172a;
         }
@@ -165,6 +213,57 @@
         .ghost-btn {
             background: white;
             border: 1px solid var(--border);
+        }
+
+        .tree-node {
+            display: grid;
+            gap: 4px;
+        }
+
+        .tree-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 14px;
+            padding: 8px 10px;
+        }
+
+        .tree-row:hover {
+            background: #f8fafc;
+        }
+
+        .tree-toggle {
+            width: 22px;
+            height: 22px;
+            padding: 0;
+            border-radius: 999px;
+            background: transparent;
+            color: #475569;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            flex: 0 0 auto;
+        }
+
+        .tree-toggle:hover {
+            background: #e2e8f0;
+        }
+
+        .tree-spacer {
+            width: 22px;
+            height: 22px;
+            flex: 0 0 auto;
+        }
+
+        .tree-label {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .tree-type {
+            font-size: 13px;
+            color: var(--muted);
         }
 
         .payload {
@@ -196,12 +295,48 @@
             display: none;
         }
 
+        .status-line.info {
+            display: block;
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+        }
+
+        .status-line.success {
+            display: block;
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+
+        .status-line.error {
+            display: block;
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
         .validation-list {
             margin: 0;
             padding-left: 18px;
             color: #b91c1c;
             font-size: 13px;
             line-height: 1.5;
+        }
+
+        .error-border {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.08);
+        }
+
+        .flash-success {
+            animation: flash-success 0.5s ease;
+        }
+
+        @keyframes flash-success {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+            50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.15); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
         }
 
         @media (max-width: 1100px) {
@@ -211,7 +346,6 @@
         }
     </style>
 </head>
-
 <body>
 <div class="page">
     <div class="layout">
@@ -237,8 +371,7 @@
         <section class="card">
             <div class="card-header">
                 <h2 class="title">Recursive Form</h2>
-                <p class="hint">Built entirely from the nested field descriptors returned by the
-                    server.</p>
+                <p class="hint">Built entirely from the nested field descriptors returned by the server.</p>
             </div>
             <div class="card-body">
                 <div id="formRoot"></div>
@@ -256,6 +389,16 @@
         <div class="stack">
             <section class="card">
                 <div class="card-header">
+                    <h2 class="title">Field Tree</h2>
+                    <p class="hint">Expand nested structured fields.</p>
+                </div>
+                <div class="card-body">
+                    <div class="tree-root" id="treeRoot"></div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
                         <div>
                             <h2 class="title">Generated Invocation Payload</h2>
@@ -268,13 +411,14 @@
                     <pre class="payload" id="payloadOutput"></pre>
                 </div>
             </section>
+
             <section class="card">
                 <div class="card-header">
                     <h2 class="title">Result</h2>
                     <p class="hint">Response from the invoke endpoint.</p>
                 </div>
                 <div class="card-body">
-                    <pre class="payload" id="resultOutput">No result yet.</pre>
+                    <pre class="payload" id="resultOutput"></pre>
                 </div>
             </section>
         </div>
@@ -282,237 +426,541 @@
 </div>
 
 <script>
-    /**
-     * --- CONFIGURATION & STATE ---
-     */
     const API_BASE_URL = 'http://localhost:8080';
 
     const state = {
         descriptors: [],
-        selectedId: null,
-        form: {}, // Structured nested state
+        selectedExecutionId: null,
+        form: {},
+        expanded: {}
     };
 
-    /**
-     * --- LOGIC: DATA & VALIDATION ---
-     */
-    const Logic = {
-        getCurrent: () => state.descriptors.find(d => d.executionId === state.selectedId),
+    function currentDescriptor() {
+        return state.descriptors.find(d => d.executionId === state.selectedExecutionId) || null;
+    }
 
-        getShortType: (t) => String(t || '').split('.').pop(),
+    function shortType(type) {
+        const parts = String(type || '').split('.');
+        return parts[parts.length - 1] || type || '';
+    }
 
-        // Recursively updates state.form using path: ['user', 'address', 'city']
-        updateFormPath: (path, value, obj) => {
-            const key = path[0];
-            if (path.length === 1) {
-                obj[key] = value;
+    function defaultScalarValue(type) {
+        const lower = String(type || '').toLowerCase();
+        if (lower === 'boolean' || lower === 'java.lang.boolean') return false;
+        return '';
+    }
+
+    function buildInitialState(fields) {
+        const result = {};
+        (fields || []).forEach((field) => {
+            if (field.kind === 'RECORD') {
+                result[field.name] = buildInitialState(field.children || []);
             } else {
-                obj[key] = obj[key] || {};
-                Logic.updateFormPath(path.slice(1), value, obj[key]);
+                result[field.name] = defaultScalarValue(field.type);
             }
-        },
+        });
+        return result;
+    }
 
-        // Maps UI state to the API "Kind" structure (Arguments = Array, Records = Map)
-        wrapField: (field, value) => {
-            if (field.kind === 'SCALAR') {
-                const type = field.type.toLowerCase();
-                const isNum = ['int', 'long', 'double', 'float', 'short'].includes(type);
-                const isBool = type.includes('bool');
+    function setStatus(kind, message) {
+        const statusLine = document.getElementById('statusLine');
+        statusLine.className = `status-line ${kind}`;
+        statusLine.textContent = message;
+    }
 
-                if (field.nullable && (value === '' || value == null)) return {kind: 'null'};
+    function setResult(value) {
+        document.getElementById('resultOutput').textContent = value;
+    }
 
-                let finalVal = value;
-                if (isNum) finalVal = Number(value) || 0;
-                if (isBool) finalVal = (value === true || value === 'true');
+    function clearFieldErrors() {
+        document.querySelectorAll('.error-border').forEach((el) => {
+            el.classList.remove('error-border');
+        });
+    }
 
-                return {kind: 'scalar', value: finalVal};
+    function showValidation(errors) {
+        const block = document.getElementById('validationBlock');
+        const list = document.getElementById('validationList');
+        list.innerHTML = '';
+
+        if (!errors.length) {
+            block.style.display = 'none';
+            return;
+        }
+
+        errors.forEach((error) => {
+            const item = document.createElement('li');
+            item.textContent = `[${error.path}] ${error.message}`;
+            list.appendChild(item);
+        });
+
+        block.style.display = 'block';
+    }
+
+    function fieldKey(field) {
+        return `${field.type}:${field.reflectedName}:${field.name}`;
+    }
+
+    function getFormValueAtPath(path) {
+        let cursor = state.form;
+        for (const key of path) {
+            if (cursor == null) return undefined;
+            cursor = cursor[key];
+        }
+        return cursor;
+    }
+
+    function setFormValueAtPath(path, nextValue) {
+        let cursor = state.form;
+        for (let i = 0; i < path.length - 1; i++) {
+            const key = path[i];
+            if (!cursor[key] || typeof cursor[key] !== 'object') {
+                cursor[key] = {};
+            }
+            cursor = cursor[key];
+        }
+        cursor[path[path.length - 1]] = nextValue;
+    }
+
+    function toValue(field, rawValue) {
+        if (field.kind === 'SCALAR') {
+            if (field.nullable && (rawValue === '' || rawValue === null || rawValue === undefined)) {
+                return { kind: 'null' };
             }
 
-            // RECORD: Must return a 'fields' MAP/OBJECT
-            const nestedFieldsMap = {};
-            (field.children || []).forEach(child => {
-                nestedFieldsMap[child.name] = Logic.wrapField(child, value?.[child.name]);
-            });
+            const type = String(field.type || '').toLowerCase();
+            if (['int', 'long', 'double', 'float', 'short', 'byte'].includes(type)) {
+                return { kind: 'scalar', value: Number(rawValue) };
+            }
 
-            return {kind: 'record', type: field.type, fields: nestedFieldsMap};
-        },
+            if (type === 'boolean' || type === 'java.lang.boolean') {
+                return { kind: 'scalar', value: Boolean(rawValue) };
+            }
 
-        // Recursive Validation: Checks required and types
-        validate: (fields, formData, path = []) => {
-            let errors = [];
-            fields.forEach(field => {
-                const currentPath = [...path, field.name];
-                const pathStr = currentPath.join('.');
-                const value = formData?.[field.name];
+            return { kind: 'scalar', value: rawValue };
+        }
 
-                if (field.kind === 'SCALAR') {
-                    const type = field.type.toLowerCase();
-                    const isNum = ['int', 'long', 'double', 'float'].includes(type);
+        const fields = {};
+        (field.children || []).forEach((child) => {
+            fields[child.name] = toValue(child, rawValue ? rawValue[child.name] : undefined);
+        });
 
-                    if (!field.nullable && (value === '' || value == null)) {
-                        errors.push({path: pathStr, message: `${field.name} is required.`});
-                    }
-                    if (isNum && value !== '' && value != null && isNaN(Number(value))) {
-                        errors.push({path: pathStr, message: `${field.name} must be a number.`});
-                    }
-                } else {
-                    errors = errors.concat(Logic.validate(field.children || [], value, currentPath));
-                }
-            });
+        return {
+            kind: 'record',
+            type: field.type,
+            fields
+        };
+    }
+
+    function buildInvocationPayload(descriptor, formState) {
+        return {
+            executionId: descriptor.executionId,
+            args: descriptor.parameters.map((param) => toValue(param, formState[param.name]))
+        };
+    }
+
+    function validateField(field, rawValue, path = field.name) {
+        const errors = [];
+
+        if (field.kind === 'SCALAR') {
+            const type = String(field.type || '').toLowerCase();
+            const isEmpty = rawValue === '' || rawValue === null || rawValue === undefined;
+            const isNum = ['int', 'long', 'double', 'float', 'short', 'byte'].includes(type);
+
+            if (!field.nullable && isEmpty) {
+                errors.push({ path, message: `${field.name} is required.` });
+                return errors;
+            }
+
+            if (!isEmpty && isNum && Number.isNaN(Number(rawValue))) {
+                errors.push({ path, message: `${field.name} must be a number.` });
+            }
+
             return errors;
         }
-    };
 
-    /**
-     * --- UI: RENDERING ---
-     */
-    const UI = {
-        // Updates JSON preview without re-rendering form inputs (prevents focus loss)
-        refreshPreview: () => {
-            const d = Logic.getCurrent();
-            if (!d) return;
+        if (!field.nullable && (rawValue === null || rawValue === undefined)) {
+            errors.push({ path, message: `${field.name} is required.` });
+            return errors;
+        }
 
-            const payload = {
-                executionId: d.executionId,
-                args: d.parameters.map(p => Logic.wrapField(p, state.form[p.name]))
-            };
-            document.getElementById('payloadOutput').textContent = JSON.stringify(payload, null, 2);
-        },
+        (field.children || []).forEach((child) => {
+            errors.push(
+                ...validateField(
+                    child,
+                    rawValue ? rawValue[child.name] : undefined,
+                    `${path}.${child.name}`
+                )
+            );
+        });
 
-        // Builds field HTML string recursively
-        buildFieldHTML: (field, path) => {
-            const pathStr = path.join('.');
-            const type = field.type.toLowerCase();
+        return errors;
+    }
 
-            if (field.kind === 'SCALAR') {
-                const isBool = type.includes('bool');
-                return `
-                <div class="field-card" data-path-container="${pathStr}">
-                    <label><strong>${field.name}</strong> <span class="badge">${Logic.getShortType(field.type)}</span></label>
-                    <input type="${isBool ? 'checkbox' : 'text'}"
-                           data-path="${pathStr}"
-                           class="scalar-input"
-                           oninput="handleInputChange('${pathStr}', this.type === 'checkbox' ? this.checked : this.value)">
-                </div>`;
+    function validateForm(descriptor, formState) {
+        const errors = [];
+        descriptor.parameters.forEach((param) => {
+            errors.push(...validateField(param, formState[param.name], param.name));
+        });
+        return errors;
+    }
+
+    function renderMethodSelect() {
+        const select = document.getElementById('methodSelect');
+        select.innerHTML = '';
+
+        state.descriptors.forEach((descriptor) => {
+            const option = document.createElement('option');
+            option.value = descriptor.executionId;
+            option.textContent = `${descriptor.sourceDescription || 'Static'} · ${descriptor.reflectedName}`;
+            option.selected = descriptor.executionId === state.selectedExecutionId;
+            select.appendChild(option);
+        });
+
+        select.onchange = (event) => {
+            state.selectedExecutionId = event.target.value;
+            const descriptor = currentDescriptor();
+            state.form = buildInitialState(descriptor ? descriptor.parameters : []);
+            state.expanded = {};
+            clearFieldErrors();
+            showValidation([]);
+            setResult('Select a method and invoke it to see the response.');
+            rerenderAll();
+        };
+    }
+
+    function renderSummary() {
+        const root = document.getElementById('methodSummary');
+        root.innerHTML = '';
+        const descriptor = currentDescriptor();
+        if (!descriptor) return;
+
+        const items = [
+            ['Invocation', descriptor.executionId],
+            ['Method', descriptor.reflectedName],
+            ['Source', descriptor.sourceDescription || '—'],
+            ['Returns', shortType(descriptor.returnType)],
+            ['Static', descriptor.isStatic ? 'Yes' : 'No']
+        ];
+
+        items.forEach(([label, value]) => {
+            const block = document.createElement('div');
+            block.innerHTML = `
+                <div class="meta-label">${label}</div>
+                <div class="meta-value">${value}</div>
+            `;
+            root.appendChild(block);
+        });
+    }
+
+    function renderTree() {
+        const root = document.getElementById('treeRoot');
+        root.innerHTML = '';
+        const descriptor = currentDescriptor();
+        if (!descriptor) return;
+
+        descriptor.parameters.forEach((field) => {
+            root.appendChild(renderTreeNode(field, 0));
+        });
+    }
+
+    function renderTreeNode(field, depth) {
+        const node = document.createElement('div');
+        node.className = 'tree-node';
+
+        const row = document.createElement('div');
+        row.className = 'tree-row';
+        row.style.marginLeft = `${depth * 16}px`;
+
+        const hasChildren = field.kind === 'RECORD' && field.children && field.children.length > 0;
+        const key = fieldKey(field);
+        const open = state.expanded[key] !== false;
+
+        if (hasChildren) {
+            const toggle = document.createElement('button');
+            toggle.className = 'tree-toggle';
+            toggle.type = 'button';
+            toggle.textContent = open ? '▾' : '▸';
+            toggle.addEventListener('click', () => {
+                state.expanded[key] = !open;
+                renderTree();
+            });
+            row.appendChild(toggle);
+        } else {
+            const spacer = document.createElement('div');
+            spacer.className = 'tree-spacer';
+            row.appendChild(spacer);
+        }
+
+        const label = document.createElement('div');
+        label.className = 'tree-label';
+        label.textContent = field.name;
+        row.appendChild(label);
+
+        const kind = document.createElement('span');
+        kind.className = 'badge kind';
+        kind.textContent = field.kind === 'RECORD' ? 'record' : 'scalar';
+        row.appendChild(kind);
+
+        const type = document.createElement('span');
+        type.className = 'tree-type';
+        type.textContent = shortType(field.type);
+        row.appendChild(type);
+
+        const nullable = document.createElement('span');
+        nullable.className = 'badge';
+        nullable.textContent = field.nullable ? 'nullable' : 'required';
+        row.appendChild(nullable);
+
+        node.appendChild(row);
+
+        if (hasChildren && open) {
+            const children = document.createElement('div');
+            children.className = 'tree-children';
+            field.children.forEach((child) => {
+                children.appendChild(renderTreeNode(child, depth + 1));
+            });
+            node.appendChild(children);
+        }
+
+        return node;
+    }
+
+    function renderForm() {
+        const root = document.getElementById('formRoot');
+        root.innerHTML = '';
+        const descriptor = currentDescriptor();
+        if (!descriptor) return;
+
+        const grid = document.createElement('div');
+        grid.className = 'field-grid';
+
+        descriptor.parameters.forEach((field) => {
+            grid.appendChild(renderFieldForm(field, [field.name]));
+        });
+
+        root.appendChild(grid);
+    }
+
+    function renderFieldForm(field, path) {
+        const value = getFormValueAtPath(path);
+
+        if (field.kind === 'SCALAR') {
+            const card = document.createElement('div');
+            card.className = 'field-card';
+            card.setAttribute('data-path-container', path.join('.'));
+
+            const header = document.createElement('div');
+            header.className = 'badge-row';
+            header.innerHTML = `
+                <strong>${field.name}</strong>
+                <span class="badge kind">scalar</span>
+                <span class="badge">${shortType(field.type)}</span>
+                <span class="badge">${field.nullable ? 'nullable' : 'required'}</span>
+            `;
+            card.appendChild(header);
+
+            const type = String(field.type || '').toLowerCase();
+
+            if (type === 'boolean' || type === 'java.lang.boolean') {
+                const label = document.createElement('label');
+                label.className = 'checkbox-row';
+
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.checked = Boolean(value);
+                input.addEventListener('change', (event) => {
+                    setFormValueAtPath(path, event.target.checked);
+                    clearFieldErrors();
+                    showValidation([]);
+                    refreshPayload();
+                });
+
+                label.appendChild(input);
+
+                const text = document.createElement('span');
+                text.textContent = 'True / False';
+                label.appendChild(text);
+
+                card.appendChild(label);
+            } else {
+                const input = document.createElement('input');
+                input.className = 'scalar-input';
+                input.type = ['int', 'long', 'double', 'float', 'short', 'byte'].includes(type) ? 'number' : 'text';
+                input.value = value ?? '';
+                input.placeholder = shortType(field.type);
+                input.addEventListener('input', (event) => {
+                    setFormValueAtPath(path, event.target.value);
+                    clearFieldErrors();
+                    showValidation([]);
+                    refreshPayload();
+                });
+                card.appendChild(input);
             }
 
-            return `
-            <div class="record-card">
-                <div class="record-header"><strong>${field.name}</strong></div>
-                <div class="record-children">
-                    ${field.children.map(c => UI.buildFieldHTML(c, [...path, c.name])).join('')}
-                </div>
-            </div>`;
-        },
-
-        setStatus: (msg, type) => {
-            const el = document.getElementById('statusLine');
-            el.textContent = msg;
-            el.className = `status-message ${type}`;
-        },
-
-        renderForm: () => {
-            const d = Logic.getCurrent();
-            if (!d) return;
-
-            document.getElementById('methodSummary').innerHTML = `<b>Method:</b> ${d.reflectedName} (${Logic.getShortType(d.returnType)})`;
-            document.getElementById('formRoot').innerHTML = d.parameters.map(p => UI.buildFieldHTML(p, [p.name])).join('');
-            UI.refreshPreview();
+            return card;
         }
-    };
 
-    /**
-     * --- ACTIONS ---
-     */
-    window.handleInputChange = (pathStr, value) => {
-        Logic.updateFormPath(pathStr.split('.'), value, state.form);
-        UI.refreshPreview();
-    };
+        const card = document.createElement('div');
+        card.className = 'record-card';
+        card.setAttribute('data-path-container', path.join('.'));
 
-    const invoke = async () => {
-        const d = Logic.getCurrent();
+        const header = document.createElement('div');
+        header.className = 'badge-row';
+        header.innerHTML = `
+            <strong>${field.name}</strong>
+            <span class="badge kind">record</span>
+            <span class="badge">${shortType(field.type)}</span>
+            <span class="badge">${field.nullable ? 'nullable' : 'required'}</span>
+        `;
+        card.appendChild(header);
+
+        const children = document.createElement('div');
+        children.className = 'record-children';
+        (field.children || []).forEach((child) => {
+            children.appendChild(renderFieldForm(child, [...path, child.name]));
+        });
+
+        card.appendChild(children);
+        return card;
+    }
+
+    function refreshPayload() {
+        const descriptor = currentDescriptor();
+        if (!descriptor) return;
+
+        const payload = buildInvocationPayload(descriptor, state.form);
+        document.getElementById('payloadOutput').textContent = JSON.stringify(payload, null, 2);
+    }
+
+    async function copyPayload() {
+        const text = document.getElementById('payloadOutput').textContent;
+        try {
+            await navigator.clipboard.writeText(text);
+            setStatus('success', 'Payload copied.');
+        } catch (error) {
+            setStatus('error', 'Failed to copy payload.');
+        }
+    }
+
+    function markValidationErrors(errors) {
+        clearFieldErrors();
+        errors.forEach((error) => {
+            const el = document.querySelector(`[data-path-container="${error.path}"]`);
+            if (el) {
+                el.classList.add('error-border');
+            }
+        });
+    }
+
+    async function invokeMethod() {
+        const descriptor = currentDescriptor();
+        if (!descriptor) return;
+
         const output = document.getElementById('resultOutput');
-        const btn = document.getElementById('invokeButton');
+        const invokeButton = document.getElementById('invokeButton');
 
-        // 1. Validation
-        const errors = Logic.validate(d.parameters, state.form);
-        document.querySelectorAll('.field-card').forEach(el => el.classList.remove('error-border'));
+        const errors = validateForm(descriptor, state.form);
+        showValidation(errors);
+        markValidationErrors(errors);
 
-        if (errors.length > 0) {
-            UI.setStatus(`❌ Validation Failed (${errors.length} errors)`, 'error');
-            errors.forEach(err => {
-                const el = document.querySelector(`[data-path-container="${err.path}"]`);
-                if (el) el.classList.add('error-border');
-            });
+        if (errors.length) {
+            setStatus('error', `Validation failed (${errors.length}).`);
             output.textContent = errors.map(e => `[${e.path}] ${e.message}`).join('\n');
             return;
         }
 
-        // 2. Invocation
-        btn.disabled = true;
-        UI.setStatus("⌛ Invoking...", "info");
+        const payload = buildInvocationPayload(descriptor, state.form);
+        invokeButton.disabled = true;
+        setResult('Invoking...');
+        setStatus('info', 'Invoking method...');
 
         try {
-            const payloadText = document.getElementById('payloadOutput').textContent;
             const response = await fetch(`${API_BASE_URL}/invoke`, {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: payloadText
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
 
             const text = await response.text();
-            const success = response.ok;
 
-            UI.setStatus(success ? `✅ Success (${response.status})` : `❌ Server Error (${response.status})`, success ? 'success' : 'error');
-
-            try {
-                output.textContent = JSON.stringify(JSON.parse(text), null, 2);
-            } catch {
-                output.textContent = text;
+            if (text && text.trim().length > 0) {
+                try {
+                    const json = JSON.parse(text);
+                    setResult(JSON.stringify(json, null, 2));
+                } catch {
+                    setResult(text);
+                }
+            } else {
+                setResult('(empty response body)');
             }
 
-            if (success) {
+            if (response.ok) {
+                setStatus('success', `Invocation succeeded (${response.status}).`);
                 output.classList.add('flash-success');
                 setTimeout(() => output.classList.remove('flash-success'), 500);
+            } else {
+                setStatus('error', `Invocation failed (${response.status}).`);
             }
-
-        } catch (err) {
-            UI.setStatus(`🚫 Network Error`, "error");
-            output.textContent = err.message;
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setResult(message);
+            setStatus('error', `Invocation failed before a response was received. ${message}`);
         } finally {
-            btn.disabled = false;
+            invokeButton.disabled = false;
         }
-    };
+    }
 
-    /**
-     * --- INITIALIZATION ---
-     */
-    const init = async () => {
+    function resetForm() {
+        const descriptor = currentDescriptor();
+        state.form = buildInitialState(descriptor ? descriptor.parameters : []);
+        clearFieldErrors();
+        showValidation([]);
+        renderForm();
+        refreshPayload();
+        setStatus('success', 'Form reset.');
+        setResult('Select a method and invoke it to see the response.');
+    }
+
+    async function loadDescriptors() {
+        const response = await fetch(`${API_BASE_URL}/executions`);
+        if (!response.ok) {
+            throw new Error(`Failed to load executions (${response.status})`);
+        }
+
+        const data = await response.json();
+        state.descriptors = Array.isArray(data) ? data : [];
+
+        if (state.descriptors.length > 0) {
+            state.selectedExecutionId = state.descriptors[0].executionId;
+            state.form = buildInitialState(currentDescriptor().parameters);
+        }
+    }
+
+    function rerenderAll() {
+        renderMethodSelect();
+        renderSummary();
+        renderTree();
+        renderForm();
+        refreshPayload();
+    }
+
+    document.getElementById('resetButton').addEventListener('click', resetForm);
+    document.getElementById('invokeButton').addEventListener('click', invokeMethod);
+    document.getElementById('copyButton').addEventListener('click', copyPayload);
+
+    (async function init() {
         try {
-            const response = await fetch(`${API_BASE_URL}/executions`);
-            state.descriptors = await response.json();
-
-            const select = document.getElementById('methodSelect');
-            select.innerHTML = state.descriptors.map(d => `<option value="${d.executionId}">${d.reflectedName}</option>`).join('');
-
-            select.onchange = (e) => {
-                state.selectedId = e.target.value;
-                state.form = {};
-                UI.renderForm();
-            };
-
-            document.getElementById('invokeButton').onclick = invoke;
-
-            if (state.descriptors.length) {
-                state.selectedId = state.descriptors[0].executionId;
-                UI.renderForm();
-            }
-        } catch (err) {
-            UI.setStatus("Failed to load descriptors", "error");
+            await loadDescriptors();
+            rerenderAll();
+            setResult('Select a method and invoke it to see the response.');
+            setStatus('success', 'Loaded execution descriptors from server.');
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setResult(message);
+            setStatus('error', `Failed to load execution descriptors. ${message}`);
         }
-    };
-
-    init();
+    })();
 </script>
 </body>
 </html>

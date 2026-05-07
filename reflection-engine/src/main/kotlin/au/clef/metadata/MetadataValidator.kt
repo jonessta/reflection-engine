@@ -13,10 +13,8 @@ class MetadataValidator(private val methodSourceRegistry: MethodSourceRegistry) 
     fun validate(metadata: MetadataRoot): List<ValidationIssue> {
         val issues: MutableList<ValidationIssue> = mutableListOf()
         val allDescriptors: List<MethodDescriptor> = methodSourceRegistry.allDescriptors()
-        val descriptorMap: Map<MethodId, MethodDescriptor> =
-            allDescriptors.associateBy { descriptor: MethodDescriptor ->
-                descriptor.id
-            }
+        val descriptorMap: Map<MethodId, MethodDescriptor> = allDescriptors
+            .associateBy { descriptor: MethodDescriptor -> descriptor.id }
 
         metadata.methods.forEach { (methodId: MethodId, methodMetadata: MethodMetadata) ->
             val descriptor: MethodDescriptor? = descriptorMap[methodId]

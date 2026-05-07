@@ -109,7 +109,7 @@ sealed class MethodSource(val declaringClass: KClass<*>, val sourceDescription: 
                 methodName: String,
                 parameterTypes: Array<out KClass<*>>
             ): MethodId {
-                val requestedId: MethodId =
+                val requestedId =
                     MethodId.from(declaringClass, methodName, *parameterTypes)
 
                 val matchingFunction: KFunction<*>? =
@@ -127,13 +127,14 @@ sealed class MethodSource(val declaringClass: KClass<*>, val sourceDescription: 
                             return@firstOrNull false
                         }
 
-                        valueParameters.mapIndexed { index: Int, parameter: KParameter ->
-                            val classifier: KClass<*> =
-                                parameter.type.classifier as? KClass<*>
-                                    ?: return@firstOrNull false
-
-                            classifier == parameterTypes[index]
-                        }.all { matches: Boolean -> matches }
+                        valueParameters
+                            .mapIndexed { index: Int, parameter: KParameter ->
+                                val classifier: KClass<*> =
+                                    parameter.type.classifier as? KClass<*>
+                                        ?: return@firstOrNull false
+                                classifier == parameterTypes[index]
+                            }
+                            .all { matches: Boolean -> matches }
                     }
 
                 if (matchingFunction != null) {

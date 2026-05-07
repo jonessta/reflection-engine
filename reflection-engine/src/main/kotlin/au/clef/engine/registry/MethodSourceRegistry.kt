@@ -27,7 +27,7 @@ private data class ParsedMethodId(
 
     companion object {
 
-        private val regex: Regex =
+        private val regex =
             Regex("""^([A-Za-z_][A-Za-z0-9_$.]*)#([A-Za-z_][A-Za-z0-9_$]*)\((.*)\)$""")
 
         fun parse(methodId: MethodId): ParsedMethodId {
@@ -78,8 +78,7 @@ class MethodSourceRegistry(
     fun descriptor(id: MethodId): MethodDescriptor =
         entriesById[id]?.descriptor ?: throwMethodNotFound(id)
 
-    fun method(id: MethodId): Method =
-        entriesById[id]?.javaMethod ?: throwMethodNotFound(id)
+    fun method(id: MethodId): Method = entriesById[id]?.javaMethod ?: throwMethodNotFound(id)
 
     fun executionContext(id: ExecutionId): ExecutionContext =
         executionContextsById[id] ?: throw IllegalArgumentException("Unknown ID: $id")
@@ -87,8 +86,7 @@ class MethodSourceRegistry(
     fun allDescriptors(): List<MethodDescriptor> =
         entriesById.values.map { entry: RegistryEntry -> entry.descriptor }
 
-    fun allExecutionContexts(): List<ExecutionContext> =
-        executionContextsById.values.toList()
+    fun allExecutionContexts(): List<ExecutionContext> = executionContextsById.values.toList()
 
     private fun registerMethodSource(source: MethodSource) {
         val clazz: Class<*> = source.declaringClass.java

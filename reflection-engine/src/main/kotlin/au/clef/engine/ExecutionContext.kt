@@ -18,6 +18,6 @@ sealed class ExecutionContext(val methodId: MethodId, val sourceDescription: Str
         ExecutionContext(methodId, sourceDescription) {
 
         override val executionId: ExecutionId =
-            ExecutionId("instance:${UUID.randomUUID()}:${methodId}")
+            ExecutionId("instance:${UUID.randomUUID()}:${methodId}");
     }
 }

@@ -6,9 +6,7 @@ import au.clef.metadata.model.MetadataRoot
 import au.clef.metadata.model.MethodMetadata
 import au.clef.metadata.model.ParamMetadata
 
-class DescriptorMetadataRegistry(
-    private val metadata: MetadataRoot
-) {
+class DescriptorMetadataRegistry(private val metadata: MetadataRoot) {
 
     fun apply(descriptor: MethodDescriptor): MethodDescriptor {
         val methodMeta: MethodMetadata = metadata.methods[descriptor.id] ?: return descriptor

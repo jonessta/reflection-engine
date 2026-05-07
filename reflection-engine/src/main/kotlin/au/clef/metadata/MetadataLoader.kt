@@ -12,11 +12,9 @@ object MetadataLoader {
     }
 
     fun fromResource(path: String): MetadataRoot {
-        val stream: InputStream =
-            MetadataLoader::class.java.getResourceAsStream(path)
-                ?: error("Metadata resource not found on classpath: $path")
-        val text: String =
-            stream.bufferedReader().use { reader -> reader.readText() }
+        val stream: InputStream = MetadataLoader::class.java.getResourceAsStream(path)
+            ?: error("Metadata resource not found on classpath: $path")
+        val text: String = stream.bufferedReader().use { reader -> reader.readText() }
 
         if (text.isBlank()) {
             return MetadataRoot()

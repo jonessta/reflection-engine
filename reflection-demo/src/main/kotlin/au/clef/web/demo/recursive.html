@@ -426,7 +426,7 @@
 </div>
 
 <script>
-    const API_BASE_URL = 'http://localhost:8080';
+    const API_BASE_URL = "http://localhost:8080";
 
     const state = {
         descriptors: [],
@@ -435,530 +435,558 @@
         expanded: {}
     };
 
-    function currentDescriptor() {
-        return state.descriptors.find(d => d.executionId === state.selectedExecutionId) || null;
-    }
+    const State = {
+        currentDescriptor() {
+            return state.descriptors.find(d => d.executionId === state.selectedExecutionId) || null;
+        },
 
-    function shortType(type) {
-        const parts = String(type || '').split('.');
-        return parts[parts.length - 1] || type || '';
-    }
-
-    function defaultScalarValue(type) {
-        const lower = String(type || '').toLowerCase();
-        if (lower === 'boolean' || lower === 'java.lang.boolean') return false;
-        return '';
-    }
-
-    function buildInitialState(fields) {
-        const result = {};
-        (fields || []).forEach((field) => {
-            if (field.kind === 'RECORD') {
-                result[field.name] = buildInitialState(field.children || []);
-            } else {
-                result[field.name] = defaultScalarValue(field.type);
-            }
-        });
-        return result;
-    }
-
-    function setStatus(kind, message) {
-        const statusLine = document.getElementById('statusLine');
-        statusLine.className = `status-line ${kind}`;
-        statusLine.textContent = message;
-    }
-
-    function setResult(value) {
-        document.getElementById('resultOutput').textContent = value;
-    }
-
-    function clearFieldErrors() {
-        document.querySelectorAll('.error-border').forEach((el) => {
-            el.classList.remove('error-border');
-        });
-    }
-
-    function showValidation(errors) {
-        const block = document.getElementById('validationBlock');
-        const list = document.getElementById('validationList');
-        list.innerHTML = '';
-
-        if (!errors.length) {
-            block.style.display = 'none';
-            return;
+        resetFormForCurrentDescriptor() {
+            const descriptor = this.currentDescriptor();
+            state.form = FormState.buildInitial(descriptor ? descriptor.parameters : []);
         }
+    };
 
-        errors.forEach((error) => {
-            const item = document.createElement('li');
-            item.textContent = `[${error.path}] ${error.message}`;
-            list.appendChild(item);
-        });
+    const FormState = {
+        buildInitial(fields) {
+            const result = {};
+            (fields || []).forEach((field) => {
+                if (field.kind === "RECORD") {
+                    result[field.name] = this.buildInitial(field.children || []);
+                } else {
+                    result[field.name] = this.defaultScalarValue(field.type);
+                }
+            });
+            return result;
+        },
 
-        block.style.display = 'block';
-    }
+        defaultScalarValue(type) {
+            const lower = String(type || "").toLowerCase();
+            if (lower === "boolean" || lower === "java.lang.boolean") return false;
+            return "";
+        },
 
-    function fieldKey(field) {
-        return `${field.type}:${field.reflectedName}:${field.name}`;
-    }
+        get(path) {
+            let cursor = state.form;
+            for (const key of path) {
+                if (cursor == null) return undefined;
+                cursor = cursor[key];
+            }
+            return cursor;
+        },
 
-    function getFormValueAtPath(path) {
-        let cursor = state.form;
-        for (const key of path) {
-            if (cursor == null) return undefined;
-            cursor = cursor[key];
+        set(path, nextValue) {
+            let cursor = state.form;
+            for (let i = 0; i < path.length - 1; i++) {
+                const key = path[i];
+                if (!cursor[key] || typeof cursor[key] !== "object") {
+                    cursor[key] = {};
+                }
+                cursor = cursor[key];
+            }
+            cursor[path[path.length - 1]] = nextValue;
         }
-        return cursor;
-    }
+    };
 
-    function setFormValueAtPath(path, nextValue) {
-        let cursor = state.form;
-        for (let i = 0; i < path.length - 1; i++) {
-            const key = path[i];
-            if (!cursor[key] || typeof cursor[key] !== 'object') {
-                cursor[key] = {};
+    const DescriptorRuntime = {
+        shortType(type) {
+            const parts = String(type || "").split(".");
+            return parts[parts.length - 1] || type || "";
+        },
+
+        isNumericType(type) {
+            const lower = String(type || "").toLowerCase();
+            return ["int", "long", "double", "float", "short", "byte"].includes(lower);
+        },
+
+        isBooleanType(type) {
+            const lower = String(type || "").toLowerCase();
+            return lower === "boolean" || lower === "java.lang.boolean";
+        },
+
+        toValue(field, rawValue) {
+            if (field.kind === "SCALAR") {
+                if (field.nullable && (rawValue === "" || rawValue === null || rawValue === undefined)) {
+                    return {kind: "null"};
+                }
+
+                if (this.isNumericType(field.type)) {
+                    return {kind: "scalar", value: Number(rawValue)};
+                }
+
+                if (this.isBooleanType(field.type)) {
+                    return {kind: "scalar", value: Boolean(rawValue)};
+                }
+
+                return {kind: "scalar", value: rawValue};
             }
-            cursor = cursor[key];
-        }
-        cursor[path[path.length - 1]] = nextValue;
-    }
 
-    function toValue(field, rawValue) {
-        if (field.kind === 'SCALAR') {
-            if (field.nullable && (rawValue === '' || rawValue === null || rawValue === undefined)) {
-                return { kind: 'null' };
-            }
+            const fields = {};
+            (field.children || []).forEach((child) => {
+                fields[child.name] = this.toValue(child, rawValue ? rawValue[child.name] : undefined);
+            });
 
-            const type = String(field.type || '').toLowerCase();
-            if (['int', 'long', 'double', 'float', 'short', 'byte'].includes(type)) {
-                return { kind: 'scalar', value: Number(rawValue) };
-            }
+            return {
+                kind: "record",
+                type: field.type,
+                fields
+            };
+        },
 
-            if (type === 'boolean' || type === 'java.lang.boolean') {
-                return { kind: 'scalar', value: Boolean(rawValue) };
-            }
+        buildPayload(descriptor, formState) {
+            return {
+                executionId: descriptor.executionId,
+                args: descriptor.parameters.map((param) => this.toValue(param, formState[param.name]))
+            };
+        },
 
-            return { kind: 'scalar', value: rawValue };
-        }
+        validateField(field, rawValue, path = field.name) {
+            const errors = [];
 
-        const fields = {};
-        (field.children || []).forEach((child) => {
-            fields[child.name] = toValue(child, rawValue ? rawValue[child.name] : undefined);
-        });
+            if (field.kind === "SCALAR") {
+                const isEmpty = rawValue === "" || rawValue === null || rawValue === undefined;
 
-        return {
-            kind: 'record',
-            type: field.type,
-            fields
-        };
-    }
+                if (!field.nullable && isEmpty) {
+                    errors.push({path, message: `${field.name} is required.`});
+                    return errors;
+                }
 
-    function buildInvocationPayload(descriptor, formState) {
-        return {
-            executionId: descriptor.executionId,
-            args: descriptor.parameters.map((param) => toValue(param, formState[param.name]))
-        };
-    }
+                if (!isEmpty && this.isNumericType(field.type) && Number.isNaN(Number(rawValue))) {
+                    errors.push({path, message: `${field.name} must be a number.`});
+                }
 
-    function validateField(field, rawValue, path = field.name) {
-        const errors = [];
-
-        if (field.kind === 'SCALAR') {
-            const type = String(field.type || '').toLowerCase();
-            const isEmpty = rawValue === '' || rawValue === null || rawValue === undefined;
-            const isNum = ['int', 'long', 'double', 'float', 'short', 'byte'].includes(type);
-
-            if (!field.nullable && isEmpty) {
-                errors.push({ path, message: `${field.name} is required.` });
                 return errors;
             }
 
-            if (!isEmpty && isNum && Number.isNaN(Number(rawValue))) {
-                errors.push({ path, message: `${field.name} must be a number.` });
+            if (!field.nullable && (rawValue === null || rawValue === undefined)) {
+                errors.push({path, message: `${field.name} is required.`});
+                return errors;
             }
 
+            (field.children || []).forEach((child) => {
+                errors.push(
+                    ...this.validateField(
+                        child,
+                        rawValue ? rawValue[child.name] : undefined,
+                        `${path}.${child.name}`
+                    )
+                );
+            });
+
+            return errors;
+        },
+
+        validateForm(descriptor, formState) {
+            const errors = [];
+            descriptor.parameters.forEach((param) => {
+                errors.push(...this.validateField(param, formState[param.name], param.name));
+            });
             return errors;
         }
+    };
 
-        if (!field.nullable && (rawValue === null || rawValue === undefined)) {
-            errors.push({ path, message: `${field.name} is required.` });
-            return errors;
-        }
+    const View = {
+        setStatus(kind, message) {
+            const statusLine = document.getElementById("statusLine");
+            statusLine.className = `status-line ${kind}`;
+            statusLine.textContent = message;
+        },
 
-        (field.children || []).forEach((child) => {
-            errors.push(
-                ...validateField(
-                    child,
-                    rawValue ? rawValue[child.name] : undefined,
-                    `${path}.${child.name}`
-                )
-            );
-        });
+        setResult(value) {
+            document.getElementById("resultOutput").textContent = value;
+        },
 
-        return errors;
-    }
+        showValidation(errors) {
+            const block = document.getElementById("validationBlock");
+            const list = document.getElementById("validationList");
+            list.innerHTML = "";
 
-    function validateForm(descriptor, formState) {
-        const errors = [];
-        descriptor.parameters.forEach((param) => {
-            errors.push(...validateField(param, formState[param.name], param.name));
-        });
-        return errors;
-    }
+            if (!errors.length) {
+                block.style.display = "none";
+                return;
+            }
 
-    function renderMethodSelect() {
-        const select = document.getElementById('methodSelect');
-        select.innerHTML = '';
-
-        state.descriptors.forEach((descriptor) => {
-            const option = document.createElement('option');
-            option.value = descriptor.executionId;
-            option.textContent = `${descriptor.sourceDescription || 'Static'} · ${descriptor.reflectedName}`;
-            option.selected = descriptor.executionId === state.selectedExecutionId;
-            select.appendChild(option);
-        });
-
-        select.onchange = (event) => {
-            state.selectedExecutionId = event.target.value;
-            const descriptor = currentDescriptor();
-            state.form = buildInitialState(descriptor ? descriptor.parameters : []);
-            state.expanded = {};
-            clearFieldErrors();
-            showValidation([]);
-            setResult('Select a method and invoke it to see the response.');
-            rerenderAll();
-        };
-    }
-
-    function renderSummary() {
-        const root = document.getElementById('methodSummary');
-        root.innerHTML = '';
-        const descriptor = currentDescriptor();
-        if (!descriptor) return;
-
-        const items = [
-            ['Invocation', descriptor.executionId],
-            ['Method', descriptor.reflectedName],
-            ['Source', descriptor.sourceDescription || '—'],
-            ['Returns', shortType(descriptor.returnType)],
-            ['Static', descriptor.isStatic ? 'Yes' : 'No']
-        ];
-
-        items.forEach(([label, value]) => {
-            const block = document.createElement('div');
-            block.innerHTML = `
-                <div class="meta-label">${label}</div>
-                <div class="meta-value">${value}</div>
-            `;
-            root.appendChild(block);
-        });
-    }
-
-    function renderTree() {
-        const root = document.getElementById('treeRoot');
-        root.innerHTML = '';
-        const descriptor = currentDescriptor();
-        if (!descriptor) return;
-
-        descriptor.parameters.forEach((field) => {
-            root.appendChild(renderTreeNode(field, 0));
-        });
-    }
-
-    function renderTreeNode(field, depth) {
-        const node = document.createElement('div');
-        node.className = 'tree-node';
-
-        const row = document.createElement('div');
-        row.className = 'tree-row';
-        row.style.marginLeft = `${depth * 16}px`;
-
-        const hasChildren = field.kind === 'RECORD' && field.children && field.children.length > 0;
-        const key = fieldKey(field);
-        const open = state.expanded[key] !== false;
-
-        if (hasChildren) {
-            const toggle = document.createElement('button');
-            toggle.className = 'tree-toggle';
-            toggle.type = 'button';
-            toggle.textContent = open ? '▾' : '▸';
-            toggle.addEventListener('click', () => {
-                state.expanded[key] = !open;
-                renderTree();
+            errors.forEach((error) => {
+                const item = document.createElement("li");
+                item.textContent = `[${error.path}] ${error.message}`;
+                list.appendChild(item);
             });
-            row.appendChild(toggle);
-        } else {
-            const spacer = document.createElement('div');
-            spacer.className = 'tree-spacer';
-            row.appendChild(spacer);
-        }
 
-        const label = document.createElement('div');
-        label.className = 'tree-label';
-        label.textContent = field.name;
-        row.appendChild(label);
+            block.style.display = "block";
+        },
 
-        const kind = document.createElement('span');
-        kind.className = 'badge kind';
-        kind.textContent = field.kind === 'RECORD' ? 'record' : 'scalar';
-        row.appendChild(kind);
-
-        const type = document.createElement('span');
-        type.className = 'tree-type';
-        type.textContent = shortType(field.type);
-        row.appendChild(type);
-
-        const nullable = document.createElement('span');
-        nullable.className = 'badge';
-        nullable.textContent = field.nullable ? 'nullable' : 'required';
-        row.appendChild(nullable);
-
-        node.appendChild(row);
-
-        if (hasChildren && open) {
-            const children = document.createElement('div');
-            children.className = 'tree-children';
-            field.children.forEach((child) => {
-                children.appendChild(renderTreeNode(child, depth + 1));
+        clearFieldErrors() {
+            document.querySelectorAll(".error-border").forEach((el) => {
+                el.classList.remove("error-border");
             });
-            node.appendChild(children);
+        },
+
+        markValidationErrors(errors) {
+            this.clearFieldErrors();
+            errors.forEach((error) => {
+                const el = document.querySelector(`[data-path-container="${error.path}"]`);
+                if (el) {
+                    el.classList.add("error-border");
+                }
+            });
+        },
+
+        flashSuccessResult() {
+            const output = document.getElementById("resultOutput");
+            output.classList.add("flash-success");
+            setTimeout(() => output.classList.remove("flash-success"), 500);
         }
+    };
 
-        return node;
-    }
+    const Renderer = {
+        fieldKey(field) {
+            return `${field.type}:${field.reflectedName}:${field.name}`;
+        },
 
-    function renderForm() {
-        const root = document.getElementById('formRoot');
-        root.innerHTML = '';
-        const descriptor = currentDescriptor();
-        if (!descriptor) return;
+        renderMethodSelect() {
+            const select = document.getElementById("methodSelect");
+            select.innerHTML = "";
 
-        const grid = document.createElement('div');
-        grid.className = 'field-grid';
+            state.descriptors.forEach((descriptor) => {
+                const option = document.createElement("option");
+                option.value = descriptor.executionId;
+                option.textContent = `${descriptor.sourceDescription || "Static"} · ${descriptor.reflectedName}`;
+                option.selected = descriptor.executionId === state.selectedExecutionId;
+                select.appendChild(option);
+            });
 
-        descriptor.parameters.forEach((field) => {
-            grid.appendChild(renderFieldForm(field, [field.name]));
-        });
+            select.onchange = (event) => {
+                state.selectedExecutionId = event.target.value;
+                State.resetFormForCurrentDescriptor();
+                state.expanded = {};
+                View.clearFieldErrors();
+                View.showValidation([]);
+                View.setResult("Select a method and invoke it to see the response.");
+                this.rerenderAll();
+            };
+        },
 
-        root.appendChild(grid);
-    }
+        renderSummary() {
+            const root = document.getElementById("methodSummary");
+            root.innerHTML = "";
 
-    function renderFieldForm(field, path) {
-        const value = getFormValueAtPath(path);
+            const descriptor = State.currentDescriptor();
+            if (!descriptor) return;
 
-        if (field.kind === 'SCALAR') {
-            const card = document.createElement('div');
-            card.className = 'field-card';
-            card.setAttribute('data-path-container', path.join('.'));
+            const addItem = (label, value) => {
+                const block = document.createElement("div");
+                block.innerHTML = `
+                    <div class="meta-label">${label}</div>
+                    <div class="meta-value">${value}</div>
+                `;
+                root.appendChild(block);
+            };
 
-            const header = document.createElement('div');
-            header.className = 'badge-row';
+            addItem("Invocation", descriptor.executionId);
+            addItem("Method", descriptor.reflectedName);
+            addItem("Source", descriptor.sourceDescription || "—");
+            addItem("Returns", DescriptorRuntime.shortType(descriptor.returnType));
+            addItem("Static", descriptor.isStatic ? "Yes" : "No");
+        },
+
+        renderTree() {
+            const root = document.getElementById("treeRoot");
+            root.innerHTML = "";
+
+            const descriptor = State.currentDescriptor();
+            if (!descriptor) return;
+
+            descriptor.parameters.forEach((field) => {
+                root.appendChild(this.renderTreeNode(field, 0));
+            });
+        },
+
+        renderTreeNode(field, depth) {
+            const node = document.createElement("div");
+            node.className = "tree-node";
+
+            const row = document.createElement("div");
+            row.className = "tree-row";
+            row.style.marginLeft = `${depth * 16}px`;
+
+            const hasChildren = field.kind === "RECORD" && field.children && field.children.length > 0;
+            const key = this.fieldKey(field);
+            const open = state.expanded[key] !== false;
+
+            if (hasChildren) {
+                const toggle = document.createElement("button");
+                toggle.className = "tree-toggle";
+                toggle.type = "button";
+                toggle.textContent = open ? "▾" : "▸";
+                toggle.addEventListener("click", () => {
+                    state.expanded[key] = !open;
+                    this.renderTree();
+                });
+                row.appendChild(toggle);
+            } else {
+                const spacer = document.createElement("div");
+                spacer.className = "tree-spacer";
+                row.appendChild(spacer);
+            }
+
+            const label = document.createElement("div");
+            label.className = "tree-label";
+            label.textContent = field.name;
+            row.appendChild(label);
+
+            const kind = document.createElement("span");
+            kind.className = "badge kind";
+            kind.textContent = field.kind === "RECORD" ? "record" : "scalar";
+            row.appendChild(kind);
+
+            const type = document.createElement("span");
+            type.className = "tree-type";
+            type.textContent = DescriptorRuntime.shortType(field.type);
+            row.appendChild(type);
+
+            const nullable = document.createElement("span");
+            nullable.className = "badge";
+            nullable.textContent = field.nullable ? "nullable" : "required";
+            row.appendChild(nullable);
+
+            node.appendChild(row);
+
+            if (hasChildren && open) {
+                const children = document.createElement("div");
+                children.className = "tree-children";
+                field.children.forEach((child) => {
+                    children.appendChild(this.renderTreeNode(child, depth + 1));
+                });
+                node.appendChild(children);
+            }
+
+            return node;
+        },
+
+        renderForm() {
+            const root = document.getElementById("formRoot");
+            root.innerHTML = "";
+
+            const descriptor = State.currentDescriptor();
+            if (!descriptor) return;
+
+            const grid = document.createElement("div");
+            grid.className = "field-grid";
+
+            descriptor.parameters.forEach((field) => {
+                grid.appendChild(this.renderFieldForm(field, [field.name]));
+            });
+
+            root.appendChild(grid);
+        },
+
+        renderFieldForm(field, path) {
+            const value = FormState.get(path);
+
+            if (field.kind === "SCALAR") {
+                const card = document.createElement("div");
+                card.className = "field-card";
+                card.setAttribute("data-path-container", path.join("."));
+
+                const header = document.createElement("div");
+                header.className = "badge-row";
+                header.innerHTML = `
+                    <strong>${field.name}</strong>
+                    <span class="badge kind">scalar</span>
+                    <span class="badge">${DescriptorRuntime.shortType(field.type)}</span>
+                    <span class="badge">${field.nullable ? "nullable" : "required"}</span>
+                `;
+                card.appendChild(header);
+
+                if (DescriptorRuntime.isBooleanType(field.type)) {
+                    const label = document.createElement("label");
+                    label.className = "checkbox-row";
+
+                    const input = document.createElement("input");
+                    input.type = "checkbox";
+                    input.checked = Boolean(value);
+                    input.addEventListener("change", (event) => {
+                        FormState.set(path, event.target.checked);
+                        View.clearFieldErrors();
+                        View.showValidation([]);
+                        Renderer.refreshPayload();
+                    });
+
+                    label.appendChild(input);
+
+                    const text = document.createElement("span");
+                    text.textContent = "True / False";
+                    label.appendChild(text);
+
+                    card.appendChild(label);
+                } else {
+                    const input = document.createElement("input");
+                    input.className = "scalar-input";
+                    input.type = DescriptorRuntime.isNumericType(field.type) ? "number" : "text";
+                    input.value = value ?? "";
+                    input.placeholder = DescriptorRuntime.shortType(field.type);
+                    input.addEventListener("input", (event) => {
+                        FormState.set(path, event.target.value);
+                        View.clearFieldErrors();
+                        View.showValidation([]);
+                        Renderer.refreshPayload();
+                    });
+
+                    card.appendChild(input);
+                }
+
+                return card;
+            }
+
+            const card = document.createElement("div");
+            card.className = "record-card";
+            card.setAttribute("data-path-container", path.join("."));
+
+            const header = document.createElement("div");
+            header.className = "badge-row";
             header.innerHTML = `
                 <strong>${field.name}</strong>
-                <span class="badge kind">scalar</span>
-                <span class="badge">${shortType(field.type)}</span>
-                <span class="badge">${field.nullable ? 'nullable' : 'required'}</span>
+                <span class="badge kind">record</span>
+                <span class="badge">${DescriptorRuntime.shortType(field.type)}</span>
+                <span class="badge">${field.nullable ? "nullable" : "required"}</span>
             `;
             card.appendChild(header);
 
-            const type = String(field.type || '').toLowerCase();
-
-            if (type === 'boolean' || type === 'java.lang.boolean') {
-                const label = document.createElement('label');
-                label.className = 'checkbox-row';
-
-                const input = document.createElement('input');
-                input.type = 'checkbox';
-                input.checked = Boolean(value);
-                input.addEventListener('change', (event) => {
-                    setFormValueAtPath(path, event.target.checked);
-                    clearFieldErrors();
-                    showValidation([]);
-                    refreshPayload();
-                });
-
-                label.appendChild(input);
-
-                const text = document.createElement('span');
-                text.textContent = 'True / False';
-                label.appendChild(text);
-
-                card.appendChild(label);
-            } else {
-                const input = document.createElement('input');
-                input.className = 'scalar-input';
-                input.type = ['int', 'long', 'double', 'float', 'short', 'byte'].includes(type) ? 'number' : 'text';
-                input.value = value ?? '';
-                input.placeholder = shortType(field.type);
-                input.addEventListener('input', (event) => {
-                    setFormValueAtPath(path, event.target.value);
-                    clearFieldErrors();
-                    showValidation([]);
-                    refreshPayload();
-                });
-                card.appendChild(input);
-            }
-
-            return card;
-        }
-
-        const card = document.createElement('div');
-        card.className = 'record-card';
-        card.setAttribute('data-path-container', path.join('.'));
-
-        const header = document.createElement('div');
-        header.className = 'badge-row';
-        header.innerHTML = `
-            <strong>${field.name}</strong>
-            <span class="badge kind">record</span>
-            <span class="badge">${shortType(field.type)}</span>
-            <span class="badge">${field.nullable ? 'nullable' : 'required'}</span>
-        `;
-        card.appendChild(header);
-
-        const children = document.createElement('div');
-        children.className = 'record-children';
-        (field.children || []).forEach((child) => {
-            children.appendChild(renderFieldForm(child, [...path, child.name]));
-        });
-
-        card.appendChild(children);
-        return card;
-    }
-
-    function refreshPayload() {
-        const descriptor = currentDescriptor();
-        if (!descriptor) return;
-
-        const payload = buildInvocationPayload(descriptor, state.form);
-        document.getElementById('payloadOutput').textContent = JSON.stringify(payload, null, 2);
-    }
-
-    async function copyPayload() {
-        const text = document.getElementById('payloadOutput').textContent;
-        try {
-            await navigator.clipboard.writeText(text);
-            setStatus('success', 'Payload copied.');
-        } catch (error) {
-            setStatus('error', 'Failed to copy payload.');
-        }
-    }
-
-    function markValidationErrors(errors) {
-        clearFieldErrors();
-        errors.forEach((error) => {
-            const el = document.querySelector(`[data-path-container="${error.path}"]`);
-            if (el) {
-                el.classList.add('error-border');
-            }
-        });
-    }
-
-    async function invokeMethod() {
-        const descriptor = currentDescriptor();
-        if (!descriptor) return;
-
-        const output = document.getElementById('resultOutput');
-        const invokeButton = document.getElementById('invokeButton');
-
-        const errors = validateForm(descriptor, state.form);
-        showValidation(errors);
-        markValidationErrors(errors);
-
-        if (errors.length) {
-            setStatus('error', `Validation failed (${errors.length}).`);
-            output.textContent = errors.map(e => `[${e.path}] ${e.message}`).join('\n');
-            return;
-        }
-
-        const payload = buildInvocationPayload(descriptor, state.form);
-        invokeButton.disabled = true;
-        setResult('Invoking...');
-        setStatus('info', 'Invoking method...');
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/invoke`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+            const children = document.createElement("div");
+            children.className = "record-children";
+            (field.children || []).forEach((child) => {
+                children.appendChild(this.renderFieldForm(child, [...path, child.name]));
             });
 
-            const text = await response.text();
+            card.appendChild(children);
+            return card;
+        },
 
-            if (text && text.trim().length > 0) {
-                try {
-                    const json = JSON.parse(text);
-                    setResult(JSON.stringify(json, null, 2));
-                } catch {
-                    setResult(text);
+        refreshPayload() {
+            const descriptor = State.currentDescriptor();
+            if (!descriptor) return;
+
+            const payload = DescriptorRuntime.buildPayload(descriptor, state.form);
+            document.getElementById("payloadOutput").textContent = JSON.stringify(payload, null, 2);
+        },
+
+        rerenderAll() {
+            this.renderMethodSelect();
+            this.renderSummary();
+            this.renderTree();
+            this.renderForm();
+            this.refreshPayload();
+        }
+    };
+
+    const Actions = {
+        async copyPayload() {
+            const text = document.getElementById("payloadOutput").textContent;
+            try {
+                await navigator.clipboard.writeText(text);
+                View.setStatus("success", "Payload copied.");
+            } catch (error) {
+                View.setStatus("error", "Failed to copy payload.");
+            }
+        },
+
+        resetForm() {
+            State.resetFormForCurrentDescriptor();
+            View.clearFieldErrors();
+            View.showValidation([]);
+            Renderer.renderForm();
+            Renderer.refreshPayload();
+            View.setStatus("success", "Form reset.");
+            View.setResult("Select a method and invoke it to see the response.");
+        },
+
+        async invokeMethod() {
+            const descriptor = State.currentDescriptor();
+            if (!descriptor) return;
+
+            const invokeButton = document.getElementById("invokeButton");
+            const errors = DescriptorRuntime.validateForm(descriptor, state.form);
+
+            View.showValidation(errors);
+            View.markValidationErrors(errors);
+
+            if (errors.length) {
+                View.setStatus("error", `Validation failed (${errors.length}).`);
+                View.setResult(errors.map(e => `[${e.path}] ${e.message}`).join("\n"));
+                return;
+            }
+
+            const payload = DescriptorRuntime.buildPayload(descriptor, state.form);
+            invokeButton.disabled = true;
+            View.setResult("Invoking...");
+            View.setStatus("info", "Invoking method...");
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/invoke`, {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify(payload)
+                });
+
+                const text = await response.text();
+
+                if (text && text.trim().length > 0) {
+                    try {
+                        const json = JSON.parse(text);
+                        View.setResult(JSON.stringify(json, null, 2));
+                    } catch {
+                        View.setResult(text);
+                    }
+                } else {
+                    View.setResult("(empty response body)");
                 }
-            } else {
-                setResult('(empty response body)');
+
+                if (response.ok) {
+                    View.setStatus("success", `Invocation succeeded (${response.status}).`);
+                    View.flashSuccessResult();
+                } else {
+                    View.setStatus("error", `Invocation failed (${response.status}).`);
+                }
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                View.setResult(message);
+                View.setStatus("error", `Invocation failed before a response was received. ${message}`);
+            } finally {
+                invokeButton.disabled = false;
+            }
+        }
+    };
+
+    const Api = {
+        async loadDescriptors() {
+            const response = await fetch(`${API_BASE_URL}/executions`);
+            if (!response.ok) {
+                throw new Error(`Failed to load executions (${response.status})`);
             }
 
-            if (response.ok) {
-                setStatus('success', `Invocation succeeded (${response.status}).`);
-                output.classList.add('flash-success');
-                setTimeout(() => output.classList.remove('flash-success'), 500);
-            } else {
-                setStatus('error', `Invocation failed (${response.status}).`);
+            const data = await response.json();
+            state.descriptors = Array.isArray(data) ? data : [];
+
+            if (state.descriptors.length > 0) {
+                state.selectedExecutionId = state.descriptors[0].executionId;
+                State.resetFormForCurrentDescriptor();
             }
-        } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            setResult(message);
-            setStatus('error', `Invocation failed before a response was received. ${message}`);
-        } finally {
-            invokeButton.disabled = false;
         }
-    }
+    };
 
-    function resetForm() {
-        const descriptor = currentDescriptor();
-        state.form = buildInitialState(descriptor ? descriptor.parameters : []);
-        clearFieldErrors();
-        showValidation([]);
-        renderForm();
-        refreshPayload();
-        setStatus('success', 'Form reset.');
-        setResult('Select a method and invoke it to see the response.');
-    }
-
-    async function loadDescriptors() {
-        const response = await fetch(`${API_BASE_URL}/executions`);
-        if (!response.ok) {
-            throw new Error(`Failed to load executions (${response.status})`);
-        }
-
-        const data = await response.json();
-        state.descriptors = Array.isArray(data) ? data : [];
-
-        if (state.descriptors.length > 0) {
-            state.selectedExecutionId = state.descriptors[0].executionId;
-            state.form = buildInitialState(currentDescriptor().parameters);
-        }
-    }
-
-    function rerenderAll() {
-        renderMethodSelect();
-        renderSummary();
-        renderTree();
-        renderForm();
-        refreshPayload();
-    }
-
-    document.getElementById('resetButton').addEventListener('click', resetForm);
-    document.getElementById('invokeButton').addEventListener('click', invokeMethod);
-    document.getElementById('copyButton').addEventListener('click', copyPayload);
+    document.getElementById("resetButton").addEventListener("click", () => Actions.resetForm());
+    document.getElementById("invokeButton").addEventListener("click", () => Actions.invokeMethod());
+    document.getElementById("copyButton").addEventListener("click", () => Actions.copyPayload());
 
     (async function init() {
         try {
-            await loadDescriptors();
-            rerenderAll();
-            setResult('Select a method and invoke it to see the response.');
-            setStatus('success', 'Loaded execution descriptors from server.');
+            await Api.loadDescriptors();
+            Renderer.rerenderAll();
+            View.setResult("Select a method and invoke it to see the response.");
+            View.setStatus("success", "Loaded execution descriptors from server.");
         } catch (error) {
             const message = error instanceof Error ? error.message : String(error);
-            setResult(message);
-            setStatus('error', `Failed to load execution descriptors. ${message}`);
+            View.setResult(message);
+            View.setStatus("error", `Failed to load execution descriptors. ${message}`);
         }
     })();
 </script>

@@ -13,14 +13,11 @@ class MethodSourceRegistryTest {
 
     @Test
     fun instanceSource_usesLogicalKotlinNames_forValueClassMethods() {
-        val service: CustomerService = CustomerService()
-        val registry: MethodSourceRegistry = MethodSourceRegistry(
-            methodSources = listOf(
-                MethodSource.Instance(service, "Customer Service")
-            )
+        val service = CustomerService()
+        val registry = MethodSourceRegistry(
+            methodSources = listOf(MethodSource.Instance(service, "Customer Service"))
         )
-        val descriptors: List<MethodDescriptor> =
-            registry.descriptors(CustomerService::class.java)
+        val descriptors: List<MethodDescriptor> = registry.descriptors(CustomerService::class.java)
         val names: List<String> =
             descriptors.map { descriptor: MethodDescriptor -> descriptor.reflectedName }
 
@@ -33,8 +30,8 @@ class MethodSourceRegistryTest {
 
     @Test
     fun instanceMethodSource_usesLogicalKotlinName_forSingleMethod() {
-        val service: CustomerService = CustomerService()
-        val registry: MethodSourceRegistry = MethodSourceRegistry(
+        val service = CustomerService()
+        val registry = MethodSourceRegistry(
             methodSources = listOf(
                 MethodSource.InstanceMethod(
                     instance = service,
@@ -43,8 +40,7 @@ class MethodSourceRegistryTest {
                 )
             )
         )
-        val descriptors: List<MethodDescriptor> =
-            registry.descriptors(CustomerService::class.java)
+        val descriptors: List<MethodDescriptor> = registry.descriptors(CustomerService::class.java)
 
         assertEquals(1, descriptors.size)
         assertEquals("findCustomer", descriptors.single().reflectedName)
@@ -53,10 +49,8 @@ class MethodSourceRegistryTest {
 
     @Test
     fun staticMethodSource_forTopLevelKotlinFunction_usesLogicalName() {
-        val registry: MethodSourceRegistry = MethodSourceRegistry(
-            methodSources = listOf(
-                MethodSource.StaticMethod(::topLevelAdd)
-            )
+        val registry = MethodSourceRegistry(
+            methodSources = listOf(MethodSource.StaticMethod(::topLevelAdd))
         )
         val methodId: MethodId = MethodId.from(::topLevelAdd.javaMethod!!)
         val descriptor: MethodDescriptor = registry.descriptor(methodId)
@@ -68,13 +62,10 @@ class MethodSourceRegistryTest {
 
     @Test
     fun staticClass_registersOnlyStaticMethods() {
-        val registry: MethodSourceRegistry = MethodSourceRegistry(
-            methodSources = listOf(
-                MethodSource.StaticClass(MixedMethods::class)
-            )
+        val registry = MethodSourceRegistry(
+            methodSources = listOf(MethodSource.StaticClass(MixedMethods::class))
         )
-        val descriptors: List<MethodDescriptor> =
-            registry.descriptors(MixedMethods::class.java)
+        val descriptors: List<MethodDescriptor> = registry.descriptors(MixedMethods::class.java)
 
         assertTrue(descriptors.any { descriptor: MethodDescriptor -> descriptor.reflectedName == "staticEcho" })
         assertTrue(descriptors.none { descriptor: MethodDescriptor -> descriptor.reflectedName == "instanceEcho" })
@@ -82,13 +73,10 @@ class MethodSourceRegistryTest {
 
     @Test
     fun instanceSource_registersOnlyInstanceMethods() {
-        val registry: MethodSourceRegistry = MethodSourceRegistry(
-            methodSources = listOf(
-                MethodSource.Instance(MixedMethods(), "Mixed")
-            )
+        val registry = MethodSourceRegistry(
+            methodSources = listOf(MethodSource.Instance(MixedMethods(), "Mixed"))
         )
-        val descriptors: List<MethodDescriptor> =
-            registry.descriptors(MixedMethods::class.java)
+        val descriptors: List<MethodDescriptor> = registry.descriptors(MixedMethods::class.java)
 
         assertTrue(descriptors.any { descriptor: MethodDescriptor -> descriptor.reflectedName == "instanceEcho" })
         assertTrue(descriptors.none { descriptor: MethodDescriptor -> descriptor.reflectedName == "staticEcho" })
@@ -96,11 +84,9 @@ class MethodSourceRegistryTest {
 
     @Test
     fun instanceSource_createsInstanceExecutionContexts() {
-        val service: CustomerService = CustomerService()
-        val registry: MethodSourceRegistry = MethodSourceRegistry(
-            methodSources = listOf(
-                MethodSource.Instance(service, "Customer Service")
-            )
+        val service = CustomerService()
+        val registry = MethodSourceRegistry(
+            methodSources = listOf(MethodSource.Instance(service, "Customer Service"))
         )
         val instanceContexts: List<ExecutionContext.Instance> =
             registry.allExecutionContexts().filterIsInstance<ExecutionContext.Instance>()
@@ -122,10 +108,8 @@ class MethodSourceRegistryTest {
 
     @Test
     fun staticSource_createsStaticExecutionContexts() {
-        val registry: MethodSourceRegistry = MethodSourceRegistry(
-            methodSources = listOf(
-                MethodSource.StaticClass(MixedMethods::class)
-            )
+        val registry = MethodSourceRegistry(
+            methodSources = listOf(MethodSource.StaticClass(MixedMethods::class))
         )
         val staticContexts: List<ExecutionContext.Static> =
             registry.allExecutionContexts().filterIsInstance<ExecutionContext.Static>()
@@ -141,16 +125,13 @@ class MethodSourceRegistryTest {
 
     @Test
     fun executionContext_returnsMatchingContextByExecutionId() {
-        val service: CustomerService = CustomerService()
-        val registry: MethodSourceRegistry = MethodSourceRegistry(
-            methodSources = listOf(
-                MethodSource.Instance(service, "Customer Service")
-            )
+        val service = CustomerService()
+        val registry = MethodSourceRegistry(
+            methodSources = listOf(MethodSource.Instance(service, "Customer Service"))
         )
-        val context: ExecutionContext.Instance =
-            registry.allExecutionContexts()
-                .filterIsInstance<ExecutionContext.Instance>()
-                .first()
+        val context: ExecutionContext.Instance = registry.allExecutionContexts()
+            .filterIsInstance<ExecutionContext.Instance>()
+            .first()
         val resolved: ExecutionContext = registry.executionContext(context.executionId)
         val resolvedInstance: ExecutionContext.Instance = assertIs(resolved)
         assertEquals(context.executionId, resolvedInstance.executionId)
@@ -160,10 +141,8 @@ class MethodSourceRegistryTest {
 
     @Test
     fun declaringClasses_and_knownClasses_includeSupportingTypes() {
-        val registry: MethodSourceRegistry = MethodSourceRegistry(
-            methodSources = listOf(
-                MethodSource.Instance(CustomerService(), "Customer Service")
-            ),
+        val registry = MethodSourceRegistry(
+            methodSources = listOf(MethodSource.Instance(CustomerService(), "Customer Service")),
             methodSupportingTypes = listOf(Customer::class, Address::class)
         )
 
@@ -175,10 +154,8 @@ class MethodSourceRegistryTest {
 
     @Test
     fun descriptors_throwsForUnregisteredClass() {
-        val registry: MethodSourceRegistry = MethodSourceRegistry(
-            methodSources = listOf(
-                MethodSource.Instance(CustomerService(), "Customer Service")
-            )
+        val registry = MethodSourceRegistry(
+            methodSources = listOf(MethodSource.Instance(CustomerService(), "Customer Service"))
         )
         val ex: IllegalArgumentException =
             try {
@@ -193,13 +170,10 @@ class MethodSourceRegistryTest {
 
     @Test
     fun descriptor_throwsForUnknownMethodId() {
-        val registry: MethodSourceRegistry = MethodSourceRegistry(
-            methodSources = listOf(
-                MethodSource.Instance(CustomerService(), "Customer Service")
-            )
+        val registry = MethodSourceRegistry(
+            methodSources = listOf(MethodSource.Instance(CustomerService(), "Customer Service"))
         )
-        val unknownMethodId: MethodId =
-            MethodId.fromValue("com.example.Missing#nope()")
+        val unknownMethodId = MethodId.fromValue("com.example.Missing#nope()")
         val ex: MethodNotFoundException =
             try {
                 registry.descriptor(unknownMethodId)
@@ -258,14 +232,11 @@ class MethodSourceRegistryTest {
 
     @Test
     fun inheritanceLevel_declaredOnly_excludes_parentMethods() {
-        val registry: MethodSourceRegistry = MethodSourceRegistry(
-            methodSources = listOf(
-                MethodSource.Instance(ChildService(), "Child")
-            ),
+        val registry = MethodSourceRegistry(
+            methodSources = listOf(MethodSource.Instance(ChildService(), "Child")),
             inheritanceLevel = InheritanceLevel.DeclaredOnly
         )
-        val descriptors: List<MethodDescriptor> =
-            registry.descriptors(ChildService::class.java)
+        val descriptors: List<MethodDescriptor> = registry.descriptors(ChildService::class.java)
         val names: List<String> =
             descriptors.map { descriptor: MethodDescriptor -> descriptor.reflectedName }
 
@@ -275,14 +246,11 @@ class MethodSourceRegistryTest {
 
     @Test
     fun inheritanceLevel_all_includes_parentMethods() {
-        val registry: MethodSourceRegistry = MethodSourceRegistry(
-            methodSources = listOf(
-                MethodSource.Instance(ChildService(), "Child")
-            ),
+        val registry = MethodSourceRegistry(
+            methodSources = listOf(MethodSource.Instance(ChildService(), "Child")),
             inheritanceLevel = InheritanceLevel.All
         )
-        val descriptors: List<MethodDescriptor> =
-            registry.descriptors(ChildService::class.java)
+        val descriptors: List<MethodDescriptor> = registry.descriptors(ChildService::class.java)
         val names: List<String> =
             descriptors.map { descriptor: MethodDescriptor -> descriptor.reflectedName }
 

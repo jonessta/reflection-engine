@@ -131,9 +131,7 @@ class ValueJsonCodecTest {
                 MapEntry(
                     key = Value.Scalar(ScalarValue.NumberValue("2")),
                     value = Value.ListValue(
-                        items = listOf(
-                            Value.Scalar(ScalarValue.StringValue("two"))
-                        )
+                        items = listOf(Value.Scalar(ScalarValue.StringValue("two")))
                     )
                 )
             )
@@ -165,7 +163,7 @@ class ValueJsonCodecTest {
 
     @Test
     fun decode_rejects_recordWhoseTypeResolvesToScalar() {
-        val scalarResolvingCodec: ValueJsonCodec = ValueJsonCodec(
+        val scalarResolvingCodec = ValueJsonCodec(
             classResolver = FakeClassResolver().apply {
                 putScalar(String::class.java.name, String::class.java)
             }
@@ -186,11 +184,7 @@ class ValueJsonCodecTest {
 
     @Test
     fun decode_rejects_missingKind() {
-        val json = JsonObject(
-            mapOf(
-                "value" to JsonPrimitive("x")
-            )
-        )
+        val json = JsonObject(mapOf("value" to JsonPrimitive("x")))
         val ex: IllegalArgumentException = assertFailsWith {
             codec.decode(json)
         }
@@ -200,11 +194,7 @@ class ValueJsonCodecTest {
 
     @Test
     fun decode_rejects_unknownKind() {
-        val json = JsonObject(
-            mapOf(
-                "kind" to JsonPrimitive("mystery")
-            )
-        )
+        val json = JsonObject(mapOf("kind" to JsonPrimitive("mystery")))
         val ex: IllegalArgumentException = assertFailsWith {
             codec.decode(json)
         }
@@ -228,7 +218,4 @@ private class FakeClassResolver : ClassResolver {
         values[typeName] ?: throw IllegalArgumentException("Unknown type: $typeName")
 }
 
-@JvmInline
-value class CustomerId(val value: String)
 class Person
-class Address

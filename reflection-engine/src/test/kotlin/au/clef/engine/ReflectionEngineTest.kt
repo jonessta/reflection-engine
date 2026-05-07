@@ -19,9 +19,7 @@ class ReflectionEngineTest {
         val descriptors = engine.descriptors(SampleStatics2::class)
 
         assertTrue(
-            descriptors.any { descriptor ->
-                descriptor.reflectedName == "sum"
-            }
+            descriptors.any { descriptor -> descriptor.reflectedName == "sum" }
         )
     }
 
@@ -40,22 +38,16 @@ class ReflectionEngineTest {
 
     @Test
     fun descriptor_returnsDecoratedDescriptor_whenMetadataExists() {
-        val methodId: MethodId = MethodId.from(
-            SampleService2::class,
-            "greet",
-            String::class
-        )
-        val metadata: MetadataRoot = MetadataRoot(
+        val methodId: MethodId = MethodId.from(SampleService2::class, "greet", String::class)
+        val metadata = MetadataRoot(
             methods = mapOf(
                 methodId to MethodMetadata(
                     displayName = "Friendly Greeting",
-                    parameters = listOf(
-                        ParamMetadata(name = "personName")
-                    )
+                    parameters = listOf(ParamMetadata(name = "personName"))
                 )
             )
         )
-        val engine: ReflectionEngine = ReflectionEngine(
+        val engine = ReflectionEngine(
             reflectionConfig = reflectionConfig(
                 MethodSource.Instance(SampleService2(), "Sample Service")
             ).build(),
@@ -74,12 +66,7 @@ class ReflectionEngineTest {
                 MethodSource.StaticClass(SampleStatics2::class)
             ).build()
         )
-        val methodId: MethodId = MethodId.from(
-            SampleStatics2::class,
-            "sum",
-            Int::class,
-            Int::class
-        )
+        val methodId = MethodId.from(SampleStatics2::class, "sum", Int::class, Int::class)
         val result: Any? = engine.invokeStatic(methodId, 2, 3)
 
         assertEquals(5, result)
@@ -92,12 +79,7 @@ class ReflectionEngineTest {
                 MethodSource.StaticClass(SampleStatics2::class)
             ).build()
         )
-        val methodId: MethodId = MethodId.from(
-            SampleStatics2::class,
-            "sum",
-            Int::class,
-            Int::class
-        )
+        val methodId: MethodId = MethodId.from(SampleStatics2::class, "sum", Int::class, Int::class)
         val descriptor = engine.descriptor(methodId)
         val result: Any? = engine.invokeStatic(descriptor, listOf(4, 6))
 
@@ -106,17 +88,13 @@ class ReflectionEngineTest {
 
     @Test
     fun invokeInstance_byMethodId_invokesInstanceMethod() {
-        val instance: SampleService2 = SampleService2()
+        val instance = SampleService2()
         val engine: ReflectionEngine = testEngine(
             reflectionConfig(
                 MethodSource.Instance(instance, "Sample Service")
             ).build()
         )
-        val methodId: MethodId = MethodId.from(
-            SampleService2::class,
-            "greet",
-            String::class
-        )
+        val methodId: MethodId = MethodId.from(SampleService2::class, "greet", String::class)
         val result: Any? = engine.invokeInstance(methodId, instance, "Alice")
 
         assertEquals("Hello Alice", result)
@@ -124,17 +102,13 @@ class ReflectionEngineTest {
 
     @Test
     fun invokeInstance_byDescriptor_invokesInstanceMethod() {
-        val instance: SampleService2 = SampleService2()
+        val instance = SampleService2()
         val engine: ReflectionEngine = testEngine(
             reflectionConfig(
                 MethodSource.Instance(instance, "Sample Service")
             ).build()
         )
-        val methodId: MethodId = MethodId.from(
-            SampleService2::class,
-            "greet",
-            String::class
-        )
+        val methodId: MethodId = MethodId.from(SampleService2::class, "greet", String::class)
         val descriptor = engine.descriptor(methodId)
         val result: Any? = engine.invokeInstance(descriptor, instance, listOf("Bob"))
 
@@ -148,12 +122,7 @@ class ReflectionEngineTest {
                 MethodSource.StaticClass(SampleStatics2::class)
             ).build()
         )
-        val methodId: MethodId = MethodId.from(
-            SampleStatics2::class,
-            "sum",
-            Int::class,
-            Int::class
-        )
+        val methodId: MethodId = MethodId.from(SampleStatics2::class, "sum", Int::class, Int::class)
         val ex: IllegalArgumentException =
             try {
                 engine.invokeStatic(methodId, 1)
@@ -167,17 +136,13 @@ class ReflectionEngineTest {
 
     @Test
     fun invokeInstance_throwsWhenArgCountIsWrong() {
-        val instance: SampleService2 = SampleService2()
+        val instance = SampleService2()
         val engine: ReflectionEngine = testEngine(
             reflectionConfig(
                 MethodSource.Instance(instance, "Sample Service")
             ).build()
         )
-        val methodId: MethodId = MethodId.from(
-            SampleService2::class,
-            "greet",
-            String::class
-        )
+        val methodId: MethodId = MethodId.from(SampleService2::class, "greet", String::class)
         val ex: IllegalArgumentException =
             try {
                 engine.invokeInstance(methodId, instance, emptyList())
@@ -191,17 +156,13 @@ class ReflectionEngineTest {
 
     @Test
     fun invokeInstance_throwsWhenDescriptorIsInstanceMethod_andInstanceIsNull() {
-        val instance: SampleService2 = SampleService2()
+        val instance = SampleService2()
         val engine: ReflectionEngine = testEngine(
             reflectionConfig(
                 MethodSource.Instance(instance, "Sample Service")
             ).build()
         )
-        val methodId: MethodId = MethodId.from(
-            SampleService2::class,
-            "greet",
-            String::class
-        )
+        val methodId: MethodId = MethodId.from(SampleService2::class, "greet", String::class)
         val descriptor = engine.descriptor(methodId)
         val ex: MissingInstanceException =
             try {
@@ -221,12 +182,7 @@ class ReflectionEngineTest {
                 MethodSource.StaticClass(SampleStatics2::class)
             ).build()
         )
-        val methodId: MethodId = MethodId.from(
-            SampleStatics2::class,
-            "sum",
-            Int::class,
-            Int::class
-        )
+        val methodId: MethodId = MethodId.from(SampleStatics2::class, "sum", Int::class, Int::class)
         val descriptor = engine.descriptor(methodId)
         val ex: IllegalArgumentException =
             try {
@@ -241,7 +197,7 @@ class ReflectionEngineTest {
 
     @Test
     fun executionContexts_returnsRegisteredContexts() {
-        val instance: SampleService2 = SampleService2()
+        val instance = SampleService2()
         val engine: ReflectionEngine = testEngine(
             reflectionConfig(
                 MethodSource.StaticClass(SampleStatics2::class),
@@ -256,7 +212,7 @@ class ReflectionEngineTest {
 
     @Test
     fun executionContext_returnsMatchingContextByExecutionId() {
-        val instance: SampleService2 = SampleService2()
+        val instance = SampleService2()
         val engine: ReflectionEngine = testEngine(
             reflectionConfig(
                 MethodSource.Instance(instance, "Sample Service")
@@ -275,18 +231,12 @@ class ReflectionEngineTest {
 
     @Test
     fun descriptors_returnsDecoratedList_whenMetadataExists() {
-        val methodId: MethodId = MethodId.from(
-            SampleService2::class,
-            "greet",
-            String::class
-        )
-        val metadata: MetadataRoot = MetadataRoot(
+        val methodId: MethodId = MethodId.from(SampleService2::class, "greet", String::class)
+        val metadata = MetadataRoot(
             methods = mapOf(
                 methodId to MethodMetadata(
                     displayName = "Greeting",
-                    parameters = listOf(
-                        ParamMetadata(name = "who")
-                    )
+                    parameters = listOf(ParamMetadata(name = "who"))
                 )
             )
         )
@@ -297,10 +247,7 @@ class ReflectionEngineTest {
             metadataRegistry = DescriptorMetadataRegistry(metadata)
         )
         val descriptors = engine.descriptors(SampleService2::class)
-        val greetingDescriptor =
-            descriptors.firstOrNull { descriptor ->
-                descriptor.id == methodId
-            }
+        val greetingDescriptor = descriptors.firstOrNull { descriptor -> descriptor.id == methodId }
 
         assertNotNull(greetingDescriptor)
         assertEquals("Greeting", greetingDescriptor.displayName)
@@ -309,20 +256,4 @@ class ReflectionEngineTest {
 
     private fun testEngine(config: ReflectionConfig): ReflectionEngine =
         ReflectionEngine(config, metadataRegistry = null)
-}
-
-class SampleService {
-
-    fun greet(name: String): String =
-        "Hello $name"
-}
-
-class SampleSupport
-class SampleStatics {
-    companion object {
-
-        @JvmStatic
-        fun sum(a: Int, b: Int): Int =
-            a + b
-    }
 }

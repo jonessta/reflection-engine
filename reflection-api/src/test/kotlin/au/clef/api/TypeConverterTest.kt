@@ -9,68 +9,60 @@ import kotlin.test.*
 
 class TypeConverterTest {
 
-    private val converter: TypeConverter = TypeConverter(
-        scalarRegistry = ScalarTypeRegistry()
-    )
+    private val converter = TypeConverter(scalarRegistry = ScalarTypeRegistry())
 
     @Test
     fun materialize_convertsScalarToIntPrimitive() {
-        val result: Any? =
-            converter.materialize(
-                Value.Scalar(NumberValue("42")),
-                Int::class.javaPrimitiveType!!
-            )
+        val result: Any? = converter.materialize(
+            Value.Scalar(NumberValue("42")),
+            Int::class.javaPrimitiveType!!
+        )
 
         assertEquals(42, result)
     }
 
     @Test
     fun materialize_convertsScalarToBoxedInt() {
-        val result: Any? =
-            converter.materialize(
-                Value.Scalar(NumberValue("42")),
-                Int::class.javaObjectType
-            )
+        val result: Any? = converter.materialize(
+            Value.Scalar(NumberValue("42")),
+            Int::class.javaObjectType
+        )
 
         assertEquals(42, result)
     }
 
     @Test
     fun materialize_convertsScalarToBoolean() {
-        val result: Any? =
-            converter.materialize(
-                Value.Scalar(BooleanValue(true)),
-                Boolean::class.javaObjectType
-            )
+        val result: Any? = converter.materialize(
+            Value.Scalar(BooleanValue(true)),
+            Boolean::class.javaObjectType
+        )
 
         assertEquals(true, result)
     }
 
     @Test
     fun materialize_convertsListWithWildcardElementType() {
-        val listType: Type =
-            object : TypeReference<List<String>>() {}.type
-        val result: Any? =
-            converter.materialize(
-                Value.ListValue(
-                    items = listOf(
-                        Value.Scalar(StringValue("a")),
-                        Value.Scalar(StringValue("b"))
-                    )
-                ),
-                listType
-            )
+        val listType: Type = object : TypeReference<List<String>>() {}.type
+        val result: Any? = converter.materialize(
+            Value.ListValue(
+                items = listOf(
+                    Value.Scalar(StringValue("a")),
+                    Value.Scalar(StringValue("b"))
+                )
+            ),
+            listType
+        )
         val list: MutableList<*> = assertIs(result)
         assertEquals<List<Any?>>(listOf("a", "b"), list)
     }
 
     @Test
     fun materialize_convertsScalarToEnumIgnoringCase() {
-        val result: Any? =
-            converter.materialize(
-                Value.Scalar(StringValue("active")),
-                SampleStatus::class.java
-            )
+        val result: Any? = converter.materialize(
+            Value.Scalar(StringValue("active")),
+            SampleStatus::class.java
+        )
 
         assertEquals(SampleStatus.ACTIVE, result)
     }
@@ -111,50 +103,47 @@ class TypeConverterTest {
 
     @Test
     fun materialize_convertsListToMutableList() {
-        val result: Any? =
-            converter.materialize(
-                Value.ListValue(
-                    items = listOf(
-                        Value.Scalar(StringValue("a")),
-                        Value.Scalar(StringValue("b"))
-                    )
-                ),
-                object : TypeReference<List<String>>() {}.type
-            )
+        val result: Any? = converter.materialize(
+            Value.ListValue(
+                items = listOf(
+                    Value.Scalar(StringValue("a")),
+                    Value.Scalar(StringValue("b"))
+                )
+            ),
+            object : TypeReference<List<String>>() {}.type
+        )
         val list: MutableList<*> = assertIs(result)
         assertEquals<List<Any?>>(listOf("a", "b"), list)
     }
 
     @Test
     fun materialize_convertsListToSet() {
-        val result: Any? =
-            converter.materialize(
-                Value.ListValue(
-                    items = listOf(
-                        Value.Scalar(StringValue("a")),
-                        Value.Scalar(StringValue("a")),
-                        Value.Scalar(StringValue("b"))
-                    )
-                ),
-                object : TypeReference<Set<String>>() {}.type
-            )
+        val result: Any? = converter.materialize(
+            Value.ListValue(
+                items = listOf(
+                    Value.Scalar(StringValue("a")),
+                    Value.Scalar(StringValue("a")),
+                    Value.Scalar(StringValue("b"))
+                )
+            ),
+            object : TypeReference<Set<String>>() {}.type
+        )
         val set: Set<*> = assertIs(result)
         assertEquals(setOf("a", "b"), set)
     }
 
     @Test
     fun materialize_convertsListToArray() {
-        val result: Any? =
-            converter.materialize(
-                Value.ListValue(
-                    items = listOf(
-                        Value.Scalar(NumberValue("1")),
-                        Value.Scalar(NumberValue("2")),
-                        Value.Scalar(NumberValue("3"))
-                    )
-                ),
-                Array<Int>::class.java
-            )
+        val result: Any? = converter.materialize(
+            Value.ListValue(
+                items = listOf(
+                    Value.Scalar(NumberValue("1")),
+                    Value.Scalar(NumberValue("2")),
+                    Value.Scalar(NumberValue("3"))
+                )
+            ),
+            Array<Int>::class.java
+        )
         val array: Array<*> = assertIs(result)
         assertEquals(listOf(1, 2, 3), array.toList())
     }
@@ -211,17 +200,16 @@ class TypeConverterTest {
 
     @Test
     fun materialize_buildsKotlinObjectUsingPrimaryConstructor() {
-        val result: Any? =
-            converter.materialize(
-                Value.Record(
-                    type = SamplePerson::class.java,
-                    fields = mapOf(
-                        "name" to Value.Scalar(StringValue("Alice")),
-                        "age" to Value.Scalar(NumberValue("25"))
-                    )
-                ),
-                SamplePerson::class.java
-            )
+        val result: Any? = converter.materialize(
+            Value.Record(
+                type = SamplePerson::class.java,
+                fields = mapOf(
+                    "name" to Value.Scalar(StringValue("Alice")),
+                    "age" to Value.Scalar(NumberValue("25"))
+                )
+            ),
+            SamplePerson::class.java
+        )
         val person: SamplePerson = assertIs(result)
         assertEquals("Alice", person.name)
         assertEquals(25, person.age)
@@ -229,14 +217,13 @@ class TypeConverterTest {
 
     @Test
     fun materialize_buildsKotlinObjectUsingDefaultParameter() {
-        val result: Any? =
-            converter.materialize(
-                Value.Record(
-                    type = SampleWithDefault::class.java,
-                    fields = mapOf("name" to Value.Scalar(StringValue("Alice")))
-                ),
-                SampleWithDefault::class.java
-            )
+        val result: Any? = converter.materialize(
+            Value.Record(
+                type = SampleWithDefault::class.java,
+                fields = mapOf("name" to Value.Scalar(StringValue("Alice")))
+            ),
+            SampleWithDefault::class.java
+        )
         val value: SampleWithDefault = assertIs(result)
         assertEquals("Alice", value.name)
         assertEquals(99, value.age)
@@ -260,17 +247,16 @@ class TypeConverterTest {
 
     @Test
     fun materialize_buildsJavaObjectUsingSingleConstructor() {
-        val result: Any? =
-            converter.materialize(
-                Value.Record(
-                    type = JavaOnlyCtor::class.java,
-                    fields = mapOf(
-                        "arg0" to Value.Scalar(StringValue("Bob")),
-                        "arg1" to Value.Scalar(NumberValue("41"))
-                    )
-                ),
-                JavaOnlyCtor::class.java
-            )
+        val result: Any? = converter.materialize(
+            Value.Record(
+                type = JavaOnlyCtor::class.java,
+                fields = mapOf(
+                    "arg0" to Value.Scalar(StringValue("Bob")),
+                    "arg1" to Value.Scalar(NumberValue("41"))
+                )
+            ),
+            JavaOnlyCtor::class.java
+        )
         val value: JavaOnlyCtor = assertIs(result)
         assertEquals("Bob", value.name)
         assertEquals(41, value.age)
@@ -296,17 +282,16 @@ class TypeConverterTest {
 
     @Test
     fun materialize_buildsObjectUsingNoArgConstructorAndFields() {
-        val result: Any? =
-            converter.materialize(
-                Value.Record(
-                    type = MutableBean::class.java,
-                    fields = mapOf(
-                        "name" to Value.Scalar(StringValue("Chris")),
-                        "age" to Value.Scalar(NumberValue("50"))
-                    )
-                ),
-                MutableBean::class.java
-            )
+        val result: Any? = converter.materialize(
+            Value.Record(
+                type = MutableBean::class.java,
+                fields = mapOf(
+                    "name" to Value.Scalar(StringValue("Chris")),
+                    "age" to Value.Scalar(NumberValue("50"))
+                )
+            ),
+            MutableBean::class.java
+        )
         val bean: MutableBean = assertIs(result)
         assertEquals("Chris", bean.name)
         assertEquals(50, bean.age)

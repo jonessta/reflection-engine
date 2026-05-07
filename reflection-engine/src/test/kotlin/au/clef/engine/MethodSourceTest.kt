@@ -10,21 +10,18 @@ class MethodSourceTest {
 
     @Test
     fun staticClass_setsDeclaringClass() {
-        val source: MethodSource.StaticClass =
-            MethodSource.StaticClass(SampleStatics2::class)
-
+        val source: MethodSource.StaticClass = MethodSource.StaticClass(SampleStatics2::class)
         assertEquals(SampleStatics2::class, source.declaringClass)
     }
 
     @Test
     fun staticMethod_fromClassAndName_buildsMethodIdAndDeclaringClass() {
-        val source: MethodSource.StaticMethod =
-            MethodSource.StaticMethod(
-                declaringClass = SampleStatics2::class,
-                methodName = "sum",
-                Int::class,
-                Int::class
-            )
+        val source: MethodSource.StaticMethod = MethodSource.StaticMethod(
+            declaringClass = SampleStatics2::class,
+            methodName = "sum",
+            Int::class,
+            Int::class
+        )
 
         assertEquals(SampleStatics2::class, source.declaringClass)
         assertEquals(
@@ -35,22 +32,19 @@ class MethodSourceTest {
 
     @Test
     fun staticMethod_fromKFunction_buildsMethodIdAndDeclaringClass() {
-        val source: MethodSource.StaticMethod =
-            MethodSource.StaticMethod(::topLevelAdd)
+        val source: MethodSource.StaticMethod = MethodSource.StaticMethod(::topLevelAdd)
         val javaMethod = requireNotNull(::topLevelAdd.javaMethod)
-
         assertEquals(javaMethod.declaringClass.kotlin, source.declaringClass)
         assertEquals(MethodId.from(javaMethod), source.methodId)
     }
 
     @Test
     fun instance_setsDeclaringClassInstanceAndDescription() {
-        val instance: SampleService2 = SampleService2()
-        val source: MethodSource.Instance =
-            MethodSource.Instance(
-                instance = instance,
-                sourceDescription = "Sample Service"
-            )
+        val instance = SampleService2()
+        val source: MethodSource.Instance = MethodSource.Instance(
+            instance = instance,
+            sourceDescription = "Sample Service"
+        )
 
         assertEquals(SampleService2::class, source.declaringClass)
         assertSame(instance, source.instance)
@@ -59,14 +53,13 @@ class MethodSourceTest {
 
     @Test
     fun instanceMethod_fromMethodName_buildsMethodIdAndStoresInstanceData() {
-        val instance: SampleService2 = SampleService2()
-        val source: MethodSource.InstanceMethod =
-            MethodSource.InstanceMethod(
-                instance = instance,
-                sourceDescription = "Sample Service",
-                methodName = "greet",
-                String::class
-            )
+        val instance = SampleService2()
+        val source: MethodSource.InstanceMethod = MethodSource.InstanceMethod(
+            instance = instance,
+            sourceDescription = "Sample Service",
+            methodName = "greet",
+            String::class
+        )
 
         assertEquals(SampleService2::class, source.declaringClass)
         assertSame(instance, source.instance)
@@ -79,14 +72,13 @@ class MethodSourceTest {
 
     @Test
     fun instanceMethod_primaryConstructor_keepsProvidedMethodId() {
-        val instance: SampleService2 = SampleService2()
+        val instance = SampleService2()
         val methodId: MethodId = MethodId.from(SampleService2::class, "greet", String::class)
-        val source: MethodSource.InstanceMethod =
-            MethodSource.InstanceMethod(
-                instance = instance,
-                sourceDescription = "Sample Service",
-                methodId = methodId
-            )
+        val source: MethodSource.InstanceMethod = MethodSource.InstanceMethod(
+            instance = instance,
+            sourceDescription = "Sample Service",
+            methodId = methodId
+        )
 
         assertEquals(SampleService2::class, source.declaringClass)
         assertSame(instance, source.instance)

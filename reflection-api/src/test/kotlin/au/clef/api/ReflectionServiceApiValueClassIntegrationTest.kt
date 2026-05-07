@@ -51,9 +51,7 @@ class ReflectionServiceApiValueClassIntegrationTest {
         )
             .scalarConverters(
                 scalarConverter<CustomerId>(
-                    encode = { value: CustomerId ->
-                        ScalarValue.StringValue(value.value)
-                    },
+                    encode = { value: CustomerId -> ScalarValue.StringValue(value.value) },
                     decode = { value: ScalarValue ->
                         when (value) {
                             is ScalarValue.StringValue -> CustomerId(value.value)
@@ -62,9 +60,7 @@ class ReflectionServiceApiValueClassIntegrationTest {
                     }
                 ),
                 scalarConverter<EmailAddress>(
-                    encode = { value: EmailAddress ->
-                        ScalarValue.StringValue(value.value)
-                    },
+                    encode = { value: EmailAddress -> ScalarValue.StringValue(value.value) },
                     decode = { value: ScalarValue ->
                         when (value) {
                             is ScalarValue.StringValue -> EmailAddress(value.value)
@@ -156,9 +152,6 @@ class ReflectionServiceApiValueClassIntegrationTest {
         val scalar: Value.Scalar = assertIs(response)
         val result: ScalarValue.StringValue = assertIs(scalar.value)
 
-        assertEquals(
-            "cust-456:bob@example.com:29:Queen St:3000",
-            result.value
-        )
+        assertEquals("cust-456:bob@example.com:29:Queen St:3000", result.value)
     }
 }

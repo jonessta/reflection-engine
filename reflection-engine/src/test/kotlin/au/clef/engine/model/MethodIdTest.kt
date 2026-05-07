@@ -31,8 +31,7 @@ class MethodModelTest {
 
     @Test
     fun methodId_fromKClass_buildsExpectedValue() {
-        val id: MethodId =
-            MethodId.from(SampleService::class, "personName", SamplePerson::class)
+        val id: MethodId = MethodId.from(SampleService::class, "personName", SamplePerson::class)
 
         assertEquals(
             "au.clef.engine.model.SampleService#personName(au.clef.engine.model.SamplePerson)",
@@ -43,7 +42,6 @@ class MethodModelTest {
     @Test
     fun methodId_fromValue_acceptsValidMethodId_withoutParameters() {
         val id: MethodId = MethodId.fromValue("au.clef.engine.model.SampleService#ping()")
-
         assertEquals("au.clef.engine.model.SampleService#ping()", id.value)
     }
 
@@ -52,7 +50,6 @@ class MethodModelTest {
         val id: MethodId = MethodId.fromValue(
             "au.clef.engine.model.SampleService#personName(au.clef.engine.model.SamplePerson)"
         )
-
         assertEquals(
             "au.clef.engine.model.SampleService#personName(au.clef.engine.model.SamplePerson)",
             id.value
@@ -67,7 +64,6 @@ class MethodModelTest {
         } catch (e: IllegalMethodIdException) {
             e
         }
-
         assertTrue(ex.message!!.contains("expected <class>#<method>(<paramTypes>)"))
     }
 
@@ -79,7 +75,6 @@ class MethodModelTest {
         } catch (e: IllegalMethodIdException) {
             e
         }
-
         assertTrue(ex.message!!.contains("comma-separated with no empty entries"))
     }
 
@@ -170,10 +165,7 @@ class MethodModelTest {
         val method1: Method =
             SampleOverloads::class.java.getDeclaredMethod("echo", String::class.java)
         val method2: Method =
-            SampleOverloads::class.java.getDeclaredMethod(
-                "echo",
-                Int::class.javaPrimitiveType!!
-            )
+            SampleOverloads::class.java.getDeclaredMethod("echo", Int::class.javaPrimitiveType!!)
         val descriptor1 = MethodDescriptor.from(method1)
         val descriptor2 = MethodDescriptor.from(method2)
 

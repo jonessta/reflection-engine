@@ -44,27 +44,23 @@ class JavaInteropJsonTest {
     fun `generate descriptors and invoke JDK methods with JSON`() {
         val descriptors: List<ExecutionDescriptorDto> = executionDescriptors()
 
-        val localDateDescriptor: ExecutionDescriptorDto =
-            descriptors.first { descriptor: ExecutionDescriptorDto ->
-                descriptor.reflectedName == "of" &&
-                        descriptor.returnType == "java.time.LocalDate"
+        val localDateDescriptor: ExecutionDescriptorDto = descriptors
+            .first { descriptor: ExecutionDescriptorDto ->
+                descriptor.reflectedName == "of" && descriptor.returnType == "java.time.LocalDate"
             }
 
-        val uriDescriptor: ExecutionDescriptorDto =
-            descriptors.first { descriptor: ExecutionDescriptorDto ->
-                descriptor.reflectedName == "create" &&
-                        descriptor.returnType == "java.net.URI"
+        val uriDescriptor: ExecutionDescriptorDto = descriptors
+            .first { descriptor: ExecutionDescriptorDto ->
+                descriptor.reflectedName == "create" && descriptor.returnType == "java.net.URI"
             }
 
-        val localeDescriptor: ExecutionDescriptorDto =
-            descriptors.first { descriptor: ExecutionDescriptorDto ->
+        val localeDescriptor: ExecutionDescriptorDto = descriptors
+            .first { descriptor: ExecutionDescriptorDto ->
                 descriptor.reflectedName == "forLanguageTag"
             }
 
-        val singletonMapDescriptor: ExecutionDescriptorDto =
-            descriptors.first { descriptor: ExecutionDescriptorDto ->
-                descriptor.reflectedName == "singletonMap"
-            }
+        val singletonMapDescriptor: ExecutionDescriptorDto = descriptors
+            .first { descriptor: ExecutionDescriptorDto -> descriptor.reflectedName == "singletonMap" }
 
         assertEquals(3, localDateDescriptor.parameters.size)
         localDateDescriptor.parameters.forEachIndexed { index, param ->
@@ -202,12 +198,7 @@ class JavaInteropJsonTest {
     @Test
     fun `invokes Java varargs method from JSON list`() {
         val response: Value = invokeSingleStatic(
-            methodSource = StaticMethod(
-                Paths::class,
-                "get",
-                String::class,
-                Array<String>::class
-            ),
+            methodSource = StaticMethod(Paths::class, "get", String::class, Array<String>::class),
             args = listOf(
                 Value.Scalar(StringValue("root")),
                 Value.ListValue(
@@ -225,12 +216,7 @@ class JavaInteropJsonTest {
     @Test
     fun `supports maps with non string keys`() {
         val response: Value = invokeSingleStatic(
-            methodSource = StaticMethod(
-                Collections::class,
-                "singletonMap",
-                Any::class,
-                Any::class
-            ),
+            methodSource = StaticMethod(Collections::class, "singletonMap", Any::class, Any::class),
             args = listOf(
                 Value.Scalar(ScalarValue.NumberValue("123")),
                 Value.Scalar(StringValue("value-123"))
@@ -263,9 +249,7 @@ class JavaInteropJsonTest {
 
         val result: Any? =
             when (executionContext) {
-                is ExecutionContext.Static ->
-                    engine.invokeStatic(descriptor, args)
-
+                is ExecutionContext.Static -> engine.invokeStatic(descriptor, args)
                 is ExecutionContext.Instance ->
                     engine.invokeInstance(descriptor, executionContext.instance, args)
             }
@@ -273,24 +257,16 @@ class JavaInteropJsonTest {
         return responseValueMapper.toValue(result)
     }
 
-    private fun invokeSingleStatic(
-        methodSource: StaticMethod,
-        args: List<Value>
-    ): Value {
+    private fun invokeSingleStatic(methodSource: StaticMethod, args: List<Value>): Value {
         val localConfig: ReflectionConfig = reflectionConfig(methodSource).build()
-        val localScalarTypeRegistry: ScalarTypeRegistry = ScalarTypeRegistry()
+        val localScalarTypeRegistry = ScalarTypeRegistry()
 
-        val localEngine: ReflectionEngine = ReflectionEngine(
-            reflectionConfig = localConfig
-        )
+        val localEngine = ReflectionEngine(reflectionConfig = localConfig)
 
-        val localRequestValueMapper: RequestValueMapper = RequestValueMapper(
-            scalarTypeRegistry = localScalarTypeRegistry
-        )
+        val localRequestValueMapper =
+            RequestValueMapper(scalarTypeRegistry = localScalarTypeRegistry)
 
-        val localResponseValueMapper: ResponseValueMapper = ResponseValueMapper(
-            scalarRegistry = localScalarTypeRegistry
-        )
+        val localResponseValueMapper = ResponseValueMapper(scalarRegistry = localScalarTypeRegistry)
 
         val execution: ExecutionContext.Static =
             localEngine.executionContexts().single() as ExecutionContext.Static
@@ -301,8 +277,9 @@ class JavaInteropJsonTest {
             "Expected ${descriptor.parameters.size} args for ${descriptor.id}, got ${args.size}"
         }
 
-        val materializedArgs: List<Any?> =
-            args.zip(descriptor.parameters).map { (argValue, param) ->
+        val materializedArgs: List<Any?> = args
+            .zip(descriptor.parameters)
+            .map { (argValue, param) ->
                 localRequestValueMapper.materialize(argValue, param.runtimeType)
             }
 
@@ -344,22 +321,19 @@ class JavaInteropJsonTest {
     private fun toExecutionDescriptorDto(
         executionContext: ExecutionContext,
         descriptor: MethodDescriptor
-    ): ExecutionDescriptorDto =
-        ExecutionDescriptorDto(
-            executionId = executionContext.executionId,
-            sourceDescription = executionContext.sourceDescription,
-            reflectedName = descriptor.reflectedName,
-            displayName = descriptor.displayName,
-            returnType = descriptor.returnType.name,
-            isStatic = descriptor.isStatic,
-            parameters = descriptor.parameters.map { param: ParamDescriptor ->
-                toFieldDescriptorDto(param)
-            }
-        )
+    ): ExecutionDescriptorDto = ExecutionDescriptorDto(
+        executionId = executionContext.executionId,
+        sourceDescription = executionContext.sourceDescription,
+        reflectedName = descriptor.reflectedName,
+        displayName = descriptor.displayName,
+        returnType = descriptor.returnType.name,
+        isStatic = descriptor.isStatic,
+        parameters = descriptor.parameters.map { param: ParamDescriptor ->
+            toFieldDescriptorDto(param)
+        }
+    )
 
-    private fun toFieldDescriptorDto(
-        param: ParamDescriptor
-    ): FieldDescriptorDto =
+    private fun toFieldDescriptorDto(param: ParamDescriptor): FieldDescriptorDto =
         FieldDescriptorDto(
             index = param.index,
             reflectedName = param.reflectedName,

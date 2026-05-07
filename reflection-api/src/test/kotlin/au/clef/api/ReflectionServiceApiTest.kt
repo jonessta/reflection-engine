@@ -8,7 +8,7 @@ import kotlin.test.*
 
 class ReflectionServiceApiTest {
 
-    private val api: ReflectionServiceApi = ReflectionServiceApi(
+    private val api = ReflectionServiceApi(
         reflectionApiConfig(
             reflectionConfig(
                 MethodSource.StaticClass(SampleStatics::class),
@@ -19,9 +19,7 @@ class ReflectionServiceApiTest {
         )
             .scalarConverters(
                 scalarConverter<EmailAddress1>(
-                    encode = { value: EmailAddress1 ->
-                        ScalarValue.StringValue(value.value)
-                    },
+                    encode = { value: EmailAddress1 -> ScalarValue.StringValue(value.value) },
                     decode = { value: ScalarValue ->
                         when (value) {
                             is ScalarValue.StringValue -> EmailAddress1(value.value)
@@ -48,10 +46,8 @@ class ReflectionServiceApiTest {
 
     @Test
     fun executionDescriptors_exposesInstanceDescription_forInstanceMethods() {
-        val greetDescriptor: ExecutionDescriptorDto =
-            api.executionDescriptors().first { descriptor: ExecutionDescriptorDto ->
-                descriptor.reflectedName == "greet"
-            }
+        val greetDescriptor: ExecutionDescriptorDto = api.executionDescriptors()
+            .first { descriptor: ExecutionDescriptorDto -> descriptor.reflectedName == "greet" }
 
         assertEquals("Sample Service", greetDescriptor.sourceDescription)
         assertFalse(greetDescriptor.isStatic)
@@ -59,10 +55,8 @@ class ReflectionServiceApiTest {
 
     @Test
     fun executionDescriptors_hasNullInstanceDescription_forStaticMethods() {
-        val sumDescriptor: ExecutionDescriptorDto =
-            api.executionDescriptors().first { descriptor: ExecutionDescriptorDto ->
-                descriptor.reflectedName == "sum"
-            }
+        val sumDescriptor: ExecutionDescriptorDto = api.executionDescriptors()
+            .first { descriptor: ExecutionDescriptorDto -> descriptor.reflectedName == "sum" }
 
         assertNull(sumDescriptor.sourceDescription)
         assertTrue(sumDescriptor.isStatic)
@@ -70,10 +64,8 @@ class ReflectionServiceApiTest {
 
     @Test
     fun executionDescriptors_marksScalarParameters_asScalarKind() {
-        val normalizeDescriptor: ExecutionDescriptorDto =
-            api.executionDescriptors().first { descriptor: ExecutionDescriptorDto ->
-                descriptor.reflectedName == "normalizeEmail"
-            }
+        val normalizeDescriptor: ExecutionDescriptorDto = api.executionDescriptors()
+            .first { descriptor: ExecutionDescriptorDto -> descriptor.reflectedName == "normalizeEmail" }
 
         assertEquals(1, normalizeDescriptor.parameters.size)
 
@@ -85,10 +77,8 @@ class ReflectionServiceApiTest {
 
     @Test
     fun executionDescriptors_marksStructuredParameters_asRecordKind() {
-        val echoRecordDescriptor: ExecutionDescriptorDto =
-            api.executionDescriptors().first { descriptor: ExecutionDescriptorDto ->
-                descriptor.reflectedName == "echoRecord"
-            }
+        val echoRecordDescriptor: ExecutionDescriptorDto = api.executionDescriptors()
+            .first { descriptor: ExecutionDescriptorDto -> descriptor.reflectedName == "echoRecord" }
 
         assertEquals(1, echoRecordDescriptor.parameters.size)
 
@@ -99,10 +89,8 @@ class ReflectionServiceApiTest {
 
     @Test
     fun invoke_callsStaticMethod() {
-        val execution: ExecutionDescriptorDto =
-            api.executionDescriptors().first { descriptor: ExecutionDescriptorDto ->
-                descriptor.reflectedName == "sum"
-            }
+        val execution: ExecutionDescriptorDto = api.executionDescriptors()
+            .first { descriptor: ExecutionDescriptorDto -> descriptor.reflectedName == "sum" }
 
         val response: Value =
             api.invoke(
@@ -121,18 +109,14 @@ class ReflectionServiceApiTest {
 
     @Test
     fun invoke_callsInstanceMethod() {
-        val execution: ExecutionDescriptorDto =
-            api.executionDescriptors().first { descriptor: ExecutionDescriptorDto ->
-                descriptor.reflectedName == "greet"
-            }
+        val execution: ExecutionDescriptorDto = api.executionDescriptors()
+            .first { descriptor: ExecutionDescriptorDto -> descriptor.reflectedName == "greet" }
 
         val response: Value =
             api.invoke(
                 InvocationRequest(
                     executionId = execution.executionId,
-                    args = listOf(
-                        Value.Scalar(ScalarValue.StringValue("Alice"))
-                    )
+                    args = listOf(Value.Scalar(ScalarValue.StringValue("Alice")))
                 )
             )
 
@@ -142,18 +126,14 @@ class ReflectionServiceApiTest {
 
     @Test
     fun invoke_handlesScalarWrapperParameterAndReturnValue() {
-        val execution: ExecutionDescriptorDto =
-            api.executionDescriptors().first { descriptor: ExecutionDescriptorDto ->
-                descriptor.reflectedName == "normalizeEmail"
-            }
+        val execution: ExecutionDescriptorDto = api.executionDescriptors()
+            .first { descriptor: ExecutionDescriptorDto -> descriptor.reflectedName == "normalizeEmail" }
 
         val response: Value =
             api.invoke(
                 InvocationRequest(
                     executionId = execution.executionId,
-                    args = listOf(
-                        Value.Scalar(ScalarValue.StringValue("  Alice@Example.COM "))
-                    )
+                    args = listOf(Value.Scalar(ScalarValue.StringValue("  Alice@Example.COM ")))
                 )
             )
 
@@ -163,10 +143,8 @@ class ReflectionServiceApiTest {
 
     @Test
     fun invoke_handlesStructuredRecordParameterAndReturnValue() {
-        val execution: ExecutionDescriptorDto =
-            api.executionDescriptors().first { descriptor: ExecutionDescriptorDto ->
-                descriptor.reflectedName == "echoRecord"
-            }
+        val execution: ExecutionDescriptorDto = api.executionDescriptors()
+            .first { descriptor: ExecutionDescriptorDto -> descriptor.reflectedName == "echoRecord" }
 
         val response: Value =
             api.invoke(
@@ -231,10 +209,8 @@ class ReflectionServiceApiTest {
 
     @Test
     fun executionDescriptors_includeParameterMetadataShape() {
-        val descriptor: ExecutionDescriptorDto =
-            api.executionDescriptors().first { dto: ExecutionDescriptorDto ->
-                dto.reflectedName == "greet"
-            }
+        val descriptor: ExecutionDescriptorDto = api.executionDescriptors()
+            .first { dto: ExecutionDescriptorDto -> dto.reflectedName == "greet" }
 
         assertEquals(1, descriptor.parameters.size)
 
@@ -261,21 +237,18 @@ data class SampleRecord(
 
 class SampleService {
 
-    fun greet(name: String): String =
-        "Hello $name"
+    fun greet(name: String): String = "Hello $name"
 
     fun normalizeEmail(email: EmailAddress1): EmailAddress1 =
         EmailAddress1(email.value.trim().lowercase())
 
-    fun echoRecord(record: SampleRecord): SampleRecord =
-        record
+    fun echoRecord(record: SampleRecord): SampleRecord = record
 }
 
 class SampleStatics {
     companion object {
 
         @JvmStatic
-        fun sum(a: Int, b: Int): Int =
-            a + b
+        fun sum(a: Int, b: Int): Int = a + b
     }
 }

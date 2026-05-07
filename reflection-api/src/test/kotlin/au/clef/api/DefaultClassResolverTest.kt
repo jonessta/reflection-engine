@@ -7,10 +7,8 @@ class DefaultClassResolverTest {
 
     @Test
     fun resolve_returnsStructuredType_forKnownQualifiedClassName() {
-        val resolver: DefaultClassResolver = DefaultClassResolver(
-            knownTypeSource = FakeKnownTypeSource(
-                knownClasses = listOf(Person1::class.java)
-            ),
+        val resolver = DefaultClassResolver(
+            knownTypeSource = FakeKnownTypeSource(knownClasses = listOf(Person1::class.java)),
             scalarRegistry = ScalarTypeRegistry()
         )
         val resolved: ResolvedType = resolver.resolve(Person1::class.java.name)
@@ -20,10 +18,8 @@ class DefaultClassResolverTest {
 
     @Test
     fun resolve_returnsStructuredType_forUniqueSimpleName() {
-        val resolver: DefaultClassResolver = DefaultClassResolver(
-            knownTypeSource = FakeKnownTypeSource(
-                knownClasses = listOf(Person1::class.java)
-            ),
+        val resolver = DefaultClassResolver(
+            knownTypeSource = FakeKnownTypeSource(knownClasses = listOf(Person1::class.java)),
             scalarRegistry = ScalarTypeRegistry()
         )
         val resolved: ResolvedType = resolver.resolve("Person1")
@@ -33,10 +29,8 @@ class DefaultClassResolverTest {
 
     @Test
     fun resolve_returnsScalarType_forKnownScalarQualifiedName() {
-        val resolver: DefaultClassResolver = DefaultClassResolver(
-            knownTypeSource = FakeKnownTypeSource(
-                knownClasses = listOf(String::class.java)
-            ),
+        val resolver = DefaultClassResolver(
+            knownTypeSource = FakeKnownTypeSource(knownClasses = listOf(String::class.java)),
             scalarRegistry = ScalarTypeRegistry()
         )
         val resolved: ResolvedType = resolver.resolve(String::class.java.name)
@@ -46,10 +40,8 @@ class DefaultClassResolverTest {
 
     @Test
     fun resolve_returnsScalarType_forKnownScalarSimpleName() {
-        val resolver: DefaultClassResolver = DefaultClassResolver(
-            knownTypeSource = FakeKnownTypeSource(
-                knownClasses = listOf(String::class.java)
-            ),
+        val resolver = DefaultClassResolver(
+            knownTypeSource = FakeKnownTypeSource(knownClasses = listOf(String::class.java)),
             scalarRegistry = ScalarTypeRegistry()
         )
         val resolved: ResolvedType = resolver.resolve("String")
@@ -59,7 +51,7 @@ class DefaultClassResolverTest {
 
     @Test
     fun resolve_prefersQualifiedNames_evenWhenSimpleNamesAreAmbiguous() {
-        val resolver: DefaultClassResolver = DefaultClassResolver(
+        val resolver = DefaultClassResolver(
             knownTypeSource = FakeKnownTypeSource(
                 knownClasses = listOf(
                     au.clef.api.alpha.Duplicate::class.java,
@@ -83,7 +75,7 @@ class DefaultClassResolverTest {
 
     @Test
     fun resolve_rejectsAmbiguousSimpleName() {
-        val resolver: DefaultClassResolver = DefaultClassResolver(
+        val resolver = DefaultClassResolver(
             knownTypeSource = FakeKnownTypeSource(
                 knownClasses = listOf(
                     au.clef.api.alpha.Duplicate::class.java,
@@ -101,10 +93,8 @@ class DefaultClassResolverTest {
 
     @Test
     fun resolve_rejectsUnknownType() {
-        val resolver: DefaultClassResolver = DefaultClassResolver(
-            knownTypeSource = FakeKnownTypeSource(
-                knownClasses = listOf(Person1::class.java)
-            ),
+        val resolver = DefaultClassResolver(
+            knownTypeSource = FakeKnownTypeSource(knownClasses = listOf(Person1::class.java)),
             scalarRegistry = ScalarTypeRegistry()
         )
         val ex: IllegalArgumentException = assertFailsWith {
@@ -116,7 +106,7 @@ class DefaultClassResolverTest {
 
     @Test
     fun resolve_handlesMixedScalarAndStructuredKnownClasses() {
-        val resolver: DefaultClassResolver = DefaultClassResolver(
+        val resolver = DefaultClassResolver(
             knownTypeSource = FakeKnownTypeSource(
                 knownClasses = listOf(
                     String::class.java,

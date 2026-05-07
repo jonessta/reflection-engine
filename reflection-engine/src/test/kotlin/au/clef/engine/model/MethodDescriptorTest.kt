@@ -8,12 +8,11 @@ class MethodDescriptorTest {
 
     @Test
     fun from_javaMethod_buildsDescriptorFromJavaReflection() {
-        val javaMethod: Method =
-            SampleJavaMethods::class.java.getDeclaredMethod(
-                "join",
-                String::class.java,
-                Int::class.javaPrimitiveType!!
-            )
+        val javaMethod: Method = SampleJavaMethods::class.java.getDeclaredMethod(
+            "join",
+            String::class.java,
+            Int::class.javaPrimitiveType!!
+        )
         val descriptor: MethodDescriptor = MethodDescriptor.from(javaMethod)
 
         assertEquals(MethodId.from(javaMethod), descriptor.id)
@@ -39,20 +38,18 @@ class MethodDescriptorTest {
 
     @Test
     fun from_javaMethod_withLogicalMethodName_overridesReflectedName() {
-        val javaMethod: Method =
-            SampleJavaMethods::class.java.getDeclaredMethod(
-                "join",
-                String::class.java,
-                Int::class.javaPrimitiveType!!
-            )
+        val javaMethod: Method = SampleJavaMethods::class.java.getDeclaredMethod(
+            "join",
+            String::class.java,
+            Int::class.javaPrimitiveType!!
+        )
         val methodId: MethodId = MethodId.from(javaMethod)
-        val descriptor: MethodDescriptor =
-            MethodDescriptor.from(
-                javaMethod = javaMethod,
-                id = methodId,
-                logicalMethodName = "logicalJoin",
-                displayName = "Logical Join"
-            )
+        val descriptor: MethodDescriptor = MethodDescriptor.from(
+            javaMethod = javaMethod,
+            id = methodId,
+            logicalMethodName = "logicalJoin",
+            displayName = "Logical Join"
+        )
 
         assertEquals(methodId, descriptor.id)
         assertEquals("logicalJoin", descriptor.reflectedName)
@@ -63,17 +60,15 @@ class MethodDescriptorTest {
 
     @Test
     fun from_kotlinFunction_usesKotlinFunctionName() {
-        val javaMethod: Method =
-            SampleKotlinMethods::nullableEcho.javaMethod
-                ?: fail("Expected javaMethod for nullableEcho")
+        val javaMethod: Method = SampleKotlinMethods::nullableEcho.javaMethod
+            ?: fail("Expected javaMethod for nullableEcho")
         val methodId: MethodId = MethodId.from(javaMethod)
-        val descriptor: MethodDescriptor =
-            MethodDescriptor.from(
-                kotlinFunction = SampleKotlinMethods::nullableEcho,
-                javaMethod = javaMethod,
-                id = methodId,
-                displayName = "Nullable Echo"
-            )
+        val descriptor: MethodDescriptor = MethodDescriptor.from(
+            kotlinFunction = SampleKotlinMethods::nullableEcho,
+            javaMethod = javaMethod,
+            id = methodId,
+            displayName = "Nullable Echo"
+        )
 
         assertEquals(methodId, descriptor.id)
         assertEquals("nullableEcho", descriptor.reflectedName)
@@ -100,12 +95,11 @@ class MethodDescriptorTest {
 
     @Test
     fun from_javaMethod_detectsStaticMethod() {
-        val javaMethod: Method =
-            SampleStatics1::class.java.getDeclaredMethod(
-                "sum",
-                Int::class.javaPrimitiveType!!,
-                Int::class.javaPrimitiveType!!
-            )
+        val javaMethod: Method = SampleStatics1::class.java.getDeclaredMethod(
+            "sum",
+            Int::class.javaPrimitiveType!!,
+            Int::class.javaPrimitiveType!!
+        )
         val descriptor: MethodDescriptor = MethodDescriptor.from(javaMethod)
 
         assertTrue(descriptor.isStatic)
@@ -114,12 +108,11 @@ class MethodDescriptorTest {
 
     @Test
     fun withMetadata_returnsNewDescriptorWithUpdatedMetadata() {
-        val javaMethod: Method =
-            SampleJavaMethods::class.java.getDeclaredMethod(
-                "join",
-                String::class.java,
-                Int::class.javaPrimitiveType!!
-            )
+        val javaMethod: Method = SampleJavaMethods::class.java.getDeclaredMethod(
+            "join",
+            String::class.java,
+            Int::class.javaPrimitiveType!!
+        )
         val original: MethodDescriptor = MethodDescriptor.from(javaMethod)
         val updatedParameters: List<ParamDescriptor> =
             listOf(
@@ -133,11 +126,10 @@ class MethodDescriptorTest {
                 ),
                 original.parameters[1]
             )
-        val updated: MethodDescriptor =
-            original.withMetadata(
-                displayName = "Joined Text",
-                parameters = updatedParameters
-            )
+        val updated: MethodDescriptor = original.withMetadata(
+            displayName = "Joined Text",
+            parameters = updatedParameters
+        )
 
         assertEquals(original.id, updated.id)
         assertEquals(original.reflectedName, updated.reflectedName)
@@ -150,26 +142,23 @@ class MethodDescriptorTest {
 
     @Test
     fun equality_and_hashCode_are_basedOnIdOnly() {
-        val javaMethod: Method =
-            SampleJavaMethods::class.java.getDeclaredMethod(
-                "join",
-                String::class.java,
-                Int::class.javaPrimitiveType!!
-            )
-        val first: MethodDescriptor =
-            MethodDescriptor.from(
-                javaMethod = javaMethod,
-                id = MethodId.from(javaMethod),
-                logicalMethodName = "joinA",
-                displayName = "First"
-            )
-        val second: MethodDescriptor =
-            MethodDescriptor.from(
-                javaMethod = javaMethod,
-                id = MethodId.from(javaMethod),
-                logicalMethodName = "joinB",
-                displayName = "Second"
-            )
+        val javaMethod: Method = SampleJavaMethods::class.java.getDeclaredMethod(
+            "join",
+            String::class.java,
+            Int::class.javaPrimitiveType!!
+        )
+        val first: MethodDescriptor = MethodDescriptor.from(
+            javaMethod = javaMethod,
+            id = MethodId.from(javaMethod),
+            logicalMethodName = "joinA",
+            displayName = "First"
+        )
+        val second: MethodDescriptor = MethodDescriptor.from(
+            javaMethod = javaMethod,
+            id = MethodId.from(javaMethod),
+            logicalMethodName = "joinB",
+            displayName = "Second"
+        )
 
         assertEquals(first, second)
         assertEquals(first.hashCode(), second.hashCode())
@@ -177,17 +166,15 @@ class MethodDescriptorTest {
 
     @Test
     fun equality_distinguishesDifferentMethods() {
-        val firstMethod: Method =
-            SampleJavaMethods::class.java.getDeclaredMethod(
-                "join",
-                String::class.java,
-                Int::class.javaPrimitiveType!!
-            )
-        val secondMethod: Method =
-            SampleJavaMethods::class.java.getDeclaredMethod(
-                "echo",
-                String::class.java
-            )
+        val firstMethod: Method = SampleJavaMethods::class.java.getDeclaredMethod(
+            "join",
+            String::class.java,
+            Int::class.javaPrimitiveType!!
+        )
+        val secondMethod: Method = SampleJavaMethods::class.java.getDeclaredMethod(
+            "echo",
+            String::class.java
+        )
         val first: MethodDescriptor = MethodDescriptor.from(firstMethod)
         val second: MethodDescriptor = MethodDescriptor.from(secondMethod)
 
@@ -196,18 +183,16 @@ class MethodDescriptorTest {
 
     @Test
     fun toString_containsImportantFields() {
-        val javaMethod: Method =
-            SampleJavaMethods::class.java.getDeclaredMethod(
-                "echo",
-                String::class.java
-            )
-        val descriptor: MethodDescriptor =
-            MethodDescriptor.from(
-                javaMethod = javaMethod,
-                id = MethodId.from(javaMethod),
-                logicalMethodName = "logicalEcho",
-                displayName = "Echo"
-            )
+        val javaMethod: Method = SampleJavaMethods::class.java.getDeclaredMethod(
+            "echo",
+            String::class.java
+        )
+        val descriptor: MethodDescriptor = MethodDescriptor.from(
+            javaMethod = javaMethod,
+            id = MethodId.from(javaMethod),
+            logicalMethodName = "logicalEcho",
+            displayName = "Echo"
+        )
         val text: String = descriptor.toString()
 
         assertTrue(text.contains("MethodDescriptor("))
@@ -219,24 +204,20 @@ class MethodDescriptorTest {
 
 class SampleJavaMethods {
 
-    fun join(text: String, count: Int): String =
-        text + count
+    fun join(text: String, count: Int): String = text + count
 
-    fun echo(text: String): String =
-        text
+    fun echo(text: String): String = text
 }
 
 object SampleKotlinMethods {
 
-    fun nullableEcho(value: String?, count: Int?): String =
-        "${value}:${count}"
+    fun nullableEcho(value: String?, count: Int?): String = "${value}:${count}"
 }
 
 class SampleStatics1 {
     companion object {
 
         @JvmStatic
-        fun sum(a: Int, b: Int): Int =
-            a + b
+        fun sum(a: Int, b: Int): Int = a + b
     }
 }

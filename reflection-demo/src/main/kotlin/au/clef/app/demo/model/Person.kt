@@ -2,7 +2,8 @@ package au.clef.app.demo.model
 
 data class Person(val name: String, val age: Int, val address: Address)
 
-class ZipCode(var code: String) {
+@JvmInline
+value class ZipCode(val code: String) {
     init {
        require(code.isNotEmpty()) { "ZipCode must be non-empty" }
     }

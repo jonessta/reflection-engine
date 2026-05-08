@@ -45,13 +45,13 @@ private data class ParsedMethodId(
 
 class MethodSourceRegistry(
     methodSources: Collection<MethodSource>,
-    methodSupportingTypes: Collection<KClass<*>> = emptyList(),
+    additionalTypes: Collection<KClass<*>> = emptyList(),
     private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-) : KnownTypeSource by ConfigKnownTypeSource(methodSources, methodSupportingTypes) {
+) {
 
     constructor(reflectionConfig: ReflectionConfig) : this(
         methodSources = reflectionConfig.methodSources,
-        methodSupportingTypes = reflectionConfig.methodSupportingTypes,
+        additionalTypes = reflectionConfig.additionalTypes,
         inheritanceLevel = reflectionConfig.inheritanceLevel
     )
 
@@ -70,6 +70,12 @@ class MethodSourceRegistry(
         require(methodSources.isNotEmpty()) { "methodSources must not be empty" }
         methodSources.forEach { source: MethodSource -> registerMethodSource(source) }
     }
+
+    val declaringClasses: List<Class<*>> =
+        methodSources.map { it.declaringClass.java }.distinct()
+
+    val additionalClasses: List<Class<*>> =
+        additionalTypes.map { it.java }.distinct()
 
     fun descriptors(clazz: Class<*>): List<MethodDescriptor> =
         descriptorsByClass[clazz]?.toList()

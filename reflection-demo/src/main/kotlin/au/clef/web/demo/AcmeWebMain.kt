@@ -19,7 +19,6 @@ internal val acmeConfig = reflectionConfig(
     StaticMethod(Math::class, "min", Int::class, Int::class),
     StaticMethod(Math::class, "max", Int::class, Int::class)
 )
-    .supportingTypes(Person::class, Address::class)
     .build()
 
 val webConfig = WebServerConfig()

@@ -17,7 +17,6 @@ private  val functionsConfig = reflectionConfig(
     MethodSource.StaticMethod(::myAddKotlinFunction, "A kotlin function"),
     MethodSource.StaticMethod(Math::class, "Java static method", "max", Int::class, Int::class),
 )
-    .supportingTypes(Customer::class, Address::class, Person::class, ZipCode::class)
     .build()
 
 val functionsApiConfig = reflectionApiConfig(functionsConfig)

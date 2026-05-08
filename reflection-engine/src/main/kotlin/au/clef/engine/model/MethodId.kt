@@ -31,6 +31,22 @@ class MethodId private constructor(val value: String) {
 
     override fun hashCode(): Int = value.hashCode()
 
+    fun resolve(declaringClass: Class<*>): Method {
+        val method: Method? =
+            declaringClass.declaredMethods.firstOrNull { candidate: Method ->
+                from(candidate) == this
+            }
+
+        return requireNotNull(method) {
+            val available: String =
+                declaringClass.declaredMethods.joinToString(", ") { candidate: Method ->
+                    from(candidate).value
+                }
+
+            "Method '$value' not found on ${declaringClass.name}. Available methods: $available"
+        }
+    }
+
     companion object {
 
         private val METHOD_ID_OUTER_REGEX = Regex(
@@ -80,22 +96,25 @@ class MethodId private constructor(val value: String) {
                 if (paramsPart.isBlank()) {
                     emptyList()
                 } else {
-                    paramsPart.split(",").also { paramTypes ->
-                        if (paramTypes.any(String::isBlank)) {
-                            throw IllegalMethodIdException(
-                                "parameter types must be comma-separated with no empty entries"
-                            )
+                    paramsPart
+                        .split(",")
+                        .also { paramTypes ->
+                            if (paramTypes.any(String::isBlank)) {
+                                throw IllegalMethodIdException(
+                                    "parameter types must be comma-separated with no empty entries"
+                                )
+                            }
+                            if (!paramTypes.all(TYPE_NAME_REGEX::matches)) {
+                                throw IllegalMethodIdException("parameter type names are malformed")
+                            }
                         }
-                        if (!paramTypes.all(TYPE_NAME_REGEX::matches)) {
-                            throw IllegalMethodIdException("parameter type names are malformed")
-                        }
-                    }
                 }
 
             val methodIdVal: String =
                 formatMethodId(declaringClassName, methodName, parameterTypeNames)
             return MethodId(methodIdVal)
         }
+
     }
 }
 

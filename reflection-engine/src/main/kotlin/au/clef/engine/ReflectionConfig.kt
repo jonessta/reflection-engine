@@ -1,13 +1,13 @@
 package au.clef.engine
 
 import au.clef.engine.model.InheritanceLevel
-import au.clef.engine.registry.KnownTypeSource
 import kotlin.reflect.KClass
 
 data class ReflectionConfig(
-    val methodSources: Collection<MethodSource>,
-    val methodSupportingTypes: Collection<KClass<*>> = emptyList(),
-    val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
+    val methodSources: List<MethodSource>,
+    val additionalTypes: List<KClass<*>> = emptyList(),
+    val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly,
+    val metadataResourcePath: String? = null
 ) {
 
     init {
@@ -15,51 +15,36 @@ data class ReflectionConfig(
     }
 }
 
-class ReflectionConfigBuilder internal constructor(firstMethodSource: MethodSource) {
+class ReflectionConfigBuilder(methodSources: Array<out MethodSource>) {
 
-    private val methodSources = mutableListOf(firstMethodSource)
-    private val methodSupportingTypes = mutableListOf<KClass<*>>()
+    private val methodSources: MutableList<MethodSource> = methodSources.toMutableList()
+    private val additionalTypes: MutableList<KClass<*>> = mutableListOf()
     private var inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
+    private var metadataResourcePath: String? = null
 
-    fun methodSources(vararg sources: MethodSource): ReflectionConfigBuilder =
-        apply { methodSources += sources }
+    fun addMethodSources(vararg sources: MethodSource): ReflectionConfigBuilder = apply {
+        methodSources += sources
+    }
 
-    fun supportingTypes(vararg types: KClass<*>): ReflectionConfigBuilder =
-        apply { methodSupportingTypes += types }
+    fun additionalTypes(vararg types: KClass<*>): ReflectionConfigBuilder = apply {
+        additionalTypes += types
+    }
 
-    fun inheritanceLevel(level: InheritanceLevel): ReflectionConfigBuilder =
-        apply { inheritanceLevel = level }
+    fun inheritanceLevel(value: InheritanceLevel): ReflectionConfigBuilder = apply {
+        inheritanceLevel = value
+    }
 
-    fun build(): ReflectionConfig =
-        ReflectionConfig(
-            methodSources = methodSources.toList(),
-            methodSupportingTypes = methodSupportingTypes.toList(),
-            inheritanceLevel = inheritanceLevel
-        )
-}
+    fun metadataResourcePath(path: String): ReflectionConfigBuilder = apply {
+        metadataResourcePath = path
+    }
 
-fun reflectionConfig(
-    methodSource: MethodSource,
-    vararg methodSources: MethodSource
-): ReflectionConfigBuilder =
-    ReflectionConfigBuilder(methodSource).apply { methodSources(*methodSources) }
-
-class ConfigKnownTypeSource(
-    methodSources: Collection<MethodSource>,
-    methodSupportingTypes: Collection<KClass<*>> = emptyList()
-) : KnownTypeSource {
-
-    constructor(reflectionConfig: ReflectionConfig) : this(
-        methodSources = reflectionConfig.methodSources,
-        methodSupportingTypes = reflectionConfig.methodSupportingTypes
+    fun build(): ReflectionConfig = ReflectionConfig(
+        methodSources = methodSources.distinct(),
+        additionalTypes = additionalTypes.distinct(),
+        inheritanceLevel = inheritanceLevel,
+        metadataResourcePath = metadataResourcePath
     )
-
-    override val declaringClasses: List<Class<*>> = methodSources
-        .map { it.declaringClass.java }
-        .distinct()
-
-    override val knownClasses: List<Class<*>> =
-        (methodSources.map { it.declaringClass } + methodSupportingTypes)
-            .distinct()
-            .map { it.java }
 }
+
+fun reflectionConfig(vararg methodSources: MethodSource): ReflectionConfigBuilder =
+    ReflectionConfigBuilder(methodSources)

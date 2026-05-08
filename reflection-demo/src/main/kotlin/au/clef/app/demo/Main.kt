@@ -1,10 +1,6 @@
 package au.clef.app.demo
 
-import au.clef.app.demo.model.AcmeService
-import au.clef.app.demo.model.Address
-import au.clef.app.demo.model.Person
-import au.clef.app.demo.model.ZipCode
-import au.clef.app.demo.model.myAddKotlinFunction
+import au.clef.app.demo.model.*
 import au.clef.engine.MethodSource.InstanceMethod
 import au.clef.engine.MethodSource.StaticMethod
 import au.clef.engine.ReflectionConfig
@@ -44,7 +40,6 @@ private val reflectionConfig: ReflectionConfig = reflectionConfig(
     StaticMethod(::myAddKotlinFunction),
     StaticMethod(Math::class, "max", Int::class, Int::class)
 )
-    .supportingTypes(Person::class, Address::class)
     .build()
 
 private val reflectionRegistry = MethodSourceRegistry(reflectionConfig)

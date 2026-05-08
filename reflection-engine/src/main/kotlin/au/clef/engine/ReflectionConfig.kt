@@ -6,8 +6,7 @@ import kotlin.reflect.KClass
 data class ReflectionConfig(
     val methodSources: List<MethodSource>,
     val additionalTypes: List<KClass<*>> = emptyList(),
-    val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly,
-    val metadataResourcePath: String? = null
+    val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
 ) {
 
     init {
@@ -20,7 +19,6 @@ class ReflectionConfigBuilder(methodSources: Array<out MethodSource>) {
     private val methodSources: MutableList<MethodSource> = methodSources.toMutableList()
     private val additionalTypes: MutableList<KClass<*>> = mutableListOf()
     private var inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
-    private var metadataResourcePath: String? = null
 
     fun addMethodSources(vararg sources: MethodSource): ReflectionConfigBuilder = apply {
         methodSources += sources
@@ -34,15 +32,10 @@ class ReflectionConfigBuilder(methodSources: Array<out MethodSource>) {
         inheritanceLevel = value
     }
 
-    fun metadataResourcePath(path: String): ReflectionConfigBuilder = apply {
-        metadataResourcePath = path
-    }
-
     fun build(): ReflectionConfig = ReflectionConfig(
         methodSources = methodSources.distinct(),
         additionalTypes = additionalTypes.distinct(),
         inheritanceLevel = inheritanceLevel,
-        metadataResourcePath = metadataResourcePath
     )
 }
 

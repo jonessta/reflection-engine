@@ -12,6 +12,9 @@ import java.time.LocalTime
 import java.util.*
 import kotlin.reflect.KClass
 
+// Required for scalar boundary decoding of domain wrapper types.
+// Auto-discovery makes the types known, but these converters tell the API
+// how to materialize them from scalar JSON values.
 interface ScalarConverter<T : Any> {
 
     val type: KClass<T>

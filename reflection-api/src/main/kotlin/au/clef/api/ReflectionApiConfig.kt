@@ -2,9 +2,6 @@ package au.clef.api
 
 import au.clef.engine.ReflectionConfig
 
-/**
- * @scalarConverters are only required for front end UX Look and feel.
- */
 data class ReflectionApiConfig(
     val reflectionConfig: ReflectionConfig,
     val metadataResourcePath: String? = null,

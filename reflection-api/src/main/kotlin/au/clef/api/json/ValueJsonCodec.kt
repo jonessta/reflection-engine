@@ -90,9 +90,8 @@ class ValueJsonCodec(private val classResolver: ClassResolver) {
         )
 
     private fun decodeRecord(obj: JsonObject): Value.Record {
-        val typeName: String =
-            obj["type"]?.jsonPrimitive?.content
-                ?: throw IllegalArgumentException("Missing 'type' for record")
+        val typeName: String = obj["type"]?.jsonPrimitive?.content
+            ?: throw IllegalArgumentException("Missing 'type' for record")
 
         val resolved: ResolvedType =
             try {

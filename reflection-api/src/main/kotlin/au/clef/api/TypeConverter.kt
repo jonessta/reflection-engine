@@ -153,11 +153,10 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
             return null
         }
 
-        val hasValueClassParameters: Boolean =
-            valueParameters.any { parameter: KParameter ->
-                val classifier = parameter.type.classifier as? KClass<*>
-                classifier?.isValue == true
-            }
+        val hasValueClassParameters: Boolean = valueParameters.any { parameter: KParameter ->
+            val classifier = parameter.type.classifier as? KClass<*>
+            classifier?.isValue == true
+        }
 
         val missingOptional = mutableSetOf<KParameter>()
         val orderedArgs = mutableListOf<Any?>()

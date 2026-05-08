@@ -18,6 +18,9 @@ data class MapEntry(
     val value: Value
 )
 
+/**
+ * Wire format scalar model
+ */
 sealed class ScalarValue {
 
     data class StringValue(val value: String) : ScalarValue()

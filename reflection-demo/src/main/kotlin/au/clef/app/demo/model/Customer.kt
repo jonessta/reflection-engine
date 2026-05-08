@@ -26,7 +26,7 @@ class CustomerService {
             address = Address(
                 number = 2,
                 street = "Smith St",
-                zipCode = "2321"
+                zipCode = ZipCode("2321")
             )
         )
 

@@ -3,6 +3,7 @@ package au.clef.app.demo
 import au.clef.app.demo.model.AcmeService
 import au.clef.app.demo.model.Address
 import au.clef.app.demo.model.Person
+import au.clef.app.demo.model.ZipCode
 import au.clef.app.demo.model.myAddKotlinFunction
 import au.clef.engine.MethodSource.InstanceMethod
 import au.clef.engine.MethodSource.StaticMethod
@@ -126,6 +127,6 @@ private fun person(name: String = "Alice", age: Int = 25): Person =
         address = Address(
             number = 2,
             street = "Smith st",
-            zipCode = "2321"
+            zipCode = ZipCode("2321")
         )
     )

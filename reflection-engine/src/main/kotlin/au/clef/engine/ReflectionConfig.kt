@@ -54,10 +54,9 @@ class ConfigKnownTypeSource(
         methodSupportingTypes = reflectionConfig.methodSupportingTypes
     )
 
-    override val declaringClasses: List<Class<*>> =
-        methodSources
-            .map { it.declaringClass.java }
-            .distinct()
+    override val declaringClasses: List<Class<*>> = methodSources
+        .map { it.declaringClass.java }
+        .distinct()
 
     override val knownClasses: List<Class<*>> =
         (methodSources.map { it.declaringClass } + methodSupportingTypes)

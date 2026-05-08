@@ -94,9 +94,7 @@ class WebServer(
 @Serializable
 private data class ErrorResponse(val error: String)
 
-fun Route.reflectionRoutes(
-    reflectionService: ReflectionServiceApi
-) {
+fun Route.reflectionRoutes(reflectionService: ReflectionServiceApi) {
     get("/health") {
         call.respond(mapOf("ok" to true))
     }

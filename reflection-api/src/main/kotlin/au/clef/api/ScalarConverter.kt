@@ -22,12 +22,11 @@ interface ScalarConverter<T : Any> {
 inline fun <reified T : Any> scalarConverter(
     noinline encode: (T) -> ScalarValue,
     noinline decode: (ScalarValue) -> T
-): ScalarConverter<T> =
-    object : ScalarConverter<T> {
-        override val type: KClass<T> = T::class
-        override fun encode(value: T): ScalarValue = encode(value)
-        override fun decode(value: ScalarValue): T = decode(value)
-    }
+): ScalarConverter<T> = object : ScalarConverter<T> {
+    override val type: KClass<T> = T::class
+    override fun encode(value: T): ScalarValue = encode(value)
+    override fun decode(value: ScalarValue): T = decode(value)
+}
 
 inline fun <reified T : Any> stringScalarConverter(
     noinline encodeText: (T) -> String = { value: T -> value.toString() },
@@ -43,14 +42,13 @@ inline fun <reified T : Any> stringScalarConverter(
 private inline fun <reified T : Any> numberScalarConverter(
     noinline encodeText: (T) -> String = { value: T -> value.toString() },
     noinline decodeText: (String) -> T
-): ScalarConverter<T> =
-    scalarConverter(
-        encode = { value: T -> ScalarValue.NumberValue(encodeText(value)) },
-        decode = { value: ScalarValue ->
-            if (value is ScalarValue.NumberValue) decodeText(value.value)
-            else throw IllegalArgumentException("Expected numeric scalar")
-        }
-    )
+): ScalarConverter<T> = scalarConverter(
+    encode = { value: T -> ScalarValue.NumberValue(encodeText(value)) },
+    decode = { value: ScalarValue ->
+        if (value is ScalarValue.NumberValue) decodeText(value.value)
+        else throw IllegalArgumentException("Expected numeric scalar")
+    }
+)
 
 object DefaultScalarConverters {
 
@@ -63,9 +61,7 @@ object DefaultScalarConverters {
         numberScalarConverter<Short> { text: String -> text.toShort() },
         numberScalarConverter<Byte> { text: String -> text.toByte() },
         scalarConverter<Boolean>(
-            encode = { value: Boolean ->
-                ScalarValue.BooleanValue(value)
-            },
+            encode = { value: Boolean -> ScalarValue.BooleanValue(value) },
             decode = { value: ScalarValue ->
                 if (value is ScalarValue.BooleanValue) value.value
                 else throw IllegalArgumentException("Expected boolean scalar")
@@ -80,9 +76,7 @@ object DefaultScalarConverters {
         ),
         stringScalarConverter<UUID>(decodeText = UUID::fromString),
         stringScalarConverter<URI>(decodeText = URI::create),
-        stringScalarConverter<URL>(decodeText = { text: String ->
-            URI.create(text).toURL()
-        }),
+        stringScalarConverter<URL>(decodeText = { text: String -> URI.create(text).toURL() }),
         stringScalarConverter<Instant>(decodeText = Instant::parse),
         stringScalarConverter<LocalDate>(decodeText = LocalDate::parse),
         stringScalarConverter<LocalDateTime>(decodeText = LocalDateTime::parse),

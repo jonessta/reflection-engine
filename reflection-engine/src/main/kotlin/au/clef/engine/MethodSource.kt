@@ -72,10 +72,7 @@ sealed class MethodSource(val declaringClass: KClass<*>, val sourceDescription: 
      * Expose exactly one instance method on this object.
      */
     class InstanceMethod(val instance: Any, sourceDescription: String, val methodId: MethodId) :
-        MethodSource(
-            declaringClass = instance::class,
-            sourceDescription = sourceDescription
-        ) {
+        MethodSource(declaringClass = instance::class, sourceDescription = sourceDescription) {
 
         constructor(
             instance: Any,
@@ -109,8 +106,7 @@ sealed class MethodSource(val declaringClass: KClass<*>, val sourceDescription: 
                 methodName: String,
                 parameterTypes: Array<out KClass<*>>
             ): MethodId {
-                val requestedId =
-                    MethodId.from(declaringClass, methodName, *parameterTypes)
+                val requestedId = MethodId.from(declaringClass, methodName, *parameterTypes)
 
                 val matchingFunction: KFunction<*>? =
                     declaringClass.declaredMemberFunctions.firstOrNull { function: KFunction<*> ->
@@ -127,13 +123,11 @@ sealed class MethodSource(val declaringClass: KClass<*>, val sourceDescription: 
                             return@firstOrNull false
                         }
 
-                        valueParameters
-                            .mapIndexed { index: Int, parameter: KParameter ->
-                                val classifier: KClass<*> =
-                                    parameter.type.classifier as? KClass<*>
-                                        ?: return@firstOrNull false
-                                classifier == parameterTypes[index]
-                            }
+                        valueParameters.mapIndexed { index: Int, parameter: KParameter ->
+                            val classifier: KClass<*> = parameter.type.classifier as? KClass<*>
+                                ?: return@firstOrNull false
+                            classifier == parameterTypes[index]
+                        }
                             .all { matches: Boolean -> matches }
                     }
 

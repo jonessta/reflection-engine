@@ -2,8 +2,8 @@ package au.clef.api
 
 import au.clef.engine.TerminalTypeDecider
 
-class ScalarTypeRegistry(userDefinedConverters: List<ScalarConverter<out Any>> = emptyList())
-    : TerminalTypeDecider {
+class ScalarTypeRegistry(userDefinedConverters: List<ScalarConverter<out Any>> = emptyList()) :
+    TerminalTypeDecider {
 
     private val decoderMap: Map<Class<*>, ScalarConverter<out Any>> =
         (DefaultScalarConverters.all + userDefinedConverters)
@@ -19,8 +19,8 @@ class ScalarTypeRegistry(userDefinedConverters: List<ScalarConverter<out Any>> =
         decoderMap[wrapPrimitive(targetType)] as ScalarConverter<Any>?
 
     @Suppress("UNCHECKED_CAST")
-    fun encoderFor(value: Any): ScalarConverter<Any>? =
-        decoderMap.values.firstOrNull { converter: ScalarConverter<out Any> ->
+    fun encoderFor(value: Any): ScalarConverter<Any>? = decoderMap.values
+        .firstOrNull { converter: ScalarConverter<out Any> ->
             converter.type.javaObjectType.isInstance(value)
         } as ScalarConverter<Any>?
 

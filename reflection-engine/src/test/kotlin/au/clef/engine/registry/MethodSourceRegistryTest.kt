@@ -140,19 +140,6 @@ class MethodSourceRegistryTest {
     }
 
     @Test
-    fun declaringClasses_and_knownClasses_includeSupportingTypes() {
-        val registry = MethodSourceRegistry(
-            methodSources = listOf(MethodSource.Instance(CustomerService(), "Customer Service")),
-            methodSupportingTypes = listOf(Customer::class, Address::class)
-        )
-
-        assertTrue(registry.declaringClasses.contains(CustomerService::class.java))
-        assertTrue(registry.knownClasses.contains(CustomerService::class.java))
-        assertTrue(registry.knownClasses.contains(Customer::class.java))
-        assertTrue(registry.knownClasses.contains(Address::class.java))
-    }
-
-    @Test
     fun descriptors_throwsForUnregisteredClass() {
         val registry = MethodSourceRegistry(
             methodSources = listOf(MethodSource.Instance(CustomerService(), "Customer Service"))

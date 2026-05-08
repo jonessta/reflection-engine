@@ -2,33 +2,35 @@ package au.clef.api
 
 import au.clef.engine.ReflectionConfig
 
+/**
+ * @scalarConverters are only required for front end UX Look and feel.
+ */
 data class ReflectionApiConfig(
     val reflectionConfig: ReflectionConfig,
     val metadataResourcePath: String? = null,
-    val userDefinedScalarConverters: List<ScalarConverter<out Any>> = emptyList()
+    val scalarConverters: List<ScalarConverter<out Any>> = emptyList()
 ) {
 
-    val scalarTypeRegistry: ScalarTypeRegistry = ScalarTypeRegistry(userDefinedScalarConverters)
+    val scalarTypeRegistry: ScalarTypeRegistry = ScalarTypeRegistry(scalarConverters)
 }
 
 class ReflectionApiConfigBuilder(private val reflectionConfig: ReflectionConfig) {
 
-    private val userDefinedScalarConverters = mutableListOf<ScalarConverter<out Any>>()
+    private val scalarConverters = mutableListOf<ScalarConverter<out Any>>()
 
     private var metadataResourcePath: String? = null
 
     fun scalarConverters(vararg converters: ScalarConverter<out Any>): ReflectionApiConfigBuilder =
-        apply { userDefinedScalarConverters += converters }
+        apply { scalarConverters += converters }
 
     fun metadataResourcePath(path: String?): ReflectionApiConfigBuilder =
         apply { metadataResourcePath = path }
 
-    fun build(): ReflectionApiConfig =
-        ReflectionApiConfig(
-            reflectionConfig = reflectionConfig,
-            metadataResourcePath = metadataResourcePath,
-            userDefinedScalarConverters = userDefinedScalarConverters.toList()
-        )
+    fun build(): ReflectionApiConfig = ReflectionApiConfig(
+        reflectionConfig = reflectionConfig,
+        metadataResourcePath = metadataResourcePath,
+        scalarConverters = scalarConverters.toList()
+    )
 }
 
 fun reflectionApiConfig(reflectionConfig: ReflectionConfig): ReflectionApiConfigBuilder =

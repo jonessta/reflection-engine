@@ -32,18 +32,28 @@ class MethodId private constructor(val value: String) {
     override fun hashCode(): Int = value.hashCode()
 
     fun resolve(declaringClass: Class<*>): Method {
-        val method: Method? =
-            declaringClass.declaredMethods.firstOrNull { candidate: Method ->
-                from(candidate) == this
+        val matches: List<Method> = declaringClass.declaredMethods
+            .filter { method: Method -> from(method) == this }
+
+        return when (matches.size) {
+            1 -> matches.single()
+            0 -> {
+                val available: String = declaringClass.declaredMethods
+                    .joinToString(", ") { candidate: Method -> from(candidate).value }
+
+                throw IllegalArgumentException(
+                    "Method '$value' not found on ${declaringClass.name}. Available methods: $available"
+                )
             }
 
-        return requireNotNull(method) {
-            val available: String =
-                declaringClass.declaredMethods.joinToString(", ") { candidate: Method ->
-                    from(candidate).value
-                }
+            else -> {
+                val matched: String =
+                    matches.joinToString(", ") { candidate: Method -> candidate.toString() }
 
-            "Method '$value' not found on ${declaringClass.name}. Available methods: $available"
+                throw IllegalArgumentException(
+                    "Method '$value' is ambiguous on ${declaringClass.name}. Matches: $matched"
+                )
+            }
         }
     }
 
@@ -52,6 +62,7 @@ class MethodId private constructor(val value: String) {
         private val METHOD_ID_OUTER_REGEX = Regex(
             """^([A-Za-z_][A-Za-z0-9_$.]*)$CLASS_NAME_SEPARATOR([A-Za-z_][A-Za-z0-9_$-]*)\((.*)\)$"""
         )
+
         private val TYPE_NAME_REGEX = Regex("""^[A-Za-z_][A-Za-z0-9_$.]*$""")
 
         /**

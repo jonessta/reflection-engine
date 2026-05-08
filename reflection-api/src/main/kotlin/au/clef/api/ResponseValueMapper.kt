@@ -18,9 +18,10 @@ class ResponseValueMapper(private val scalarRegistry: ScalarTypeRegistry) {
             value is Value -> value
             value is Map<*, *> -> {
                 Value.MapValue(
-                    entries = value.entries.map { entry: Map.Entry<*, *> ->
-                        MapEntry(key = toValue(entry.key), value = toValue(entry.value))
-                    }
+                    entries = value.entries
+                        .map { entry: Map.Entry<*, *> ->
+                            MapEntry(key = toValue(entry.key), value = toValue(entry.value))
+                        }
                 )
             }
 

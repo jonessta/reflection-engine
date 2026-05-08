@@ -1,6 +1,9 @@
 package au.clef.engine.registry
 
-import au.clef.engine.*
+import au.clef.engine.ExecutionContext
+import au.clef.engine.MethodNotFoundException
+import au.clef.engine.MethodSource
+import au.clef.engine.ReflectionConfig
 import au.clef.engine.model.*
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
@@ -98,61 +101,53 @@ class MethodSourceRegistry(
         val clazz: Class<*> = source.declaringClass.java
 
         when (source) {
-            is MethodSource.StaticClass -> {
-                registerMethods(
-                    clazz = clazz,
-                    requireStatic = true,
-                    executionContextFor = { methodId: MethodId ->
-                        ExecutionContext.Static(
-                            methodId = methodId,
-                            sourceDescription = source.sourceDescription
-                        )
-                    }
-                )
-            }
+            is MethodSource.StaticClass -> registerMethods(
+                clazz = clazz,
+                requireStatic = true,
+                executionContextFor = { methodId: MethodId ->
+                    ExecutionContext.Static(
+                        methodId = methodId,
+                        sourceDescription = source.sourceDescription
+                    )
+                }
+            )
 
-            is MethodSource.Instance -> {
-                registerMethods(
-                    clazz = clazz,
-                    requireStatic = false,
-                    executionContextFor = { methodId: MethodId ->
-                        ExecutionContext.Instance(
-                            instance = source.instance,
-                            sourceDescription = source.sourceDescription,
-                            methodId = methodId
-                        )
-                    }
-                )
-            }
+            is MethodSource.Instance -> registerMethods(
+                clazz = clazz,
+                requireStatic = false,
+                executionContextFor = { methodId: MethodId ->
+                    ExecutionContext.Instance(
+                        instance = source.instance,
+                        sourceDescription = source.sourceDescription,
+                        methodId = methodId
+                    )
+                }
+            )
 
-            is MethodSource.StaticMethod -> {
-                registerSingleMethod(
-                    clazz = clazz,
-                    methodId = source.methodId,
-                    requireStatic = true,
-                    executionContextFor = { methodId: MethodId ->
-                        ExecutionContext.Static(
-                            methodId = methodId,
-                            sourceDescription = source.sourceDescription
-                        )
-                    }
-                )
-            }
+            is MethodSource.StaticMethod -> registerSingleMethod(
+                clazz = clazz,
+                methodId = source.methodId,
+                requireStatic = true,
+                executionContextFor = { methodId: MethodId ->
+                    ExecutionContext.Static(
+                        methodId = methodId,
+                        sourceDescription = source.sourceDescription
+                    )
+                }
+            )
 
-            is MethodSource.InstanceMethod -> {
-                registerSingleMethod(
-                    clazz = clazz,
-                    methodId = source.methodId,
-                    requireStatic = false,
-                    executionContextFor = { methodId: MethodId ->
-                        ExecutionContext.Instance(
-                            instance = source.instance,
-                            sourceDescription = source.sourceDescription,
-                            methodId = methodId
-                        )
-                    }
-                )
-            }
+            is MethodSource.InstanceMethod -> registerSingleMethod(
+                clazz = clazz,
+                methodId = source.methodId,
+                requireStatic = false,
+                executionContextFor = { methodId: MethodId ->
+                    ExecutionContext.Instance(
+                        instance = source.instance,
+                        sourceDescription = source.sourceDescription,
+                        methodId = methodId
+                    )
+                }
+            )
         }
     }
 

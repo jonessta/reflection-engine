@@ -178,9 +178,7 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
                     callByArgs[parameter] = converted
                 }
 
-                parameter.isOptional -> {
-                    missingOptional += parameter
-                }
+                parameter.isOptional -> missingOptional += parameter
 
                 parameter.type.isMarkedNullable -> {
                     orderedArgs += null
@@ -215,8 +213,7 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
         val candidateConstructors: List<Constructor<*>> =
             target.declaredConstructors
                 .filter { constructor: Constructor<*> ->
-                    !constructor.isSynthetic &&
-                            constructor.parameterCount == orderedArgs.size
+                    !constructor.isSynthetic && constructor.parameterCount == orderedArgs.size
                 }
 
         val matchingConstructor: Constructor<*>? =
@@ -272,8 +269,7 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
             throw e
         } catch (e: Exception) {
             throw ObjectConstructionException(
-                "Failed to construct ${target.name} with Java constructor: ${e.message}",
-                e
+                "Failed to construct ${target.name} with Java constructor: ${e.message}", e
             )
         }
     }
@@ -289,8 +285,7 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
                 constructor.newInstance()
             } catch (e: Exception) {
                 throw ObjectConstructionException(
-                    "Failed to instantiate ${target.name} with no-arg constructor: ${e.message}",
-                    e
+                    "Failed to instantiate ${target.name} with no-arg constructor: ${e.message}", e
                 )
             }
 
@@ -308,8 +303,7 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
                 throw e
             } catch (e: Exception) {
                 throw ObjectConstructionException(
-                    "Failed to set field '$fieldName' on ${target.name}: ${e.message}",
-                    e
+                    "Failed to set field '$fieldName' on ${target.name}: ${e.message}", e
                 )
             }
         }
@@ -323,9 +317,7 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
         } ?: throw IllegalArgumentException("Invalid enum '$text' for ${target.name}")
 
     private fun findField(target: Class<*>, name: String): Field? =
-        generateSequence(target) { current: Class<*> ->
-            current.superclass
-        }
+        generateSequence(target) { current: Class<*> -> current.superclass }
             .takeWhile { current: Class<*> -> current != Any::class.java }
             .mapNotNull { current: Class<*> ->
                 runCatching { current.getDeclaredField(name) }.getOrNull()

@@ -164,9 +164,8 @@ class ValueJsonCodec(private val classResolver: ClassResolver) {
                     ?: throw IllegalArgumentException("Map entry must be an object")
                 val keyJson: JsonElement =
                     entryObject["key"] ?: throw IllegalArgumentException("Map entry missing 'key'")
-                val valueJson: JsonElement =
-                    entryObject["value"]
-                        ?: throw IllegalArgumentException("Map entry missing 'value'")
+                val valueJson: JsonElement = entryObject["value"]
+                    ?: throw IllegalArgumentException("Map entry missing 'value'")
 
                 MapEntry(key = decode(keyJson), value = decode(valueJson))
             }

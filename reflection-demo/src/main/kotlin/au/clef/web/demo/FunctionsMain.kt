@@ -1,7 +1,8 @@
 package au.clef.web.demo
 
 import au.clef.api.reflectionApiConfig
-import au.clef.app.demo.model.*
+import au.clef.app.demo.model.CustomerService
+import au.clef.app.demo.model.myAddKotlinFunction
 import au.clef.engine.MethodSource
 import au.clef.engine.reflectionConfig
 import au.clef.web.WebServer
@@ -9,7 +10,7 @@ import au.clef.web.WebServerConfig
 
 private val customerService: CustomerService = CustomerService()
 
-private  val functionsConfig = reflectionConfig(
+private val functionsConfig = reflectionConfig(
     // An instance method
     MethodSource.InstanceMethod(customerService, "Customer Service", CustomerService::addCustomer),
 

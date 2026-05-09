@@ -78,6 +78,7 @@ class MethodDescriptor(
         "MethodDescriptor(id=$id, reflectedName=$reflectedName, displayName=$displayName, parameters=$parameters)"
 }
 
+// todo look at FieldDescriptor can i just use that here
 data class ParamDescriptor(
     val index: Int,
     val logicalType: Class<*>,

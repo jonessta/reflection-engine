@@ -17,8 +17,7 @@ class ReflectionEngine(
     fun executionContext(executionId: ExecutionId): ExecutionContext =
         reflectionRegistry.executionContext(executionId)
 
-    fun executionContexts(): Collection<ExecutionContext> =
-        reflectionRegistry.allExecutionContexts()
+    fun executionContexts(): Collection<ExecutionContext> = reflectionRegistry.executionContexts()
 
     fun descriptors(clazz: KClass<*>): List<MethodDescriptor> = descriptors(clazz.java)
 

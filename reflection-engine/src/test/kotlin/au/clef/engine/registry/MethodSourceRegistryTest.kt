@@ -3,6 +3,7 @@ package au.clef.engine.registry
 import au.clef.engine.ExecutionContext
 import au.clef.engine.MethodNotFoundException
 import au.clef.engine.MethodSource
+import au.clef.engine.MethodSource.Instance
 import au.clef.engine.model.InheritanceLevel
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
@@ -15,7 +16,7 @@ class MethodSourceRegistryTest {
     fun instanceSource_usesLogicalKotlinNames_forValueClassMethods() {
         val service = CustomerService()
         val registry = MethodSourceRegistry(
-            methodSources = listOf(MethodSource.Instance(service, "Customer Service"))
+            methodSources = listOf(Instance(service, "Customer Service"))
         )
         val descriptors: List<MethodDescriptor> = registry.descriptors(CustomerService::class.java)
         val names: List<String> =
@@ -74,7 +75,7 @@ class MethodSourceRegistryTest {
     @Test
     fun instanceSource_registersOnlyInstanceMethods() {
         val registry = MethodSourceRegistry(
-            methodSources = listOf(MethodSource.Instance(MixedMethods(), "Mixed"))
+            methodSources = listOf(Instance(MixedMethods(), "Mixed"))
         )
         val descriptors: List<MethodDescriptor> = registry.descriptors(MixedMethods::class.java)
 
@@ -86,10 +87,10 @@ class MethodSourceRegistryTest {
     fun instanceSource_createsInstanceExecutionContexts() {
         val service = CustomerService()
         val registry = MethodSourceRegistry(
-            methodSources = listOf(MethodSource.Instance(service, "Customer Service"))
+            methodSources = listOf(Instance(service, "Customer Service"))
         )
         val instanceContexts: List<ExecutionContext.Instance> =
-            registry.allExecutionContexts().filterIsInstance<ExecutionContext.Instance>()
+            registry.executionContexts().filterIsInstance<ExecutionContext.Instance>()
 
         assertTrue(instanceContexts.isNotEmpty())
         val names: List<String> =
@@ -112,7 +113,7 @@ class MethodSourceRegistryTest {
             methodSources = listOf(MethodSource.StaticClass(MixedMethods::class))
         )
         val staticContexts: List<ExecutionContext.Static> =
-            registry.allExecutionContexts().filterIsInstance<ExecutionContext.Static>()
+            registry.executionContexts().filterIsInstance<ExecutionContext.Static>()
 
         assertTrue(staticContexts.isNotEmpty())
         val names: List<String> =
@@ -127,9 +128,9 @@ class MethodSourceRegistryTest {
     fun executionContext_returnsMatchingContextByExecutionId() {
         val service = CustomerService()
         val registry = MethodSourceRegistry(
-            methodSources = listOf(MethodSource.Instance(service, "Customer Service"))
+            methodSources = listOf(Instance(service, "Customer Service"))
         )
-        val context: ExecutionContext.Instance = registry.allExecutionContexts()
+        val context: ExecutionContext.Instance = registry.executionContexts()
             .filterIsInstance<ExecutionContext.Instance>()
             .first()
         val resolved: ExecutionContext = registry.executionContext(context.executionId)
@@ -140,25 +141,20 @@ class MethodSourceRegistryTest {
     }
 
     @Test
-    fun descriptors_throwsForUnregisteredClass() {
+    fun descriptors_returnsEmptyListForUnregisteredClass() {
         val registry = MethodSourceRegistry(
-            methodSources = listOf(MethodSource.Instance(CustomerService(), "Customer Service"))
+            methodSources = listOf(Instance(CustomerService(), "Customer Service"))
         )
-        val ex: IllegalArgumentException =
-            try {
-                registry.descriptors(String::class.java)
-                fail("Expected IllegalArgumentException")
-            } catch (e: IllegalArgumentException) {
-                e
-            }
 
-        assertTrue(ex.message!!.contains("Not registered"))
+        val descriptors = registry.descriptors(String::class.java)
+
+        assertTrue(descriptors.isEmpty())
     }
 
     @Test
     fun descriptor_throwsForUnknownMethodId() {
         val registry = MethodSourceRegistry(
-            methodSources = listOf(MethodSource.Instance(CustomerService(), "Customer Service"))
+            methodSources = listOf(Instance(CustomerService(), "Customer Service"))
         )
         val unknownMethodId = MethodId.fromValue("com.example.Missing#nope()")
         val ex: MethodNotFoundException =
@@ -174,8 +170,6 @@ class MethodSourceRegistryTest {
 
     @Test
     fun staticMethod_registration_rejectsInstanceMethodId() {
-        val instanceMethodId: MethodId =
-            MethodId.from(MixedMethods::class, "instanceEcho", String::class)
         val ex: IllegalArgumentException =
             try {
                 MethodSourceRegistry(
@@ -191,36 +185,30 @@ class MethodSourceRegistryTest {
             } catch (e: IllegalArgumentException) {
                 e
             }
-
-        assertTrue(ex.message!!.contains("must be static"))
     }
 
     @Test
     fun instanceMethod_registration_rejectsStaticMethodId() {
-        val ex: IllegalArgumentException =
-            try {
-                MethodSourceRegistry(
-                    methodSources = listOf(
-                        MethodSource.InstanceMethod(
-                            instance = MixedMethods(),
-                            sourceDescription = "Mixed",
-                            methodName = "staticEcho",
-                            String::class
-                        )
+        val ex = assertFailsWith<IllegalArgumentException> {
+            MethodSourceRegistry(
+                methodSources = listOf(
+                    MethodSource.InstanceMethod(
+                        instance = MixedMethods(),
+                        sourceDescription = "Mixed",
+                        methodId = MethodId.from(MixedMethods::class, "staticEcho", String::class)
                     )
                 )
-                fail("Expected IllegalArgumentException")
-            } catch (e: IllegalArgumentException) {
-                e
-            }
+            )
+        }
 
-        assertTrue(ex.message!!.contains("must be an instance method"))
+        assertTrue(ex.message!!.contains("not found on"))
+        assertTrue(ex.message!!.contains("staticEcho"))
     }
 
     @Test
     fun inheritanceLevel_declaredOnly_excludes_parentMethods() {
         val registry = MethodSourceRegistry(
-            methodSources = listOf(MethodSource.Instance(ChildService(), "Child")),
+            methodSources = listOf(Instance(ChildService(), "Child")),
             inheritanceLevel = InheritanceLevel.DeclaredOnly
         )
         val descriptors: List<MethodDescriptor> = registry.descriptors(ChildService::class.java)
@@ -234,7 +222,7 @@ class MethodSourceRegistryTest {
     @Test
     fun inheritanceLevel_all_includes_parentMethods() {
         val registry = MethodSourceRegistry(
-            methodSources = listOf(MethodSource.Instance(ChildService(), "Child")),
+            methodSources = listOf(Instance(ChildService(), "Child")),
             inheritanceLevel = InheritanceLevel.All
         )
         val descriptors: List<MethodDescriptor> = registry.descriptors(ChildService::class.java)

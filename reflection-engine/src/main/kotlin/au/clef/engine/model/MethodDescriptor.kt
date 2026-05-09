@@ -78,7 +78,7 @@ class MethodDescriptor(
         "MethodDescriptor(id=$id, reflectedName=$reflectedName, displayName=$displayName, parameters=$parameters)"
 }
 
-// todo look at FieldDescriptor can i just use that here
+// todo look at FieldDescriptor can i just use that instead of ParamDescriptor?
 data class ParamDescriptor(
     val index: Int,
     val logicalType: Class<*>,
@@ -92,8 +92,11 @@ private fun buildJavaParamDescriptors(javaMethod: Method): List<ParamDescriptor>
     javaMethod.parameters.mapIndexed { index, parameter ->
         ParamDescriptor(
             index = index,
+            // todo are thes the same logicalType and runtimeType
             logicalType = parameter.type,
             runtimeType = parameter.type,
+
+            // todo are these the same reflectedName and name
             reflectedName = parameter.name,
             name = parameter.name,
             nullable = !parameter.type.isPrimitive

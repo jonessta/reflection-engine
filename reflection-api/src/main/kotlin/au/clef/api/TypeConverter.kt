@@ -3,6 +3,7 @@ package au.clef.api
 import au.clef.api.model.ScalarValue
 import au.clef.api.model.Value
 import au.clef.engine.ObjectConstructionException
+import au.clef.engine.TypeReflection
 import java.lang.reflect.*
 import java.lang.reflect.Array.newInstance
 import java.lang.reflect.Array.set
@@ -11,19 +12,19 @@ import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.javaType
-
 class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
 
     fun materialize(value: Value, targetType: Class<*>): Any? =
         materializeInternal(value, targetType)
 
-    fun materialize(value: Value, targetType: Type): Any? = materializeInternal(value, targetType)
+    fun materialize(value: Value, targetType: Type): Any? =
+        materializeInternal(value, targetType)
 
     fun supportsScalarTarget(targetType: Class<*>): Boolean =
         scalarRegistry.isScalarLike(targetType)
 
     private fun materializeInternal(value: Value, target: Type): Any? {
-        val rawTarget: Class<*> = rawClassOf(target)
+        val rawTarget: Class<*> = TypeReflection.rawClassOf(target)
         if (value is Value.Null) {
             return handleNull(rawTarget)
         }
@@ -38,7 +39,7 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
     }
 
     private fun convertScalar(value: ScalarValue, target: Type): Any? {
-        val rawTarget: Class<*> = rawClassOf(target)
+        val rawTarget: Class<*> = TypeReflection.rawClassOf(target)
         val wrappedTarget: Class<*> = scalarRegistry.wrapPrimitive(rawTarget)
 
         if (wrappedTarget == Any::class.java || wrappedTarget == Object::class.java) {
@@ -78,7 +79,7 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
     }
 
     private fun convertList(value: Value.ListValue, target: Type): Any {
-        val rawTarget: Class<*> = rawClassOf(target)
+        val rawTarget: Class<*> = TypeReflection.rawClassOf(target)
         val elementType: Type =
             when {
                 rawTarget.isArray -> rawTarget.componentType
@@ -109,7 +110,7 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
     }
 
     private fun convertMap(value: Value.MapValue, target: Type): Any {
-        val rawTarget: Class<*> = rawClassOf(target)
+        val rawTarget: Class<*> = TypeReflection.rawClassOf(target)
 
         if (!Map::class.java.isAssignableFrom(rawTarget)) {
             throw TypeMismatchException(value, rawTarget)
@@ -141,22 +142,22 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
         val kClass: KClass<*> = target.kotlin
         val primaryConstructor: KFunction<Any> = kClass.primaryConstructor ?: return null
 
-        val valueParameters: List<KParameter> =
-            primaryConstructor.parameters.filter { parameter: KParameter ->
-                parameter.kind == KParameter.Kind.VALUE
-            }
+        val valueParameters: List<KParameter> = primaryConstructor.parameters
+            .filter { parameter: KParameter -> parameter.kind == KParameter.Kind.VALUE }
 
-        val constructorParameterNames: Set<String> =
-            valueParameters.mapNotNull { parameter: KParameter -> parameter.name }.toSet()
+        val constructorParameterNames: Set<String> = valueParameters
+            .mapNotNull { parameter: KParameter -> parameter.name }
+            .toSet()
 
         if ((value.fields.keys - constructorParameterNames).isNotEmpty()) {
             return null
         }
 
-        val hasValueClassParameters: Boolean = valueParameters.any { parameter: KParameter ->
-            val classifier = parameter.type.classifier as? KClass<*>
-            classifier?.isValue == true
-        }
+        val hasValueClassParameters: Boolean = valueParameters
+            .any { parameter: KParameter ->
+                val classifier = parameter.type.classifier as? KClass<*>
+                classifier?.isValue == true
+            }
 
         val missingOptional = mutableSetOf<KParameter>()
         val orderedArgs = mutableListOf<Any?>()
@@ -209,18 +210,16 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
             }
         }
 
-        val candidateConstructors: List<Constructor<*>> =
-            target.declaredConstructors
-                .filter { constructor: Constructor<*> ->
-                    !constructor.isSynthetic && constructor.parameterCount == orderedArgs.size
-                }
+        val candidateConstructors: List<Constructor<*>> = target.declaredConstructors
+            .filter { constructor: Constructor<*> ->
+                !constructor.isSynthetic && constructor.parameterCount == orderedArgs.size
+            }
 
-        val matchingConstructor: Constructor<*>? =
-            candidateConstructors.firstOrNull { constructor: Constructor<*> ->
+        val matchingConstructor: Constructor<*>? = candidateConstructors
+            .firstOrNull { constructor: Constructor<*> ->
                 constructor.parameterTypes.indices.all { index: Int ->
                     val expected: Class<*> =
                         scalarRegistry.wrapPrimitive(constructor.parameterTypes[index])
-
                     val actual: Any? = orderedArgs[index]
                     actual == null || expected.isInstance(actual)
                 }
@@ -248,8 +247,8 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
         if (constructor.parameterCount == 0) {
             return null
         }
-        val arguments: List<Any?> =
-            constructor.parameters.mapIndexed { index: Int, parameter: Parameter ->
+        val arguments: List<Any?> = constructor.parameters
+            .mapIndexed { index: Int, parameter: Parameter ->
                 val parameterName: String =
                     if (parameter.isNamePresent) parameter.name else "arg$index"
                 val fieldValue: Value =
@@ -274,10 +273,9 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
     }
 
     private fun tryBuildWithNoArgAndFields(value: Value.Record, target: Class<*>): Any? {
-        val constructor: Constructor<*> =
-            target.declaredConstructors.firstOrNull { ctor: Constructor<*> ->
-                ctor.parameterCount == 0
-            } ?: return null
+        val constructor: Constructor<*> = target.declaredConstructors
+            .firstOrNull { ctor: Constructor<*> -> ctor.parameterCount == 0 } ?: return null
+
         val instance: Any =
             try {
                 constructor.isAccessible = true
@@ -290,9 +288,7 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
 
         value.fields.forEach { (fieldName: String, fieldValue: Value) ->
             val field: Field = findField(target, fieldName)
-                ?: throw ObjectConstructionException(
-                    "Field '$fieldName' not found on ${target.name}"
-                )
+                ?: throw ObjectConstructionException("Field '$fieldName' not found on ${target.name}")
 
             try {
                 field.isAccessible = true
@@ -329,18 +325,4 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
         }
         return null
     }
-
-    private fun rawClassOf(type: Type): Class<*> =
-        when (type) {
-            is Class<*> -> type
-            is ParameterizedType -> rawClassOf(type.rawType)
-            is WildcardType -> rawClassOf(type.upperBounds.firstOrNull() ?: Any::class.java)
-            is GenericArrayType -> {
-                val componentType: Class<*> = rawClassOf(type.genericComponentType)
-                newInstance(componentType, 0).javaClass
-            }
-
-            is TypeVariable<*> -> rawClassOf(type.bounds.firstOrNull() ?: Any::class.java)
-            else -> throw IllegalArgumentException("Unsupported Type: $type")
-        }
 }

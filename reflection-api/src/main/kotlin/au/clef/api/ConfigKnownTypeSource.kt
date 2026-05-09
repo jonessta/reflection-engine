@@ -12,20 +12,16 @@ class ConfigKnownTypeSource(
     private val terminalTypeDecider: TerminalTypeDecider
 ) : KnownTypeSource {
 
-    private val methodSourceRegistry: MethodSourceRegistry =
-        MethodSourceRegistry(reflectionConfig)
+    private val methodSourceRegistry: MethodSourceRegistry = MethodSourceRegistry(reflectionConfig)
 
-    override val declaringClasses: List<Class<*>> =
-        methodSourceRegistry.declaringClasses
+    override val declaringClasses: List<Class<*>> = methodSourceRegistry.declaringClasses
 
     override val knownClasses: List<Class<*>> by lazy {
         val rootTypes: List<Type> = MethodTypeRoots(methodSourceRegistry).all()
 
-        val discovered: Set<Class<*>> =
-            KnownTypeDiscoverer(terminalTypeDecider).discover(rootTypes)
+        val discovered: Set<Class<*>> = KnownTypeDiscoverer(terminalTypeDecider).discover(rootTypes)
 
-        val explicitAdditional: List<Class<*>> =
-            reflectionConfig.additionalTypes.map { it.java }
+        val explicitAdditional: List<Class<*>> = reflectionConfig.additionalTypes.map { it.java }
 
         (declaringClasses + explicitAdditional + discovered).distinct()
     }

@@ -107,10 +107,8 @@ private fun buildKotlinParamDescriptors(
     kotlinFunction: KFunction<*>,
     javaMethod: Method
 ): List<ParamDescriptor> {
-    val valueParameters: List<KParameter> =
-        kotlinFunction.parameters.filter { parameter: KParameter ->
-            parameter.kind == KParameter.Kind.VALUE
-        }
+    val valueParameters: List<KParameter> = kotlinFunction.parameters
+        .filter { parameter: KParameter -> parameter.kind == KParameter.Kind.VALUE }
     val runtimeParameterTypes: Array<Class<*>> = javaMethod.parameterTypes
 
     require(valueParameters.size == runtimeParameterTypes.size) {

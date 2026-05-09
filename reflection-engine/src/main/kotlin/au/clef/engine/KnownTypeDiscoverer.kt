@@ -42,12 +42,8 @@ class KnownTypeDiscoverer(private val terminalTypeDecider: TerminalTypeDecider) 
 
         type.kotlin.primaryConstructor
             ?.parameters
-            ?.filter { parameter: KParameter ->
-                parameter.kind == KParameter.Kind.VALUE
-            }
-            ?.forEach { parameter: KParameter ->
-                result += parameter.type.javaType
-            }
+            ?.filter { parameter: KParameter -> parameter.kind == KParameter.Kind.VALUE }
+            ?.forEach { parameter: KParameter -> result += parameter.type.javaType }
 
         return result
     }

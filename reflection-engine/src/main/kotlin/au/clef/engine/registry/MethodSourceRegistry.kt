@@ -34,8 +34,9 @@ class MethodSourceRegistry(
 
     private val executionContextsById: MutableMap<String, ExecutionContext> = LinkedHashMap()
 
-    val declaringClasses: List<Class<*>> =
-        methodSources.map { source: MethodSource -> source.declaringClass.java }.distinct()
+    val declaringClasses: List<Class<*>> = methodSources
+        .map { source: MethodSource -> source.declaringClass.java }
+        .distinct()
 
     init {
         methodSources.forEach { source: MethodSource -> registerMethodSource(source) }
@@ -51,22 +52,17 @@ class MethodSourceRegistry(
     fun descriptor(methodId: MethodId): MethodDescriptor =
         entriesById[methodId]?.descriptor ?: throwMethodNotFound(methodId)
 
-    fun descriptors(declaringClass: Class<*>): List<MethodDescriptor> =
-        entriesById.values
-            .asSequence()
-            .filter { entry: RegistryEntry ->
-                entry.sourceDeclaringClass == declaringClass
-            }
-            .map { entry: RegistryEntry ->
-                entry.descriptor
-            }
-            .toList()
+    fun descriptors(declaringClass: Class<*>): List<MethodDescriptor> = entriesById.values
+        .asSequence()
+        .filter { entry: RegistryEntry -> entry.sourceDeclaringClass == declaringClass }
+        .map { entry: RegistryEntry -> entry.descriptor }
+        .toList()
 
-    fun allDescriptors(): List<MethodDescriptor> =
-        entriesById.values.map { entry: RegistryEntry -> entry.descriptor }
+    fun allDescriptors(): List<MethodDescriptor> = entriesById.values
+        .map { entry: RegistryEntry -> entry.descriptor }
 
-    fun exposedMethods(): List<Method> =
-        entriesById.values.map { entry: RegistryEntry -> entry.method }
+    fun exposedMethods(): List<Method> = entriesById.values
+        .map { entry: RegistryEntry -> entry.method }
 
     fun method(id: MethodId): Method = entriesById[id]?.method ?: throwMethodNotFound(id)
 
@@ -163,8 +159,8 @@ class MethodSourceRegistry(
             }
 
             else -> {
-                val matched: String =
-                    matches.joinToString(", ") { candidate: Method -> candidate.toString() }
+                val matched: String = matches
+                    .joinToString(", ") { candidate: Method -> candidate.toString() }
 
                 throw IllegalArgumentException(
                     "Method '$methodId' is ambiguous on ${declaringClass.name}. Matches: $matched"
@@ -228,7 +224,8 @@ class MethodSourceRegistry(
                     runtimeType = parameter.type,
                     reflectedName = parameter.name,
                     name = parameter.name,
-                    nullable = kotlinParameter?.type?.isMarkedNullable ?: !parameter.type.isPrimitive
+                    nullable = kotlinParameter?.type?.isMarkedNullable
+                        ?: !parameter.type.isPrimitive
                 )
             }
 

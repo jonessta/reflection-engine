@@ -108,16 +108,14 @@ sealed class MethodSource(val declaringClass: KClass<*>, val sourceDescription: 
             ): MethodId {
                 val requestedId = MethodId.from(declaringClass, methodName, *parameterTypes)
 
-                val matchingFunction: KFunction<*>? =
-                    declaringClass.declaredMemberFunctions.firstOrNull { function: KFunction<*> ->
+                val matchingFunction: KFunction<*>? = declaringClass.declaredMemberFunctions
+                    .firstOrNull { function: KFunction<*> ->
                         if (function.name != methodName) {
                             return@firstOrNull false
                         }
 
-                        val valueParameters: List<KParameter> =
-                            function.parameters.filter { parameter: KParameter ->
-                                parameter.kind == KParameter.Kind.VALUE
-                            }
+                        val valueParameters: List<KParameter> = function.parameters
+                            .filter { parameter: KParameter -> parameter.kind == KParameter.Kind.VALUE }
 
                         if (valueParameters.size != parameterTypes.size) {
                             return@firstOrNull false

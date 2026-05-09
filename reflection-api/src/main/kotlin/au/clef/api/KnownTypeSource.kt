@@ -1,4 +1,4 @@
-package au.clef.engine.registry
+package au.clef.api
 
 interface KnownTypeSource {
 

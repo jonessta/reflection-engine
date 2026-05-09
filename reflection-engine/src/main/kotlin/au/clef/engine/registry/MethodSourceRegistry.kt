@@ -206,8 +206,7 @@ class MethodSourceRegistry(
         val methodId: MethodId = MethodId.from(method)
         val kotlinFunction = kotlinFunction(method)
 
-        val kotlinValueParameters =
-            kotlinFunction?.parameters
+        val kotlinValueParameters = kotlinFunction?.parameters
                 ?.filter { parameter -> parameter.kind == kotlin.reflect.KParameter.Kind.VALUE }
                 ?: emptyList()
 

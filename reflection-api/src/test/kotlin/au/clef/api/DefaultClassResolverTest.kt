@@ -1,6 +1,5 @@
 package au.clef.api
 
-import au.clef.engine.registry.KnownTypeSource
 import kotlin.test.*
 
 class DefaultClassResolverTest {

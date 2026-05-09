@@ -6,7 +6,6 @@ import au.clef.engine.ExecutionContext
 import au.clef.engine.ReflectionEngine
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.ParamDescriptor
-import au.clef.engine.registry.KnownTypeSource
 import au.clef.metadata.DescriptorMetadataRegistry
 import au.clef.metadata.MetadataLoader
 import kotlinx.serialization.modules.SerializersModule

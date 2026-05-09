@@ -3,8 +3,8 @@ package au.clef.api
 import au.clef.engine.KnownTypeDiscoverer
 import au.clef.engine.ReflectionConfig
 import au.clef.engine.TerminalTypeDecider
-import au.clef.engine.registry.KnownTypeSource
 import au.clef.engine.registry.MethodSourceRegistry
+import java.lang.reflect.Method
 import java.lang.reflect.Type
 
 class ConfigKnownTypeSource(
@@ -17,7 +17,10 @@ class ConfigKnownTypeSource(
     override val declaringClasses: List<Class<*>> = methodSourceRegistry.declaringClasses
 
     override val knownClasses: List<Class<*>> by lazy {
-        val rootTypes: List<Type> = MethodTypeRoots(methodSourceRegistry).all()
+        val rootTypes: List<Type> = methodSourceRegistry.exposedMethods()
+            .flatMap { method: Method ->
+                method.genericParameterTypes.toList() + method.genericReturnType
+            }
 
         val discovered: Set<Class<*>> = KnownTypeDiscoverer(terminalTypeDecider).discover(rootTypes)
 

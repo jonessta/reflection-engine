@@ -1,7 +1,5 @@
 package au.clef.api
 
-import au.clef.engine.registry.KnownTypeSource
-
 class DefaultClassResolver(
     knownTypeSource: KnownTypeSource,
     private val scalarRegistry: ScalarTypeRegistry

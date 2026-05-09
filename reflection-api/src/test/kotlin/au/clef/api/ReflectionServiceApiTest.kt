@@ -14,7 +14,6 @@ class ReflectionServiceApiTest {
                 MethodSource.StaticClass(SampleStatics::class),
                 MethodSource.Instance(SampleService(), "Sample Service")
             )
-                .supportingTypes(SampleRecord::class)
                 .build()
         )
             .scalarConverters(

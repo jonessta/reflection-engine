@@ -52,7 +52,7 @@ class InlineScalarJsonTest {
             sourceDescription = "Customer Service",
             function = CustomerService::normalizeEmail
         )
-    ).supportingTypes(Customer::class, Address3::class).build()
+    ).build()
     private val scalarTypeRegistry: ScalarTypeRegistry =
         ScalarTypeRegistry(
             userDefinedConverters = listOf(

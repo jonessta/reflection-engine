@@ -46,7 +46,6 @@ class ReflectionServiceApiValueClassIntegrationTest {
                     function = CustomerService::customerLabel
                 )
             )
-                .supportingTypes(Customer::class, Address::class)
                 .build()
         )
             .scalarConverters(

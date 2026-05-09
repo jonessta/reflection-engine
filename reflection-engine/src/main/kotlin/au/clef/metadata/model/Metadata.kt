@@ -11,8 +11,6 @@ data class MetadataRoot(
 @Serializable
 data class MethodMetadata(
     val displayName: String? = null,
-    val hidden: Boolean = false,
-    val order: Int? = null,
     val parameters: List<ParamMetadata> = emptyList()
 )
 

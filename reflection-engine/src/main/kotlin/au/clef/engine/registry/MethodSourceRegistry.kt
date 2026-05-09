@@ -48,13 +48,11 @@ private data class ParsedMethodId(
 
 class MethodSourceRegistry(
     methodSources: Collection<MethodSource>,
-    additionalTypes: Collection<KClass<*>> = emptyList(),
     private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
 ) {
 
     constructor(reflectionConfig: ReflectionConfig) : this(
         methodSources = reflectionConfig.methodSources,
-        additionalTypes = reflectionConfig.additionalTypes,
         inheritanceLevel = reflectionConfig.inheritanceLevel
     )
 
@@ -76,9 +74,6 @@ class MethodSourceRegistry(
 
     val declaringClasses: List<Class<*>> =
         methodSources.map { it.declaringClass.java }.distinct()
-
-    val additionalClasses: List<Class<*>> =
-        additionalTypes.map { it.java }.distinct()
 
     fun descriptors(clazz: Class<*>): List<MethodDescriptor> =
         descriptorsByClass[clazz]?.toList()

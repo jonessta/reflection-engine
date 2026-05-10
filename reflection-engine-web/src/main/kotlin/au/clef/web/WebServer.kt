@@ -17,7 +17,7 @@ import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-fun Application.configureJson(reflectionServiceApi: ReflectionServiceApi) {
+private fun Application.configureJson(reflectionServiceApi: ReflectionServiceApi) {
     install(ContentNegotiation) {
         json(
             Json {
@@ -30,7 +30,7 @@ fun Application.configureJson(reflectionServiceApi: ReflectionServiceApi) {
     }
 }
 
-fun Application.configureErrorHandling() {
+private fun Application.configureErrorHandling() {
     install(StatusPages) {
         exception<Throwable> { call, cause ->
             cause.printStackTrace()

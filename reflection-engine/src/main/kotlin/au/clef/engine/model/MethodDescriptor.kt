@@ -43,6 +43,7 @@ class MethodDescriptor(
             isStatic = Modifier.isStatic(javaMethod.modifiers)
         )
 
+        // todo there are too many from methods  - fix
         fun from(
             kotlinFunction: KFunction<*>,
             javaMethod: Method,
@@ -56,6 +57,44 @@ class MethodDescriptor(
             returnType = javaMethod.returnType,
             isStatic = Modifier.isStatic(javaMethod.modifiers)
         )
+
+        fun from(
+            method: Method,
+            kotlinFunction: KFunction<*>? = null,
+            methodId: MethodId = MethodId.from(method)
+        ): MethodDescriptor {
+            val kotlinValueParameters =
+                kotlinFunction?.parameters
+                    ?.filter { parameter -> parameter.kind == KParameter.Kind.VALUE }
+                    ?: emptyList()
+
+            val parameters: List<ParamDescriptor> =
+                method.parameters.mapIndexed { index, parameter ->
+                    val kotlinParameter = kotlinValueParameters.getOrNull(index)
+                    val logicalType =
+                        (kotlinParameter?.type?.classifier as? KClass<*>)?.java
+                            ?: parameter.type
+
+                    ParamDescriptor(
+                        index = index,
+                        logicalType = logicalType,
+                        runtimeType = parameter.type,
+                        reflectedName = parameter.name,
+                        name = parameter.name,
+                        nullable = kotlinParameter?.type?.isMarkedNullable
+                            ?: !parameter.type.isPrimitive
+                    )
+                }
+
+            return MethodDescriptor(
+                id = methodId,
+                reflectedName = kotlinFunction?.name ?: method.name,
+                displayName = null,
+                returnType = method.returnType,
+                isStatic = Modifier.isStatic(method.modifiers),
+                parameters = parameters
+            )
+        }
     }
 
     fun withMetadata(
@@ -78,7 +117,6 @@ class MethodDescriptor(
         "MethodDescriptor(id=$id, reflectedName=$reflectedName, displayName=$displayName, parameters=$parameters)"
 }
 
-// todo look at FieldDescriptor can i just use that instead of ParamDescriptor?
 data class ParamDescriptor(
     val index: Int,
     val logicalType: Class<*>,

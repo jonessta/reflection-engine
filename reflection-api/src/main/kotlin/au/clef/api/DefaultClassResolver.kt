@@ -31,7 +31,7 @@ class DefaultClassResolver(
                     append("Unknown type: ")
                     append(typeName)
                     append(". ")
-                    append("If this is a structured request/response type, add it to reflectionConfig(...).supportingTypes(...). ")
+                    append("If this is a structured request/response type, add it to reflectionConfig(...).additionalTypes(...). ")
                     append("Known types: ")
                     append(classesByName.keys.sorted().joinToString(", "))
                 }

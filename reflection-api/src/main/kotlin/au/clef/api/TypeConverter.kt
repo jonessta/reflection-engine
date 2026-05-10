@@ -4,6 +4,7 @@ import au.clef.api.model.ScalarValue
 import au.clef.api.model.Value
 import au.clef.engine.ObjectConstructionException
 import au.clef.engine.TypeReflection
+import au.clef.engine.TypeReflection.findField
 import java.lang.reflect.*
 import java.lang.reflect.Array.newInstance
 import java.lang.reflect.Array.set
@@ -311,13 +312,6 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
             (constant as Enum<*>).name.equals(text, ignoreCase = true)
         } ?: throw IllegalArgumentException("Invalid enum '$text' for ${target.name}")
 
-    private fun findField(target: Class<*>, name: String): Field? =
-        generateSequence(target) { current: Class<*> -> current.superclass }
-            .takeWhile { current: Class<*> -> current != Any::class.java }
-            .mapNotNull { current: Class<*> ->
-                runCatching { current.getDeclaredField(name) }.getOrNull()
-            }
-            .firstOrNull()
 
     private fun handleNull(rawTarget: Class<*>): Any? {
         if (rawTarget.isPrimitive) {

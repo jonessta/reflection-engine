@@ -8,9 +8,9 @@ import au.clef.engine.model.ExecutionId
 import au.clef.engine.model.InheritanceLevel
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
-import au.clef.engine.model.ParamDescriptor
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
+import kotlin.reflect.KFunction
 import kotlin.reflect.jvm.javaMethod
 
 class MethodSourceRegistry(
@@ -104,7 +104,11 @@ class MethodSourceRegistry(
 
     private fun registerResolvedMethod(source: MethodSource, method: Method) {
         val methodId: MethodId = MethodId.from(method)
-        val descriptor: MethodDescriptor = toMethodDescriptor(method)
+        val kotlinFunction: KFunction<*>? = method.declaringClass.kotlin.members
+            .filterIsInstance<KFunction<*>>()
+            .firstOrNull { function -> function.javaMethod == method }
+
+        val descriptor: MethodDescriptor = MethodDescriptor.from(method, kotlinFunction)
 
         val executionContext: ExecutionContext =
             when (source) {
@@ -201,47 +205,6 @@ class MethodSourceRegistry(
         }
         return result
     }
-
-    private fun toMethodDescriptor(method: Method): MethodDescriptor {
-        val methodId: MethodId = MethodId.from(method)
-        val kotlinFunction = kotlinFunction(method)
-
-        val kotlinValueParameters = kotlinFunction?.parameters
-                ?.filter { parameter -> parameter.kind == kotlin.reflect.KParameter.Kind.VALUE }
-                ?: emptyList()
-
-        val parameters: List<ParamDescriptor> =
-            method.parameters.mapIndexed { index, parameter ->
-                val kotlinParameter = kotlinValueParameters.getOrNull(index)
-                val logicalType =
-                    (kotlinParameter?.type?.classifier as? kotlin.reflect.KClass<*>)?.java
-                        ?: parameter.type
-
-                ParamDescriptor(
-                    index = index,
-                    logicalType = logicalType,
-                    runtimeType = parameter.type,
-                    reflectedName = parameter.name,
-                    name = parameter.name,
-                    nullable = kotlinParameter?.type?.isMarkedNullable
-                        ?: !parameter.type.isPrimitive
-                )
-            }
-
-        return MethodDescriptor(
-            id = methodId,
-            reflectedName = kotlinFunction?.name ?: method.name,
-            displayName = null,
-            returnType = method.returnType,
-            isStatic = Modifier.isStatic(method.modifiers),
-            parameters = parameters
-        )
-    }
-
-    private fun kotlinFunction(method: Method): kotlin.reflect.KFunction<*>? =
-        method.declaringClass.kotlin.members
-            .filterIsInstance<kotlin.reflect.KFunction<*>>()
-            .firstOrNull { function -> function.javaMethod == method }
 
     private fun throwMethodNotFound(methodId: MethodId): Nothing = throw MethodNotFoundException(
         methodId = methodId,

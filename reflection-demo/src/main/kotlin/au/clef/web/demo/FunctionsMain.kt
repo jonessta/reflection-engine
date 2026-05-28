@@ -15,8 +15,8 @@ private val functionsConfig = reflectionConfig(
     MethodSource.InstanceMethod(customerService, "Customer Service", CustomerService::addCustomer),
 
     // Static functions
-    MethodSource.StaticMethod(::myAddKotlinFunction, "A kotlin function"),
-    MethodSource.StaticMethod(Math::class, "Java static method", "max", Int::class, Int::class),
+    MethodSource.StaticMethod(::myAddKotlinFunction),
+    MethodSource.StaticMethod(Math::class,  "max", Int::class, Int::class),
 )
     .build()
 

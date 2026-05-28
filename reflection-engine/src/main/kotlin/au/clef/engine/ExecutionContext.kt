@@ -8,16 +8,14 @@ sealed class ExecutionContext(val methodId: MethodId, val sourceDescription: Str
 
     abstract val executionId: ExecutionId
 
-    class Static(methodId: MethodId, sourceDescription: String? = null) :
-        ExecutionContext(methodId, sourceDescription) {
+    class Static(methodId: MethodId) : ExecutionContext(methodId) {
 
-        override val executionId: ExecutionId = ExecutionId("static:${methodId}")
+        override val executionId: ExecutionId = ExecutionId(UUID.randomUUID().toString())
     }
 
-    class Instance(val instance: Any, sourceDescription: String? = null, methodId: MethodId) :
+    class Instance(methodId: MethodId, val instance: Any, sourceDescription: String? = null) :
         ExecutionContext(methodId, sourceDescription) {
 
-        override val executionId: ExecutionId =
-            ExecutionId("instance:${UUID.randomUUID()}:${methodId}");
+        override val executionId: ExecutionId = ExecutionId(UUID.randomUUID().toString());
     }
 }

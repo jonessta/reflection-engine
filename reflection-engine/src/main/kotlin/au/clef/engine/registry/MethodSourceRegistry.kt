@@ -3,9 +3,16 @@ package au.clef.engine.registry
 import au.clef.engine.ExecutionContext
 import au.clef.engine.MethodNotFoundException
 import au.clef.engine.MethodSource
+import au.clef.engine.MethodSource.Instance
+import au.clef.engine.MethodSource.InstanceMethod
+import au.clef.engine.MethodSource.StaticClass
+import au.clef.engine.MethodSource.StaticMethod
 import au.clef.engine.ReflectionConfig
 import au.clef.engine.model.ExecutionId
 import au.clef.engine.model.InheritanceLevel
+import au.clef.engine.model.InheritanceLevel.All
+import au.clef.engine.model.InheritanceLevel.DeclaredOnly
+import au.clef.engine.model.InheritanceLevel.Depth
 import au.clef.engine.model.MethodDescriptor
 import au.clef.engine.model.MethodId
 import java.lang.reflect.Method
@@ -15,7 +22,7 @@ import kotlin.reflect.jvm.javaMethod
 
 class MethodSourceRegistry(
     private val methodSources: Collection<MethodSource>,
-    private val inheritanceLevel: InheritanceLevel = InheritanceLevel.DeclaredOnly
+    private val inheritanceLevel: InheritanceLevel = DeclaredOnly
 ) {
 
     constructor(reflectionConfig: ReflectionConfig) : this(
@@ -68,14 +75,14 @@ class MethodSourceRegistry(
 
     private fun registerMethodSource(source: MethodSource) {
         when (source) {
-            is MethodSource.StaticClass -> {
+            is StaticClass -> {
                 candidateMethods(
                     declaringClass = source.declaringClass.java,
                     wantStatic = true
                 ).forEach { method: Method -> registerResolvedMethod(source, method) }
             }
 
-            is MethodSource.StaticMethod -> {
+            is StaticMethod -> {
                 val method: Method = resolveConfiguredMethod(
                     declaringClass = source.declaringClass.java,
                     methodId = source.methodId,
@@ -84,14 +91,14 @@ class MethodSourceRegistry(
                 registerResolvedMethod(source, method)
             }
 
-            is MethodSource.Instance -> {
+            is Instance -> {
                 candidateMethods(
                     declaringClass = source.instance::class.java,
                     wantStatic = false
                 ).forEach { method: Method -> registerResolvedMethod(source, method) }
             }
 
-            is MethodSource.InstanceMethod -> {
+            is InstanceMethod -> {
                 val method: Method = resolveConfiguredMethod(
                     declaringClass = source.instance::class.java,
                     methodId = source.methodId,
@@ -112,22 +119,19 @@ class MethodSourceRegistry(
 
         val executionContext: ExecutionContext =
             when (source) {
-                is MethodSource.StaticClass,
-                is MethodSource.StaticMethod -> ExecutionContext.Static(
-                    sourceDescription = source.sourceDescription,
-                    methodId = methodId
+                is StaticClass,
+                is StaticMethod -> ExecutionContext.Static(methodId)
+
+                is Instance -> ExecutionContext.Instance(
+                    methodId = methodId,
+                    instance = source.instance,
+                    sourceDescription = source.sourceDescription
                 )
 
-                is MethodSource.Instance -> ExecutionContext.Instance(
+                is InstanceMethod -> ExecutionContext.Instance(
+                    methodId = methodId,
                     instance = source.instance,
-                    sourceDescription = source.sourceDescription,
-                    methodId = methodId
-                )
-
-                is MethodSource.InstanceMethod -> ExecutionContext.Instance(
-                    instance = source.instance,
-                    sourceDescription = source.sourceDescription,
-                    methodId = methodId
+                    sourceDescription = source.sourceDescription
                 )
             }
 
@@ -185,12 +189,12 @@ class MethodSourceRegistry(
 
     private fun methodSequenceForInheritance(declaringClass: Class<*>): Sequence<Method> =
         when (inheritanceLevel) {
-            InheritanceLevel.DeclaredOnly -> declaringClass.declaredMethods.asSequence()
+            DeclaredOnly -> declaringClass.declaredMethods.asSequence()
 
-            InheritanceLevel.All -> classHierarchy(declaringClass).asSequence()
+            All -> classHierarchy(declaringClass).asSequence()
                 .flatMap { current: Class<*> -> current.declaredMethods.asSequence() }
 
-            is InheritanceLevel.Depth -> classHierarchy(declaringClass)
+            is Depth -> classHierarchy(declaringClass)
                 .take(inheritanceLevel.depth + 1)
                 .asSequence()
                 .flatMap { current: Class<*> -> current.declaredMethods.asSequence() }

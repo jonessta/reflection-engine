@@ -690,7 +690,7 @@
 
             addItem("Invocation", descriptor.executionId);
             addItem("Method", descriptor.reflectedName);
-            addItem("Source", descriptor.sourceDescription || "—");
+            addItem("Source", descriptor.sourceDescription || "not specified");
             addItem("Returns", DescriptorRuntime.shortType(descriptor.returnType));
             addItem("Static", descriptor.isStatic ? "Yes" : "No");
         },

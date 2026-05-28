@@ -44,10 +44,7 @@ sealed class MethodSource(val declaringClass: KClass<*>, val sourceDescription: 
             sourceDescription = sourceDescription
         )
 
-        constructor(
-            function: KFunction<*>,
-            sourceDescription: String? = null
-        ) : this(
+        constructor(function: KFunction<*>, sourceDescription: String? = null) : this(
             declaringClass = requireNotNull(function.javaMethod) {
                 "Function ${function.name} does not have a Java method"
             }.declaringClass.kotlin,
@@ -121,11 +118,12 @@ sealed class MethodSource(val declaringClass: KClass<*>, val sourceDescription: 
                             return@firstOrNull false
                         }
 
-                        valueParameters.mapIndexed { index: Int, parameter: KParameter ->
-                            val classifier: KClass<*> = parameter.type.classifier as? KClass<*>
-                                ?: return@firstOrNull false
-                            classifier == parameterTypes[index]
-                        }
+                        valueParameters
+                            .mapIndexed { index: Int, parameter: KParameter ->
+                                val classifier: KClass<*> = parameter.type.classifier as? KClass<*>
+                                    ?: return@firstOrNull false
+                                classifier == parameterTypes[index]
+                            }
                             .all { matches: Boolean -> matches }
                     }
 

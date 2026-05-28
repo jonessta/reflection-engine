@@ -14,6 +14,7 @@ sealed class Value {
 }
 
 data class MapEntry(
+    // todo can key just be Scalar
     val key: Value,
     val value: Value
 )

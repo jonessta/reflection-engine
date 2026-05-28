@@ -13,13 +13,13 @@ import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.javaType
+
 class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
 
     fun materialize(value: Value, targetType: Class<*>): Any? =
         materializeInternal(value, targetType)
 
-    fun materialize(value: Value, targetType: Type): Any? =
-        materializeInternal(value, targetType)
+    fun materialize(value: Value, targetType: Type): Any? = materializeInternal(value, targetType)
 
     fun supportsScalarTarget(targetType: Class<*>): Boolean =
         scalarRegistry.isScalarLike(targetType)
@@ -89,8 +89,8 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
 
                 else -> Any::class.java
             }
-        val items: List<Any?> =
-            value.items.map { item: Value -> materializeInternal(item, elementType) }
+        val items: List<Any?> = value.items
+            .map { item: Value -> materializeInternal(item, elementType) }
 
         return when {
             rawTarget.isArray -> {
@@ -311,7 +311,6 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
         target.enumConstants.firstOrNull { constant: Any ->
             (constant as Enum<*>).name.equals(text, ignoreCase = true)
         } ?: throw IllegalArgumentException("Invalid enum '$text' for ${target.name}")
-
 
     private fun handleNull(rawTarget: Class<*>): Any? {
         if (rawTarget.isPrimitive) {

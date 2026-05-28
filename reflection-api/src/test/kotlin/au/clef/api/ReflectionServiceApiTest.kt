@@ -57,7 +57,6 @@ class ReflectionServiceApiTest {
         val sumDescriptor: ExecutionDescriptorDto = api.executionDescriptors()
             .first { descriptor: ExecutionDescriptorDto -> descriptor.reflectedName == "sum" }
 
-        assertNull(sumDescriptor.sourceDescription)
         assertTrue(sumDescriptor.isStatic)
     }
 

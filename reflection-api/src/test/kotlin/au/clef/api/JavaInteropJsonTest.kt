@@ -289,10 +289,7 @@ class JavaInteropJsonTest {
         return responseValueMapper.toValue(result)
     }
 
-    private fun invokeSingleStatic(
-        methodSource: StaticMethod,
-        args: List<Value>
-    ): Value {
+    private fun invokeSingleStatic(methodSource: StaticMethod, args: List<Value>): Value {
         val localConfig: ReflectionConfig = reflectionConfig(methodSource).build()
         val localScalarTypeRegistry: ScalarTypeRegistry = ScalarTypeRegistry()
         val localEngine: ReflectionEngine = ReflectionEngine(localConfig)
@@ -310,8 +307,9 @@ class JavaInteropJsonTest {
             "Expected ${descriptor.parameters.size} args for ${descriptor.id}, got ${args.size}"
         }
 
-        val materializedArgs: List<Any?> =
-            args.zip(descriptor.parameters).map { (argValue, param) ->
+        val materializedArgs: List<Any?> = args
+            .zip(descriptor.parameters)
+            .map { (argValue, param) ->
                 localRequestValueMapper.materialize(argValue, param.runtimeType)
             }
 
@@ -320,8 +318,8 @@ class JavaInteropJsonTest {
         return localResponseValueMapper.toValue(result)
     }
 
-    private fun executionDescriptors(): List<ExecutionDescriptorDto> =
-        engine.executionContexts().map { executionContext: ExecutionContext ->
+    private fun executionDescriptors(): List<ExecutionDescriptorDto> = engine.executionContexts()
+        .map { executionContext: ExecutionContext ->
             val descriptor: MethodDescriptor = engine.descriptor(executionContext.methodId)
             toExecutionDescriptorDto(executionContext, descriptor)
         }
@@ -356,33 +354,33 @@ class JavaInteropJsonTest {
     private fun toExecutionDescriptorDto(
         executionContext: ExecutionContext,
         descriptor: MethodDescriptor
-    ): ExecutionDescriptorDto =
-        ExecutionDescriptorDto(
-            executionId = executionContext.executionId,
-            sourceDescription = executionContext.sourceDescription,
-            reflectedName = descriptor.reflectedName,
-            displayName = descriptor.displayName,
-            returnType = descriptor.returnType.name,
-            isStatic = descriptor.isStatic,
-            parameters = descriptor.parameters.map { param: ParamDescriptor ->
-                toFieldDescriptorDto(param)
-            }
-        )
+    ): ExecutionDescriptorDto = ExecutionDescriptorDto(
+        executionId = executionContext.executionId,
+        sourceDescription = executionContext.sourceDescription,
+        reflectedName = descriptor.reflectedName,
+        displayName = descriptor.displayName,
+        returnType = descriptor.returnType.name,
+        isStatic = descriptor.isStatic,
+        parameters = descriptor.parameters.map { param: ParamDescriptor ->
+            toFieldDescriptorDto(
+                param
+            )
+        }
+    )
 
     private fun toFieldDescriptorDto(
         param: ParamDescriptor
-    ): FieldDescriptorDto =
-        FieldDescriptorDto(
-            index = param.index,
-            reflectedName = param.reflectedName,
-            name = param.name,
-            type = param.logicalType.name,
-            nullable = param.nullable,
-            kind = if (isDescriptorScalarLike(param.logicalType)) {
-                FieldKindDto.SCALAR
-            } else {
-                FieldKindDto.RECORD
-            },
-            children = emptyList()
-        )
+    ): FieldDescriptorDto = FieldDescriptorDto(
+        index = param.index,
+        reflectedName = param.reflectedName,
+        name = param.name,
+        type = param.logicalType.name,
+        nullable = param.nullable,
+        kind = if (isDescriptorScalarLike(param.logicalType)) {
+            FieldKindDto.SCALAR
+        } else {
+            FieldKindDto.RECORD
+        },
+        children = emptyList()
+    )
 }

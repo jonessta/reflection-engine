@@ -12,16 +12,13 @@ class DefaultClassResolver(
         knownTypeSource.knownClasses.forEach { clazz: Class<*> ->
             put(clazz.name, clazz)
             val existing: Class<*>? = simpleNames.putIfAbsent(clazz.simpleName, clazz)
-            if (existing != null && existing != clazz) {
+            if (existing != null && existing != clazz)
                 ambiguousSimpleNames += clazz.simpleName
-            }
         }
 
         simpleNames
             .filterKeys { simpleName: String -> simpleName !in ambiguousSimpleNames }
-            .forEach { (simpleName: String, clazz: Class<*>) ->
-                put(simpleName, clazz)
-            }
+            .forEach { (simpleName: String, clazz: Class<*>) -> put(simpleName, clazz) }
     }
 
     override fun resolve(typeName: String): ResolvedType {
@@ -37,10 +34,9 @@ class DefaultClassResolver(
                 }
             )
 
-        return if (scalarRegistry.isScalarLike(clazz)) {
+        return if (scalarRegistry.isScalarLike(clazz))
             ResolvedType.Scalar(clazz)
-        } else {
+        else
             ResolvedType.Structured(clazz)
-        }
     }
 }

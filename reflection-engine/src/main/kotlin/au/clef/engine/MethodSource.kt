@@ -107,16 +107,14 @@ sealed class MethodSource(val declaringClass: KClass<*>, val sourceDescription: 
 
                 val matchingFunction: KFunction<*>? = declaringClass.declaredMemberFunctions
                     .firstOrNull { function: KFunction<*> ->
-                        if (function.name != methodName) {
+                        if (function.name != methodName)
                             return@firstOrNull false
-                        }
 
                         val valueParameters: List<KParameter> = function.parameters
                             .filter { parameter: KParameter -> parameter.kind == KParameter.Kind.VALUE }
 
-                        if (valueParameters.size != parameterTypes.size) {
+                        if (valueParameters.size != parameterTypes.size)
                             return@firstOrNull false
-                        }
 
                         valueParameters
                             .mapIndexed { index: Int, parameter: KParameter ->

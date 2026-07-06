@@ -47,11 +47,10 @@ class ValueJsonCodec(private val classResolver: ClassResolver) {
         when (value) {
             is ScalarValue.StringValue -> JsonPrimitive(value.value)
             is ScalarValue.BooleanValue -> JsonPrimitive(value.value)
-            is ScalarValue.NumberValue -> {
+            is ScalarValue.NumberValue ->
                 value.value.toLongOrNull()?.let { JsonPrimitive(it) }
                     ?: value.value.toDoubleOrNull()?.let { JsonPrimitive(it) }
                     ?: throw IllegalArgumentException("Invalid numeric scalar: ${value.value}")
-            }
         }
 
     private fun decodeScalar(obj: JsonObject): Value.Scalar {
@@ -61,16 +60,14 @@ class ValueJsonCodec(private val classResolver: ClassResolver) {
         val scalarValue: ScalarValue =
             when (jsonValue) {
                 JsonNull -> throw IllegalArgumentException("Scalar value must not be null; use Value.Null")
-                is JsonPrimitive -> {
-                    if (jsonValue.isString) {
+                is JsonPrimitive ->
+                    if (jsonValue.isString)
                         ScalarValue.StringValue(jsonValue.content)
-                    } else {
+                    else
                         jsonValue.booleanOrNull?.let { ScalarValue.BooleanValue(it) }
                             ?: jsonValue.longOrNull?.let { ScalarValue.NumberValue(it.toString()) }
                             ?: jsonValue.doubleOrNull?.let { ScalarValue.NumberValue(it.toString()) }
                             ?: ScalarValue.StringValue(jsonValue.content)
-                    }
-                }
 
                 else -> throw IllegalArgumentException("Scalar value must be a JSON primitive")
             }

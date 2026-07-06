@@ -44,11 +44,10 @@ class ResponseValueMapper(private val scalarRegistry: ScalarTypeRegistry) {
                 property.name to toValue(property.getter.call(value))
             }
         val fields: Map<String, Value> =
-            if (kotlinFields.isNotEmpty()) {
+            if (kotlinFields.isNotEmpty())
                 kotlinFields
-            } else {
+            else
                 allFields(clazz).associate { field: Field -> field.name to toValue(field.get(value)) }
-            }
 
         return Value.Record(type = clazz, fields = fields)
     }

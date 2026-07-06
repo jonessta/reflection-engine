@@ -37,8 +37,10 @@ inline fun <reified T : Any> stringScalarConverter(
 ): ScalarConverter<T> = scalarConverter(
     encode = { value: T -> ScalarValue.StringValue(encodeText(value)) },
     decode = { value: ScalarValue ->
-        if (value is ScalarValue.StringValue) decodeText(value.value)
-        else throw IllegalArgumentException("Expected string scalar")
+        if (value is ScalarValue.StringValue)
+            decodeText(value.value)
+        else
+            throw IllegalArgumentException("Expected string scalar")
     }
 )
 
@@ -48,8 +50,10 @@ private inline fun <reified T : Any> numberScalarConverter(
 ): ScalarConverter<T> = scalarConverter(
     encode = { value: T -> ScalarValue.NumberValue(encodeText(value)) },
     decode = { value: ScalarValue ->
-        if (value is ScalarValue.NumberValue) decodeText(value.value)
-        else throw IllegalArgumentException("Expected numeric scalar")
+        if (value is ScalarValue.NumberValue)
+            decodeText(value.value)
+        else
+            throw IllegalArgumentException("Expected numeric scalar")
     }
 )
 
@@ -66,8 +70,10 @@ object DefaultScalarConverters {
         scalarConverter<Boolean>(
             encode = { value: Boolean -> ScalarValue.BooleanValue(value) },
             decode = { value: ScalarValue ->
-                if (value is ScalarValue.BooleanValue) value.value
-                else throw IllegalArgumentException("Expected boolean scalar")
+                if (value is ScalarValue.BooleanValue)
+                    value.value
+                else
+                    throw IllegalArgumentException("Expected boolean scalar")
             }
         ),
         stringScalarConverter<Char>(

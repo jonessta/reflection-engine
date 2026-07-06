@@ -45,9 +45,9 @@ class MetadataGenerator(private val methodSourceRegistry: MethodSourceRegistry) 
     }
 
     private fun defaultParameterName(param: ParamDescriptor): String =
-        if (param.name.startsWith("arg")) {
+        if (param.name.startsWith("arg"))
             "param${param.index}"
-        } else {
+        else {
             param.name
         }
 }

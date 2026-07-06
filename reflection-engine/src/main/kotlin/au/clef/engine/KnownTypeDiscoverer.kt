@@ -19,13 +19,11 @@ class KnownTypeDiscoverer(private val terminalTypeDecider: TerminalTypeDecider) 
             val next: Type = queue.removeFirst()
             val raw: Class<*> = TypeReflection.rawClassOf(next)
 
-            if (terminalTypeDecider.isTerminal(raw)) {
+            if (terminalTypeDecider.isTerminal(raw))
                 continue
-            }
 
-            if (!discovered.add(raw)) {
+            if (!discovered.add(raw))
                 continue
-            }
 
             childTypesOf(raw).forEach(queue::addLast)
         }

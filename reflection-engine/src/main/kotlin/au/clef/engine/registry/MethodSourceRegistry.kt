@@ -75,12 +75,11 @@ class MethodSourceRegistry(
 
     private fun registerMethodSource(source: MethodSource) {
         when (source) {
-            is StaticClass -> {
+            is StaticClass ->
                 candidateMethods(
                     declaringClass = source.declaringClass.java,
                     wantStatic = true
                 ).forEach { method: Method -> registerResolvedMethod(source, method) }
-            }
 
             is StaticMethod -> {
                 val method: Method = resolveConfiguredMethod(
@@ -91,12 +90,11 @@ class MethodSourceRegistry(
                 registerResolvedMethod(source, method)
             }
 
-            is Instance -> {
+            is Instance ->
                 candidateMethods(
                     declaringClass = source.instance::class.java,
                     wantStatic = false
                 ).forEach { method: Method -> registerResolvedMethod(source, method) }
-            }
 
             is InstanceMethod -> {
                 val method: Method = resolveConfiguredMethod(

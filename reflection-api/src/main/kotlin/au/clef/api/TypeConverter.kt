@@ -26,9 +26,8 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
 
     private fun materializeInternal(value: Value, target: Type): Any? {
         val rawTarget: Class<*> = TypeReflection.rawClassOf(target)
-        if (value is Value.Null) {
+        if (value is Value.Null)
             return handleNull(rawTarget)
-        }
 
         return when (value) {
             is Value.Scalar -> convertScalar(value.value, target)
@@ -43,15 +42,13 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
         val rawTarget: Class<*> = TypeReflection.rawClassOf(target)
         val wrappedTarget: Class<*> = scalarRegistry.wrapPrimitive(rawTarget)
 
-        if (wrappedTarget == Any::class.java || wrappedTarget == Object::class.java) {
+        if (wrappedTarget == Any::class.java || wrappedTarget == Object::class.java)
             return when (value) {
                 is ScalarValue.StringValue -> value.value
                 is ScalarValue.BooleanValue -> value.value
-                is ScalarValue.NumberValue -> {
+                is ScalarValue.NumberValue ->
                     value.value.toLongOrNull() ?: value.value.toDoubleOrNull() ?: value.value
-                }
             }
-        }
 
         if (wrappedTarget.isEnum) {
             val text: String =
@@ -63,12 +60,11 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
             return decodeEnum(text, wrappedTarget)
         }
 
-        if (wrappedTarget == String::class.java) {
+        if (wrappedTarget == String::class.java)
             return when (value) {
                 is ScalarValue.StringValue -> value.value
                 else -> throw TypeMismatchException(Value.Scalar(value), rawTarget)
             }
-        }
         val decoder: ScalarConverter<Any> = scalarRegistry.decoderFor(wrappedTarget)
             ?: throw TypeMismatchException(Value.Scalar(value), rawTarget)
 
@@ -96,9 +92,8 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
             rawTarget.isArray -> {
                 val componentType: Class<*> = rawTarget.componentType
                 val array: Any = newInstance(componentType, items.size)
-                for ((index: Int, item: Any?) in items.withIndex()) {
+                for ((index: Int, item: Any?) in items.withIndex())
                     set(array, index, item)
-                }
                 array
             }
 
@@ -113,16 +108,13 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
     private fun convertMap(value: Value.MapValue, target: Type): Any {
         val rawTarget: Class<*> = TypeReflection.rawClassOf(target)
 
-        if (!Map::class.java.isAssignableFrom(rawTarget)) {
+        if (!Map::class.java.isAssignableFrom(rawTarget))
             throw TypeMismatchException(value, rawTarget)
-        }
-        val keyType: Type =
-            (target as? ParameterizedType)?.actualTypeArguments?.getOrNull(0)
-                ?: Any::class.java
+        val keyType: Type = (target as? ParameterizedType)?.actualTypeArguments
+            ?.getOrNull(0) ?: Any::class.java
 
-        val valueType: Type =
-            (target as? ParameterizedType)?.actualTypeArguments?.getOrNull(1)
-                ?: Any::class.java
+        val valueType: Type = (target as? ParameterizedType)?.actualTypeArguments
+            ?.getOrNull(1) ?: Any::class.java
 
         return value.entries
             .associate { entry ->
@@ -150,9 +142,8 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
             .mapNotNull { parameter: KParameter -> parameter.name }
             .toSet()
 
-        if ((value.fields.keys - constructorParameterNames).isNotEmpty()) {
+        if ((value.fields.keys - constructorParameterNames).isNotEmpty())
             return null
-        }
 
         val hasValueClassParameters: Boolean = valueParameters
             .any { parameter: KParameter ->
@@ -165,10 +156,8 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
         val callByArgs = linkedMapOf<KParameter, Any?>()
 
         for (parameter in valueParameters) {
-            val parameterName: String =
-                parameter.name ?: throw ObjectConstructionException(
-                    "Unnamed Kotlin constructor parameter on ${target.name}"
-                )
+            val parameterName: String = parameter.name
+                ?: throw ObjectConstructionException("Unnamed Kotlin constructor parameter on ${target.name}")
 
             val fieldValue: Value? = value.fields[parameterName]
 
@@ -186,21 +175,18 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
                     callByArgs[parameter] = null
                 }
 
-                else -> {
-                    throw ObjectConstructionException(
-                        "Missing mandatory parameter '$parameterName' for ${target.name}"
-                    )
-                }
+                else -> throw ObjectConstructionException(
+                    "Missing mandatory parameter '$parameterName' for ${target.name}"
+                )
             }
         }
 
         if (!hasValueClassParameters) {
             return try {
-                if (missingOptional.isEmpty()) {
+                if (missingOptional.isEmpty())
                     primaryConstructor.call(*orderedArgs.toTypedArray())
-                } else {
+                else
                     primaryConstructor.callBy(callByArgs)
-                }
             } catch (e: ObjectConstructionException) {
                 throw e
             } catch (e: Exception) {
@@ -251,7 +237,10 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
         val arguments: List<Any?> = constructor.parameters
             .mapIndexed { index: Int, parameter: Parameter ->
                 val parameterName: String =
-                    if (parameter.isNamePresent) parameter.name else "arg$index"
+                    if (parameter.isNamePresent)
+                        parameter.name
+                    else
+                        "arg$index"
                 val fieldValue: Value =
                     value.fields[parameterName]
                         ?: throw ObjectConstructionException(
@@ -313,9 +302,8 @@ class TypeConverter(private val scalarRegistry: ScalarTypeRegistry) {
         } ?: throw IllegalArgumentException("Invalid enum '$text' for ${target.name}")
 
     private fun handleNull(rawTarget: Class<*>): Any? {
-        if (rawTarget.isPrimitive) {
+        if (rawTarget.isPrimitive)
             throw TypeMismatchException(Value.Null, rawTarget)
-        }
         return null
     }
 }

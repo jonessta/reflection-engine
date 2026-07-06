@@ -104,22 +104,19 @@ class MethodId private constructor(val value: String) {
             val methodName = match.groupValues[2]
             val paramsPart = match.groupValues[3]
             val parameterTypeNames =
-                if (paramsPart.isBlank()) {
+                if (paramsPart.isBlank())
                     emptyList()
-                } else {
+                else
                     paramsPart
                         .split(",")
                         .also { paramTypes ->
-                            if (paramTypes.any(String::isBlank)) {
+                            if (paramTypes.any(String::isBlank))
                                 throw IllegalMethodIdException(
                                     "parameter types must be comma-separated with no empty entries"
                                 )
-                            }
-                            if (!paramTypes.all(TYPE_NAME_REGEX::matches)) {
+                            if (!paramTypes.all(TYPE_NAME_REGEX::matches))
                                 throw IllegalMethodIdException("parameter type names are malformed")
-                            }
                         }
-                }
 
             val methodIdVal: String =
                 formatMethodId(declaringClassName, methodName, parameterTypeNames)

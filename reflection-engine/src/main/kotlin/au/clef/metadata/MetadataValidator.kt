@@ -45,26 +45,23 @@ class MetadataValidator(private val methodSourceRegistry: MethodSourceRegistry) 
             }
 
             methodMetadata.parameters.forEachIndexed { index: Int, paramMetadata: ParamMetadata ->
-                if (index >= descriptor.parameters.size) {
+                if (index >= descriptor.parameters.size)
                     return@forEachIndexed
-                }
                 val descriptorParam: ParamDescriptor = descriptor.parameters[index]
 
-                if (paramMetadata.name != null && paramMetadata.name.isBlank()) {
+                if (paramMetadata.name != null && paramMetadata.name.isBlank())
                     issues += ValidationIssue(
                         severity = Severity.WARNING,
                         location = "${methodId}:param[$index]",
                         message = "Parameter name is blank"
                     )
-                }
 
-                if (paramMetadata.name != null && paramMetadata.name == descriptorParam.reflectedName) {
+                if (paramMetadata.name != null && paramMetadata.name == descriptorParam.reflectedName)
                     issues += ValidationIssue(
                         severity = Severity.WARNING,
                         location = "${methodId}:param[$index]",
                         message = "Parameter name duplicates reflected name"
                     )
-                }
             }
         }
 

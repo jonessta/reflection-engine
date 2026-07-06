@@ -57,9 +57,7 @@ class ReflectionEngine(
         }
 
         if (descriptor.isStatic && instance != null) {
-            throw IllegalArgumentException(
-                "Static method ${descriptor.id} must not receive an instance"
-            )
+            throw IllegalArgumentException("Static method ${descriptor.id} must not receive an instance")
         }
 
         require(args.size == method.parameterCount) {

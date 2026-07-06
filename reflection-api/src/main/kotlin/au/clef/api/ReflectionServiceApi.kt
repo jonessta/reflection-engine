@@ -65,10 +65,8 @@ class ReflectionServiceApi(apiConfig: ReflectionApiConfig) {
             toExecutionDescriptorDto(ctx, engine.descriptor(ctx.methodId))
         }
 
-    private fun toExecutionDescriptorDto(
-        ctx: ExecutionContext,
-        desc: MethodDescriptor
-    ): ExecutionDescriptorDto = ExecutionDescriptorDto(
+    private fun toExecutionDescriptorDto(ctx: ExecutionContext, desc: MethodDescriptor)
+            : ExecutionDescriptorDto = ExecutionDescriptorDto(
         executionId = ctx.executionId,
         sourceDescription = ctx.sourceDescription,
         reflectedName = desc.reflectedName,

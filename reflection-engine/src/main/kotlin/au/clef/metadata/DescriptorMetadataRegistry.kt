@@ -10,13 +10,12 @@ class DescriptorMetadataRegistry(private val metadata: MetadataRoot) {
 
     fun apply(descriptor: MethodDescriptor): MethodDescriptor {
         val methodMeta: MethodMetadata = metadata.methods[descriptor.id] ?: return descriptor
-        val updatedParams: List<ParamDescriptor> =
-            descriptor.parameters.map { param: ParamDescriptor ->
+        val updatedParams: List<ParamDescriptor> = descriptor.parameters
+            .map { param: ParamDescriptor ->
                 val paramMeta: ParamMetadata? = methodMeta.parameters.getOrNull(param.index)
-
-                if (paramMeta == null) {
+                if (paramMeta == null)
                     param
-                } else {
+                else
                     ParamDescriptor(
                         index = param.index,
                         logicalType = param.logicalType,
@@ -25,7 +24,6 @@ class DescriptorMetadataRegistry(private val metadata: MetadataRoot) {
                         name = paramMeta.name ?: param.name,
                         nullable = param.nullable
                     )
-                }
             }
 
         return descriptor.withMetadata(

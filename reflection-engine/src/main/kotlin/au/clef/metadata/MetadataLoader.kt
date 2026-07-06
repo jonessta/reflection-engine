@@ -16,9 +16,8 @@ object MetadataLoader {
             ?: error("Metadata resource not found on classpath: $path")
         val text: String = stream.bufferedReader().use { reader -> reader.readText() }
 
-        if (text.isBlank()) {
+        if (text.isBlank())
             return MetadataRoot()
-        }
 
         return json.decodeFromString(text)
     }
